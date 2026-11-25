@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- BenchmarkDotNet requires instance methods. -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />
+    <!-- Today's Rust-backed module: the baseline the managed codecs replace. -->
+    <ProjectReference Include="..\..\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+  </ItemGroup>
+
+  <!-- The fixtures are encoded by an independent codec, so neither engine decodes its own encoder's choices. -->
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\tests\Pragmatic.Imaging.Codecs.Tests\Workload\SyntheticPhoto.cs" Link="Workload\SyntheticPhoto.cs" />
+  </ItemGroup>
+
+</Project>

@@ -12,8 +12,13 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Pragmatic.Imaging/Pragmatic.Imaging.csproj" />
+    <Project Path="src/Pragmatic.Imaging.Codecs/Pragmatic.Imaging.Codecs.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Pragmatic.Imaging.Codecs.Tests/Pragmatic.Imaging.Codecs.Tests.csproj" />
     <Project Path="tests/Pragmatic.Imaging.Tests/Pragmatic.Imaging.Tests.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Pragmatic.Imaging.Benchmarks/Pragmatic.Imaging.Benchmarks.csproj" />
   </Folder>
 </Solution>

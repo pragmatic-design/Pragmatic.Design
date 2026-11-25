@@ -107,6 +107,25 @@ Important public entrypoints:
 - `QrCode`
 - `ImagingOptions`
 
+## The managed codecs (`Pragmatic.Imaging.Codecs`)
+
+A second package in this module holds the managed engine that replaces the native library, piece by
+piece (#821): JPEG decode (baseline, progressive, scaled 1/2 to 1/8) and encode (optimised or standard
+Huffman tables), PNG decode and encode (every colour type, 1–16 bits, Adam7), resampling with five
+filters, and the QR, Code 128, Code 39 and EAN symbologies as matrices and bar widths. It is managed
+code only, with AVX2 paths where they pay.
+
+It is the **low-level layer** under `Pragmatic.Imaging` and `Pragmatic.Documents.Pdf`: its types are
+public because two packages use it, and an application normally reaches it through those. Today
+`Pragmatic.Imaging` still runs on the native library; it moves onto the codecs in #852.
+
+**Native AOT.** The package ships a `buildTransitive` targets file that sets
+`IlcInstructionSet=x86-64-v3` (AVX2, FMA, BMI: every x64 processor since 2013) when `PublishAot` is on
+and the consumer has not chosen an instruction set. Without it, ILC compiles for x86-64-v2, every AVX2
+path drops out at compile time and `Vector<T>` is 128 bits wide: the spike measured the same upload
+path at 32.6 ms on v2 and 27.4 ms on v3 (one run each, 2026-10-17). To target older processors, set
+`IlcInstructionSet` in your project: the package keeps your choice.
+
 ## Operational notes
 
 - **Native buffer lifecycle.** An `ImagePipeline` owns a native image handle. Dispose it

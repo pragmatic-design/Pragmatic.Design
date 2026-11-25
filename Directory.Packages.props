@@ -151,6 +151,12 @@
          ⚠️ Held at 6.2.4, the last MIT release: from 6.5.0 PDFsharp and MigraDoc are AGPL-3.0 with a
          commercial licence. Dependabot ignores the newer versions; raising this is a licensing decision. -->
     <PackageVersion Include="PDFsharp-MigraDoc" Version="[6.2.4]" />
+    <!-- Test oracles for the managed codecs (Pragmatic.Imaging.Codecs.Tests, #983): an independent codec that
+         reads what we write and writes what we read (SkiaSharp, MIT, with its Linux native assets), and an
+         independent barcode reader (ZXing.Net, Apache-2.0). Test and benchmark projects only. -->
+    <PackageVersion Include="SkiaSharp" Version="4.153.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
+    <PackageVersion Include="ZXing.Net" Version="0.16.10" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <!-- Fuzzing (#158): property tests in the hermetic suites, and coverage-guided harnesses run nightly. Test-only;
          neither reaches a package. -->

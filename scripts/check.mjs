@@ -1243,6 +1243,8 @@ async function aotSmokes() {
     'examples/aot-smoke/publish-and-smoke-host-documents.ps1',
     // The in-memory message bus dispatching to a generated [MessageHandler], with no trim/AOT warning (#869).
     'examples/aot-smoke/publish-and-smoke-messaging.ps1',
+    // The managed image codecs on an upload path, with their AVX2 paths compiled in (#983).
+    'examples/aot-smoke/publish-and-smoke-codecs.ps1',
   ];
 
   // Every smoke on every target a package ships (#931): the net11.0 pass publishes the net11.0 build of each package,

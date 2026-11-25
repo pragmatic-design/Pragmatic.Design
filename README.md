@@ -305,7 +305,7 @@ laptop and in CI.
 
 **Native AOT, measured.** The code the generator emits does not reflect: serialization goes through
 generated `JsonTypeInfo`, and generated endpoints are mapped as plain `RequestDelegate`s rather than
-through ASP.NET's runtime delegate factory. Ten smoke applications are published Native AOT and run
+through ASP.NET's runtime delegate factory. Eleven smoke applications are published Native AOT and run
 by the gate ([`examples/aot-smoke`](examples/aot-smoke/)):
 - the serialization seam;
 - a generated JSON context;
@@ -315,7 +315,8 @@ by the gate ([`examples/aot-smoke`](examples/aot-smoke/)):
 - persistence on the documents engine (MongoDB);
 - both engines at once, two boundaries in one process;
 - one composed host on the Sql engine, and the same host on the documents engine;
-- the in-memory message bus dispatching to a generated handler.
+- the in-memory message bus dispatching to a generated handler;
+- the managed image codecs on an upload path, with their AVX2 paths compiled in.
 
 What that covers, and what it does not yet:
 
