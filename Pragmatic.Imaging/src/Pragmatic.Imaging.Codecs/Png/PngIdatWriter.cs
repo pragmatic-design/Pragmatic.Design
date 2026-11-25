@@ -1,15 +1,19 @@
+using System.Buffers;
+
 namespace Pragmatic.Imaging.Codecs.Png;
 
 /// <summary>
 ///     A sink for the deflater: compressed bytes arrive here and leave as IDAT chunks of a fixed size,
 ///     each with its length and CRC, so the whole compressed stream never has to be held to be chunked.
+///     The chunk buffer is rented and given back on dispose, so an encode allocates no managed copy of
+///     its output.
 /// </summary>
 internal sealed class PngIdatWriter : Stream
 {
     private const int ChunkSize = 64 * 1024;
 
     private readonly Stream _output;
-    private readonly byte[] _chunk = new byte[ChunkSize];
+    private byte[] _chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
     private int _filled;
 
     public PngIdatWriter(Stream output) => _output = output;
@@ -40,6 +44,17 @@ internal sealed class PngIdatWriter : Stream
     {
         PngChunkWriter.Write(_output, PngChunk.Idat, _chunk.AsSpan(0, _filled));
         _filled = 0;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && _chunk.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(_chunk);
+            _chunk = [];
+        }
+
+        base.Dispose(disposing);
     }
 
     public override bool CanRead => false;

@@ -9,6 +9,21 @@ namespace Pragmatic.Imaging.Codecs.Png;
 /// </summary>
 public static class PngDecoder
 {
+    /// <summary>
+    ///     The image's size from its IHDR chunk, without inflating anything: what a caller checks against
+    ///     its limits before <see cref="Decode" /> allocates the pixels. Only the signature and the first
+    ///     chunk are read, so the beginning of a file is enough.
+    /// </summary>
+    public static (int Width, int Height) Identify(ReadOnlySpan<byte> encoded)
+    {
+        var reader = new PngChunkReader(encoded);
+        if (!reader.TryNext(out var first) || first.Type != PngChunk.Ihdr)
+            throw new ImageDecodeException("PNG does not start with IHDR.");
+
+        var header = PngHeader.Parse(encoded.Slice(first.DataOffset, first.DataLength));
+        return (header.Width, header.Height);
+    }
+
     /// <summary>Decodes the whole image. The caller owns the buffer.</summary>
     public static PixelBuffer Decode(ReadOnlyMemory<byte> encoded)
     {

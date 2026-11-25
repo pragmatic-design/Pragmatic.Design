@@ -62,20 +62,34 @@ public sealed class TheStreamPathsDoNotCopyTheImageTests
             $"the encoded image is {output.Length} bytes and should go to the stream without a managed copy (samples: {allocated.Samples})");
     }
 
-    [NativeRequiredFact]
+    /// <remarks>
+    ///     Measured as a difference, not a total: the symbol is now built in managed code, and its
+    ///     module matrices are a fixed cost of the text (3,528 bytes for this one), where the native
+    ///     encoder's were invisible to this count. What the test is for is a copy of the output, and a
+    ///     copy grows with it: the same text at module size 40 is a PNG several times the one at 10, and
+    ///     whatever the larger one allocates beyond the smaller is what scales.
+    /// </remarks>
+    [Fact]
     public void QrCodeToStream_AllocatesNoCopyOfTheOutput()
     {
-        var output = new MemoryStream(capacity: 1024 * 1024);
+        const string text = "https://example.com/a-reasonably-long-payload";
+        var output = new MemoryStream(capacity: 4 * 1024 * 1024);
 
-        var allocated = Measure(() =>
+        var small = Measure(() =>
         {
             output.SetLength(0);
-            QrCode.GeneratePng("https://example.com/a-reasonably-long-payload", output, moduleSize: 20);
+            QrCode.GeneratePng(text, output, moduleSize: 10);
+        });
+        var smallLength = output.Length;
+        var large = Measure(() =>
+        {
+            output.SetLength(0);
+            QrCode.GeneratePng(text, output, moduleSize: 40);
         });
 
-        output.Length.Should().BeGreaterThan(0);
-        allocated.Fewest.Should().BeLessThan(Bound,
-            $"the PNG is {output.Length} bytes and should go to the stream without a managed copy (samples: {allocated.Samples})");
+        output.Length.Should().BeGreaterThan(smallLength * 3);
+        (large.Fewest - small.Fewest).Should().BeLessThan(Bound,
+            $"the PNG grew from {smallLength} to {output.Length} bytes and should go to the stream without a managed copy (samples: {small.Samples} / {large.Samples})");
     }
 
     /// <summary>

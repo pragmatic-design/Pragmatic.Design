@@ -13,7 +13,7 @@ Runtime errors and their fixes.
 
 ### "Unable to load DLL 'Pragmatic.Imaging.Native'" or `DllNotFoundException`
 
-The native binary isn't findable. In order of likelihood:
+The native binary isn't findable. Only WebP, AVIF, GIF, BMP and TIFF (and a CMYK, 12-bit or arithmetic-coded JPEG) need it: PNG, JPEG, the operations and QR codes are managed, so an app that fails here is loading or encoding one of those formats. In order of likelihood:
 
 1. **Wrong RID / unsupported platform.** The NuGet ships `win-x64`, `linux-x64` (glibc) and `osx-arm64`; any other RID needs a locally-built binary. See [native-deployment.md](/modules/imaging/native-deployment/).
 2. **Alpine Linux (musl libc).** The native library requires glibc. Use a Debian/Ubuntu image, or build for musl.
@@ -50,7 +50,7 @@ The decoded format isn't in `ImagingOptions.AllowedFormats`. Add the format to t
 
 ### `Reason == EncodeFailed` / `UnsupportedFormat`
 
-Encoding to the requested format failed (e.g. encoding to `ImageFormat.Unknown`). Choose a valid output format.
+`UnsupportedFormat`: the requested output is not an encoder target (`ImageFormat.Unknown`). `EncodeFailed`: the native encoder of a WebP, AVIF, GIF, BMP or TIFF output reported an error. Choose a valid output format.
 
 ### `ArgumentException` (not `ImagingException`)
 
@@ -58,7 +58,8 @@ Argument-shape mistakes throw `ArgumentException`:
 - `Crop(x, y, w, h)` extends past the image bounds, or a zero dimension
 - `Rotate(45)`: only 90/180/270 allowed
 - `Resize(0, 0)`: dimensions must be positive
-- `QrCode.GeneratePng("")`: empty text, or `moduleSize`/`margin` out of range
+- `Blur(-1f)`, `Sharpen(0f)`: sigma must be a positive, finite number (`0` is allowed for `Blur`, meaning 0.8)
+- `QrCode.GeneratePng("")`: empty text, text over 2,331 UTF-8 bytes, or `moduleSize`/`margin` out of range
 
 The message identifies which argument failed.
 
@@ -100,16 +101,18 @@ Too many pipelines alive at once. Cap concurrency with `ImageBatch.ProcessAsync(
 
 ### Batch processing slower than sequential
 
-Likely oversubscribed: CPU-bound native work doesn't scale past physical cores. Use `maxConcurrency: Environment.ProcessorCount` (or the default `ProcessorCount / 2`) rather than a large fixed number.
+Likely oversubscribed: CPU-bound image work doesn't scale past physical cores. Use `maxConcurrency: Environment.ProcessorCount` (or the default `ProcessorCount / 2`) rather than a large fixed number.
 
 ### First call is slow, subsequent calls are fast
 
-The native library loads lazily on first use. Pre-warm at startup if latency matters:
+The first call JIT-compiles the codecs (and, for WebP, AVIF, GIF, BMP or TIFF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
 
 ```csharp
-// In Program.cs startup: triggers the native load
+// In Program.cs startup: compiles the PNG path
 _ = ImageInfo.FromBytes(QrCode.GeneratePng("warmup", moduleSize: 1, margin: 0));
 ```
+
+Under Native AOT there is nothing to compile; the native library still loads on first use.
 
 ### `Lanczos3` resize is slow for thumbnails
 
@@ -127,7 +130,7 @@ Reserve `Lanczos3` for hero images and large outputs.
 
 ### Image is rotated 90°
 
-The source has an EXIF orientation tag (common from phone cameras). The decoder returns raw pixel orientation and re-encoding strips EXIF, so the stored orientation is lost. Read the orientation yourself and apply an explicit `Rotate(...)`; the library doesn't auto-rotate.
+The source has an EXIF orientation tag (common from phone cameras). For JPEG and PNG the decoder applies it, so the image loads upright: if yours comes out turned, check that your code does not also rotate by the tag (it would turn it twice). WebP, AVIF, GIF, BMP and TIFF still go through the native library, which does not read the tag: for those, read it yourself and apply `Rotate(...)`.
 
 ### Colours look off
 

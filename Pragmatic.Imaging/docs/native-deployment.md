@@ -2,8 +2,10 @@
 
 `Pragmatic.Imaging` ships with a Rust-compiled native library, loaded under the name
 `Pragmatic.Imaging.Native`: the file is `Pragmatic.Imaging.Native.dll` on Windows and
-`libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS. This guide covers platform coverage,
-publish options, and container considerations.
+`libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS. It serves WebP, AVIF, GIF, BMP and
+TIFF (and a JPEG the managed decoder does not handle: CMYK, 12-bit, arithmetic-coded) until their
+managed codecs land; PNG, JPEG, every operation and QR codes are managed and never load it. This
+guide covers platform coverage, publish options, and container considerations.
 
 ---
 
@@ -55,7 +57,9 @@ The binding is AOT-compatible: no reflection, no dynamic code generation, `Libra
 dotnet publish -c Release -r win-x64 -p:PublishAot=true
 ```
 
-AOT affects the .NET code; the Rust library still ships alongside the AOT-compiled app.
+AOT affects the .NET code; the Rust library still ships alongside the AOT-compiled app, for the
+formats it serves. The managed codecs' `buildTransitive` targets compile their AVX2 paths in
+(`IlcInstructionSet=x86-64-v3`) unless you set an instruction set yourself.
 
 ---
 

@@ -53,7 +53,7 @@ A zero dimension, or a region extending past the image bounds, throws `ArgumentE
 
 ### `Rotate(degrees)`
 
-Rotate by 90, 180, or 270 degrees (positive = clockwise). Arbitrary angles are **not supported**: the native layer only does lossless quarter-turn rotations.
+Rotate by 90, 180, or 270 degrees (positive = clockwise). Arbitrary angles are **not supported**: only the lossless quarter turns, which move pixels without resampling them.
 
 ```csharp
 pipe.Rotate(90);    // landscape → portrait
@@ -85,7 +85,7 @@ pipe.Grayscale();
 
 ### `Blur(sigma)`
 
-Gaussian blur. `sigma` is the standard deviation in pixels; `1.0` is light, `5.0` is heavy.
+Gaussian blur. `sigma` is the standard deviation in pixels; `1.0` is light, `5.0` is heavy. `0` means the default of `0.8`; a negative, NaN or infinite sigma throws `ArgumentOutOfRangeException`. Edges are extended by repeating the border pixels, and alpha is blurred like a colour.
 
 ```csharp
 pipe.Blur(sigma: 2.0f);
@@ -93,7 +93,7 @@ pipe.Blur(sigma: 2.0f);
 
 ### `Sharpen(sigma, threshold)`
 
-Unsharp-mask sharpening. `sigma` (default `1.0`) controls the underlying blur radius; `threshold` (default `1`) is the minimum channel difference that triggers sharpening.
+Unsharp-mask sharpening. `sigma` (default `1.0`, must be positive) controls the underlying blur radius; `threshold` (default `1`) is the minimum channel difference that triggers sharpening. Every channel is sharpened, alpha included.
 
 ```csharp
 pipe.Sharpen();                              // sigma 1.0, threshold 1
@@ -102,7 +102,7 @@ pipe.Sharpen(sigma: 1.5f, threshold: 3);     // stronger, ignores micro-noise
 
 ### `Brightness(value)`
 
-Add a constant to every channel. Range `-255` to `+255`; values are clamped native-side.
+Add a constant to red, green and blue. Range `-255` to `+255`; each channel is clamped to 0–255, and alpha is unchanged.
 
 ```csharp
 pipe.Brightness(20);       // brighten
@@ -111,7 +111,7 @@ pipe.Brightness(-30);      // darken
 
 ### `Contrast(value)`
 
-Additive contrast adjustment. `0` is identity; positive values increase contrast, negative flatten. Typical range `-100` to `+100`.
+Contrast adjustment: each channel's distance from mid-grey is scaled by `((100 + value) / 100)²`. `0` is identity; positive values increase contrast, negative flatten. Typical range `-100` to `+100`. Alpha is scaled too, as the native library did.
 
 ```csharp
 pipe.Contrast(20f);        // more contrast
@@ -169,7 +169,7 @@ byte[] qr = QrCode.GeneratePng("https://pragmaticdesign.net");
 QrCode.GeneratePng("payload", output: fileStream, moduleSize: 8, margin: 2);
 ```
 
-Error-correction level is fixed at Medium. Output is always PNG, black on white: no colour, logo, or ECC tuning. For richer QR output, use a dedicated library.
+The text is encoded as UTF-8 in byte mode, at error-correction level Medium, in the smallest version that holds it: up to 2,331 bytes (version 40). Longer text throws `ArgumentException`; so does an image side over 8,192 pixels (`ImagingException`). Output is always PNG, black on white: no colour, logo, or ECC tuning. For richer QR output, use a dedicated library.
 
 ---
 
@@ -204,12 +204,12 @@ Static wrappers that open a pipeline, do one operation, encode, and return `byte
 byte[] thumb = ImageConverter.Thumbnail(bytes, maxWidth: 400, maxHeight: 400, format: ImageFormat.Jpeg, quality: 90);
 byte[] webp  = ImageConverter.Convert(bytes, ImageFormat.WebP);
 byte[] fixed = ImageConverter.Resize(bytes, 1024, 768);
-byte[] clean = ImageConverter.StripExif(bytes);   // re-encode to drop metadata
+byte[] clean = ImageConverter.StripExif(bytes);   // drop EXIF and XMP, keep the pixels
 
 byte[] thumb2 = await ImageConverter.ThumbnailAsync(bytes, 400, 400, ct: ct);
 ```
 
-`StripExif(image, quality = 95, options)` removes metadata by decoding and re-encoding in the original format (lossy for JPEG, so use high quality). Every method takes an optional `ImagingOptions`.
+`StripExif(image, quality = 95, options)` removes EXIF and XMP. A JPEG or PNG is not decoded: the file is copied without its APP1 segments (JPEG) or eXIf chunks (PNG), so a JPEG keeps its exact compressed data. The orientation tag is kept, alone in a new EXIF block, so the photo still shows upright; camera, GPS and timestamps go, while colour profiles, comments, IPTC and PNG text chunks stay. Other formats are decoded and re-encoded in the same format, and `quality` applies only there. Every method takes an optional `ImagingOptions`.
 
 ---
 
@@ -229,7 +229,7 @@ byte[][] custom = await ImageBatch.ProcessAsync(images, data =>
 }, maxConcurrency: 4);
 ```
 
-`maxConcurrency: 0` defaults to `Environment.ProcessorCount / 2`. A `SemaphoreSlim` caps how many pipelines are alive at once, so you don't exhaust native memory.
+`maxConcurrency: 0` defaults to `Environment.ProcessorCount / 2`. A `SemaphoreSlim` caps how many pipelines are alive at once, so you don't exhaust the native memory their pixels live in.
 
 **Failure semantics.** Each item runs independently. A failed item is wrapped in `ImageBatchItemException`, which carries the input `Index`. Because the result is awaited via `Task.WhenAll`, awaiting the batch **re-throws the first** failed item's `ImageBatchItemException`. If you need every failure, don't rely on the throw: process items in smaller batches, or wrap your per-item operation to capture its own result/error.
 
@@ -241,7 +241,7 @@ byte[][] custom = await ImageBatch.ProcessAsync(images, data =>
 - Text overlay / drawing
 - Colour-space conversion (sRGB assumed throughout)
 - Animation frames (GIF / APNG / animated WebP: first frame only)
-- EXIF-preserving operations (EXIF is stripped on re-encode)
+- EXIF-preserving operations (an encode writes no EXIF; the orientation is applied to the pixels on load, so nothing is lost by it)
 - WebP/AVIF lossy quality control (upstream `image` 0.25 limitation)
 - Floating-point / HDR pixel formats
 

@@ -11,7 +11,7 @@ Patterns that look reasonable but fight the module's design.
 
 ## 1. Forgetting to dispose the pipeline
 
-`ImagePipeline` owns a native buffer. Not disposing leaks native memory until the finaliser runs.
+`ImagePipeline` owns its pixels in native memory. Not disposing holds that memory until the finaliser runs, out of the pool the next image would reuse.
 
 ```csharp
 // ❌
@@ -32,7 +32,7 @@ Prefer `using`/`await using` even for single-operation flows.
 
 ## 2. Sharing a pipeline across threads
 
-`ImagePipeline` is not thread-safe. The native buffer is mutable state; concurrent access corrupts it or panics the Rust code.
+`ImagePipeline` is not thread-safe. Its pixel buffer is mutable state, and some operations replace it: concurrent access corrupts the image or uses a buffer another thread has already given back.
 
 ```csharp
 // ❌ one pipeline, two tasks
@@ -92,7 +92,7 @@ Only use `Resize(w, h)` when you deliberately want to force dimensions.
 
 ## 5. Trying to rotate by non-90° angles
 
-The native layer only supports lossless quarter-turn rotations (90, 180, 270).
+Only the lossless quarter turns are supported (90, 180, 270).
 
 ```csharp
 // ❌
@@ -106,14 +106,25 @@ Arbitrary-angle rotation needs resampling and antialiasing; if you need it, use 
 
 ---
 
-## 6. Expecting EXIF metadata to survive re-encoding
+## 6. Expecting EXIF metadata to survive re-encoding, or rotating by the orientation tag yourself
 
-Every transformation decodes and re-encodes. EXIF is dropped as a side effect (this is also how `ImageConverter.StripExif` works).
+An encode writes no EXIF: camera, GPS and timestamps are gone from any image a pipeline writes.
 
 - For **thumbnails / resized versions** this is usually what you want (metadata stripped for privacy)
-- For **original-quality re-saves** you'd lose camera / GPS / orientation data
+- For **original-quality re-saves** you'd lose camera / GPS data; to drop metadata without touching a JPEG's or PNG's pixels, use `ImageConverter.StripExif`, which copies the file without it
 
-Pragmatic.Imaging does not preserve EXIF through re-encoding. If you need it, use a dedicated metadata tool.
+The **orientation** is not lost: `ImagePipeline.Load` applies a JPEG's or PNG's EXIF orientation to the pixels, so the image is already upright when you operate on it. Reading the tag and calling `Rotate` yourself turns it a second time.
+
+```csharp
+// ❌ the decoder has already applied orientation 6
+using var pipe = ImagePipeline.Load(phonePhoto);
+pipe.Rotate(90);
+
+// ✅
+using var pipe = ImagePipeline.Load(phonePhoto);   // upright, Width/Height as shown
+```
+
+Pragmatic.Imaging does not carry other EXIF through re-encoding. If you need it, use a dedicated metadata tool.
 
 ---
 
@@ -144,7 +155,7 @@ var webp = pipe.Encode(ImageFormat.WebP);   // ✅ still valid afterwards
 var png  = pipe.Encode(ImageFormat.Png);
 ```
 
-The native buffer is released only on `Dispose` (i.e. at the end of the `using`).
+The pixel buffer goes back to the pool only on `Dispose` (i.e. at the end of the `using`).
 
 ---
 
@@ -184,13 +195,13 @@ Pass `allowUpscale: true` to enlarge, or enforce a minimum with `Resize`.
 
 ## 12. Running on Alpine Linux
 
-The native binary is built against glibc; Alpine uses musl. The app fails at the first image operation with `DllNotFoundException`. Use a Debian/Ubuntu base image, or build the native library for musl yourself (non-trivial). See [native-deployment.md](/modules/imaging/native-deployment/).
+The native binary is built against glibc; Alpine uses musl. PNG, JPEG, the operations and QR codes are managed and work there; the first WebP, AVIF, GIF, BMP or TIFF load or encode fails with `DllNotFoundException`. For those formats, use a Debian/Ubuntu base image, or build the native library for musl yourself (non-trivial). See [native-deployment.md](/modules/imaging/native-deployment/).
 
 ---
 
-## 13. Expecting cancellation to interrupt a native call
+## 13. Expecting cancellation to interrupt a decode or an operation
 
-The native functions run to completion once invoked: there's no cancellation cooperation on the Rust side. `CancellationToken` is checked **between** operations (before/after each native call), not during one. For long batches, use `ImageBatch` with `maxConcurrency` to cap work in flight.
+A decode, an encode or an operation runs to completion once started: none of them checks a token midway. `CancellationToken` is checked **between** steps (before/after each call), not during one. For long batches, use `ImageBatch` with `maxConcurrency` to cap work in flight.
 
 ---
 

@@ -5,10 +5,10 @@ namespace Showcase.Billing.Endpoints;
 
 /// <summary>
 /// Renders a QR code PNG for a payload (e.g. an invoice pay-link).
-/// Demonstrates: Pragmatic.Imaging integration end-to-end — the full Rust native pipeline exercised
-/// over HTTP: <see cref="QrCode.GeneratePng(string, uint, uint)"/> (native encode) →
-/// <see cref="ImagePipeline.Load(byte[], ImagingOptions)"/> (native decode) →
-/// <see cref="ImagePipeline.Thumbnail"/> (native resize) → <see cref="ImagePipeline.Encode"/> (native encode),
+/// Demonstrates: Pragmatic.Imaging integration end-to-end — the managed PNG pipeline exercised
+/// over HTTP: <see cref="QrCode.GeneratePng(string, uint, uint)"/> (QR to PNG) →
+/// <see cref="ImagePipeline.Load(byte[], ImagingOptions)"/> (decode) →
+/// <see cref="ImagePipeline.Thumbnail"/> (resize) → <see cref="ImagePipeline.Encode"/> (encode),
 /// streamed back via the endpoint <see cref="FileResponse"/> contract.
 /// </summary>
 [Endpoint(HttpVerb.Get, "api/invoices/qr.png")]

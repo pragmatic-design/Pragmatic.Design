@@ -3,10 +3,21 @@
   <PropertyGroup>
     <ExcludeSharedTesting>true</ExcludeSharedTesting>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- The parity tests call the native library directly, through its P/Invoke signatures, as the
+         reference the managed engine is held to. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+  </ItemGroup>
+
+  <!-- Independent decoders: SkiaSharp reads the EXIF orientation of the fixtures, ZXing reads the QR
+       codes back. Test-only, as in Pragmatic.Imaging.Codecs.Tests. -->
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
+    <PackageReference Include="ZXing.Net" />
   </ItemGroup>
 
   <ItemGroup>

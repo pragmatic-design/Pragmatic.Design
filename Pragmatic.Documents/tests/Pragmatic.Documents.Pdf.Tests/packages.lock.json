@@ -246,8 +246,12 @@
       "pragmatic.imaging": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
+          "Pragmatic.Imaging.Codecs": "[1.0.0, )"
         }
+      },
+      "pragmatic.imaging.codecs": {
+        "type": "Project"
       },
       "pragmatic.internationalization": {
         "type": "Project",
@@ -537,6 +541,12 @@
         "type": "Project"
       },
       "pragmatic.imaging": {
+        "type": "Project",
+        "dependencies": {
+          "Pragmatic.Imaging.Codecs": "[1.0.0, )"
+        }
+      },
+      "pragmatic.imaging.codecs": {
         "type": "Project"
       },
       "pragmatic.internationalization": {

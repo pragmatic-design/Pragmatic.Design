@@ -13,6 +13,29 @@ public static class JpegDecoder
     /// <summary>The image's size from its frame header, without decoding anything else.</summary>
     public static (int Width, int Height) Identify(ReadOnlySpan<byte> encoded)
     {
+        var segment = FindFrameHeader(encoded, out _);
+        if (segment.Length < 5)
+            throw new ImageDecodeException("JPEG frame header is too short.");
+        return (BinaryPrimitives.ReadUInt16BigEndian(segment[3..]), BinaryPrimitives.ReadUInt16BigEndian(segment[1..]));
+    }
+
+    /// <summary>
+    ///     Whether <see cref="Decode" /> handles this file's kind of frame: baseline, extended sequential or
+    ///     progressive Huffman coding, 8-bit samples, one or three components. Read from the frame header
+    ///     alone, so a caller can route the file elsewhere before decoding anything. A file that passes can
+    ///     still fail to decode when its data is corrupt.
+    /// </summary>
+    public static bool CanDecode(ReadOnlySpan<byte> encoded)
+    {
+        var segment = FindFrameHeader(encoded, out var marker);
+        return marker is JpegMarker.Sof0 or JpegMarker.Sof1 or JpegMarker.Sof2
+            && segment.Length >= 6
+            && segment[0] == 8
+            && segment[5] is 1 or 3;
+    }
+
+    private static ReadOnlySpan<byte> FindFrameHeader(ReadOnlySpan<byte> encoded, out byte frameMarker)
+    {
         if (encoded.Length < 4 || encoded[0] != 0xFF || encoded[1] != JpegMarker.Soi)
             throw new ImageDecodeException("The bytes do not start with a JPEG SOI marker.");
 
@@ -28,10 +51,8 @@ public static class JpegDecoder
             var length = ReadSegmentLength(encoded, position);
             if (marker is >= 0xC0 and <= 0xCF and not JpegMarker.Dht and not 0xC8 and not 0xCC)
             {
-                var segment = encoded.Slice(position + 2, length - 2);
-                if (segment.Length < 5)
-                    throw new ImageDecodeException("JPEG frame header is too short.");
-                return (BinaryPrimitives.ReadUInt16BigEndian(segment[3..]), BinaryPrimitives.ReadUInt16BigEndian(segment[1..]));
+                frameMarker = marker;
+                return encoded.Slice(position + 2, length - 2);
             }
 
             position += length;

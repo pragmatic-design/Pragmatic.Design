@@ -7,6 +7,15 @@ namespace Pragmatic.Imaging.Codecs.Tests;
 public class PngDecoderTests
 {
     [Fact]
+    public void Identify_reads_the_size_from_the_first_33_bytes()
+    {
+        var png = SkiaOracle.EncodePngRgba(SyntheticPhoto.Rgba(37, 11), 37, 11);
+
+        // Signature and IHDR: what a caller checks against its limits before any pixel exists.
+        Assert.Equal((37, 11), PngDecoder.Identify(png.AsSpan(0, 33)));
+    }
+
+    [Fact]
     public void Decodes_an_rgba_png_written_by_skia_to_the_same_pixels()
     {
         const int width = 257;

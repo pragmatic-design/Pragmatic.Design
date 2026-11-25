@@ -7,13 +7,16 @@ internal static class QrPenalty
     {
         var size = m.GetLength(0);
         var penalty = 0;
+        // One run history for every row and column, cleared for each: scored eight times per symbol,
+        // an array per line was most of what encoding a QR code allocated.
+        Span<int> history = stackalloc int[7];
 
         // Rule 1: runs of five or more same-coloured modules in a row or column. Rule 3: finder-like patterns.
         for (var y = 0; y < size; y++)
         {
             var runColor = false;
             var runX = 0;
-            var history = new int[7];
+            history.Clear();
             for (var x = 0; x < size; x++)
             {
                 if (m[y, x] == runColor)
@@ -41,7 +44,7 @@ internal static class QrPenalty
         {
             var runColor = false;
             var runY = 0;
-            var history = new int[7];
+            history.Clear();
             for (var y = 0; y < size; y++)
             {
                 if (m[y, x] == runColor)
@@ -90,22 +93,22 @@ internal static class QrPenalty
         return penalty;
     }
 
-    private static void FinderPenaltyAddHistory(int[] history, int runLength, int size)
+    private static void FinderPenaltyAddHistory(Span<int> history, int runLength, int size)
     {
         if (history[0] == 0)
             runLength += size; // the light border counts as a run before the first module
-        Array.Copy(history, 0, history, 1, 6);
+        history[..6].CopyTo(history[1..]);
         history[0] = runLength;
     }
 
-    private static int FinderPenaltyCount(int[] h)
+    private static int FinderPenaltyCount(ReadOnlySpan<int> h)
     {
         var n = h[1];
         var core = n > 0 && h[2] == n && h[3] == n * 3 && h[4] == n && h[5] == n;
         return (core && h[0] >= n * 4 && h[6] >= n ? 1 : 0) + (core && h[6] >= n * 4 && h[0] >= n ? 1 : 0);
     }
 
-    private static int FinderPenaltyTerminate(int[] history, bool currentColor, int runLength, int size)
+    private static int FinderPenaltyTerminate(Span<int> history, bool currentColor, int runLength, int size)
     {
         if (currentColor)
         {

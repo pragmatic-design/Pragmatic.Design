@@ -5,10 +5,16 @@ using Pragmatic.Imaging.Codecs.Barcodes;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
 using Pragmatic.Imaging.Codecs.Transforms;
+using ImageConverter = Pragmatic.Imaging.ImageConverter;
+using ImageFormat = Pragmatic.Imaging.ImageFormat;
+using ImageInfo = Pragmatic.Imaging.ImageInfo;
+using ImagePipeline = Pragmatic.Imaging.ImagePipeline;
+using ImagingQrCode = Pragmatic.Imaging.QrCode;
 
 // The upload path of a server, Native AOT: encode a photo-sized image as JPEG, decode it at the scale that
 // covers a thumbnail, resize to the thumbnail, encode that as PNG and read it back pixel for pixel; and a
-// QR code. Every check prints ok or FAIL; the last line is AOT-CODECS-OK only when all of them pass.
+// QR code. Then the same through Pragmatic.Imaging's public API, with no native library next to the
+// binary. Every check prints ok or FAIL; the last line is AOT-CODECS-OK only when all of them pass.
 var failures = 0;
 
 void Check(bool condition, string what)
@@ -61,6 +67,25 @@ Check(roundTrip.Pixels.SequenceEqual(thumbnail.Pixels), "PNG round trip is lossl
 
 var qr = QrCode.Encode("https://pragmaticdesign.net");
 Check(qr.Version == 3 && qr.Size == 29, $"QR code version {qr.Version}, {qr.Size} modules");
+
+// Pragmatic.Imaging: PNG, JPEG and every operation are managed, so they run without its native library,
+// which the project builds the module without (PragmaticImagingWithoutNative).
+string[] nativeNames = ["Pragmatic.Imaging.Native.dll", "libPragmatic.Imaging.Native.so", "libPragmatic.Imaging.Native.dylib", "libpragmatic_imaging_native.so"];
+Check(!nativeNames.Any(name => File.Exists(Path.Combine(AppContext.BaseDirectory, name))), "no native imaging library in the publish output");
+
+using (var pipeline = ImagePipeline.Load(jpeg))
+{
+    pipeline.Thumbnail(400, 300).Rotate(90).Grayscale().Blur(1.5f).Sharpen().Crop(10, 10, 200, 300);
+    var info = ImageInfo.FromBytes(pipeline.Encode(ImageFormat.Png));
+    Check(info is { Width: 200, Height: 300, Format: ImageFormat.Png }, $"pipeline thumbnail, rotate, filters, crop: {info.Width}x{info.Height} {info.Format}");
+}
+
+var stripped = ImageConverter.StripExif(jpeg);
+Check(stripped.AsSpan().SequenceEqual(jpeg), "StripExif on a JPEG without metadata changes no byte");
+
+var qrPng = ImagingQrCode.GeneratePng("https://pragmaticdesign.net", moduleSize: 4, margin: 4);
+var qrInfo = ImageInfo.FromBytes(qrPng);
+Check(qrInfo.Width == (29 + 8) * 4, $"QR code PNG {qrInfo.Width}x{qrInfo.Height}");
 
 Console.WriteLine(failures == 0 ? "AOT-CODECS-OK" : $"AOT-CODECS-FAILED ({failures})");
 return failures == 0 ? 0 : 1;

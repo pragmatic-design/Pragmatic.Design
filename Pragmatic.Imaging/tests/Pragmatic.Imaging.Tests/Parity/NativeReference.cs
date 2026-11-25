@@ -1,0 +1,59 @@
+using Pragmatic.Imaging.Native;
+
+namespace Pragmatic.Imaging.Tests.Parity;
+
+/// <summary>
+///     The native library's operations, called through its P/Invoke signatures on raw RGBA: the reference
+///     the managed operations are held to while the library still ships.
+/// </summary>
+internal static unsafe class NativeReference
+{
+    internal readonly record struct Image(byte[] Rgba, int Width, int Height);
+
+    public delegate int Operation(byte* rgba, nuint length, uint width, uint height, nint* output, nuint* outputLength);
+
+    public static Image Apply(Image source, Operation operation)
+    {
+        nint output;
+        nuint length;
+        fixed (byte* pixels = source.Rgba)
+        {
+            var rc = operation(pixels, (nuint)source.Rgba.Length, (uint)source.Width, (uint)source.Height, &output, &length);
+            NativeError.CheckResult(rc, "reference");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return source with { Rgba = buffer.ToArray() };
+    }
+
+    public static Image Rotate(Image source, int degrees)
+    {
+        nint output;
+        nuint length;
+        uint width, height;
+        fixed (byte* pixels = source.Rgba)
+        {
+            var rc = NativeImports.pragmatic_image_rotate(pixels, (nuint)source.Rgba.Length, (uint)source.Width, (uint)source.Height,
+                degrees, &output, &length, &width, &height);
+            NativeError.CheckResult(rc, "reference rotate");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return new Image(buffer.ToArray(), (int)width, (int)height);
+    }
+
+    public static Image Crop(Image source, int x, int y, int width, int height)
+    {
+        nint output;
+        nuint length;
+        fixed (byte* pixels = source.Rgba)
+        {
+            var rc = NativeImports.pragmatic_image_crop(pixels, (nuint)source.Rgba.Length, (uint)source.Width, (uint)source.Height,
+                (uint)x, (uint)y, (uint)width, (uint)height, &output, &length);
+            NativeError.CheckResult(rc, "reference crop");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return new Image(buffer.ToArray(), width, height);
+    }
+}
