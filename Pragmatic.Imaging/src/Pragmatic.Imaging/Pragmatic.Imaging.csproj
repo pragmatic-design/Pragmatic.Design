@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Description>Image processing for servers: decode, encode, resize, crop, filters, QR, EXIF orientation and stripping. PNG, JPEG, WebP decoding and every operation run managed; WebP encoding, AVIF, GIF, BMP and TIFF through a native library shipped for win-x64, linux-x64 and osx-arm64.</Description>
+    <Description>Image processing for servers: decode, encode, resize, crop, filters, QR, EXIF orientation and stripping. PNG, JPEG, WebP and every operation run managed; AVIF, GIF, BMP and TIFF through a native library shipped for win-x64, linux-x64 and osx-arm64.</Description>
     <PackageTags>imaging;image;resize;crop;qr;webp;avif;native;aot</PackageTags>
   </PropertyGroup>
 

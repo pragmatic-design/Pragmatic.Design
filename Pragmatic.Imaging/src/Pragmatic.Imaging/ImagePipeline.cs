@@ -167,7 +167,7 @@ public sealed partial class ImagePipeline : IDisposable, IAsyncDisposable
 
     /// <summary>Encode the current image to the specified format.</summary>
     /// <param name="format">Target format.</param>
-    /// <param name="quality">Quality for JPEG (1-100). WebP/AVIF use library defaults. Ignored for lossless formats.</param>
+    /// <param name="quality">Quality for JPEG (1-100). WebP is written lossless and AVIF at the library default. Ignored for lossless formats.</param>
     public byte[] Encode(ImageFormat format = ImageFormat.Png, byte quality = 90)
     {
         ThrowIfDisposed();

@@ -42,6 +42,22 @@ internal static unsafe class NativeReference
         return new Image(buffer.ToArray(), (int)width, (int)height);
     }
 
+    /// <summary>The native WebP encoder, lossless whatever the quality: what the managed one replaced.</summary>
+    public static byte[] EncodeWebP(Image source)
+    {
+        nint output;
+        nuint length;
+        fixed (byte* pixels = source.Rgba)
+        {
+            var rc = NativeImports.pragmatic_image_encode(pixels, (nuint)source.Rgba.Length, (uint)source.Width, (uint)source.Height,
+                (int)ImageFormat.WebP, 90, &output, &length);
+            NativeError.CheckResult(rc, "reference encode");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return buffer.ToArray();
+    }
+
     /// <summary>The native JPEG encoder: what the managed one replaced, at the same quality setting.</summary>
     public static byte[] EncodeJpeg(Image source, byte quality)
     {

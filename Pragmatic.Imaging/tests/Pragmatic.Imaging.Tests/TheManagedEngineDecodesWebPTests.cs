@@ -25,6 +25,21 @@ public class TheManagedEngineDecodesWebPTests
     }
 
     [Fact]
+    public void A_webp_encode_is_the_managed_lossless_encoders_output()
+    {
+        using var source = Exif.OrientedImages.Pixels();
+        using var png = new MemoryStream();
+        Codecs.Png.PngEncoder.Write(source, png);
+        using var reference = new MemoryStream();
+        Codecs.WebP.WebPEncoder.EncodeLossless(source, reference);
+
+        using var pipeline = ImagePipeline.Load(png.ToArray());
+        var encoded = pipeline.Encode(ImageFormat.WebP, quality: 80);
+
+        encoded.Should().Equal(reference.ToArray());
+    }
+
+    [Fact]
     public void A_webp_header_is_read_by_the_managed_decoder()
     {
         var file = IndexPastThePalette.File();

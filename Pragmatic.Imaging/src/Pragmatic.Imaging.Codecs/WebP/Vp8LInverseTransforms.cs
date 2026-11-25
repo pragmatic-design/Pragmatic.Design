@@ -122,6 +122,15 @@ internal static class Vp8LInverseTransforms
         return (alphaGreen & 0xFF00FF00) | (redBlue & 0x00FF00FF);
     }
 
+    /// <summary>Per-channel subtraction modulo 256: what the encoder writes so that <see cref="Add" /> gives the pixel back.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static uint Subtract(uint a, uint b)
+    {
+        var alphaGreen = 0x00FF00FFu + (a & 0xFF00FF00) - (b & 0xFF00FF00);
+        var redBlue = 0xFF00FF00u + (a & 0x00FF00FF) - (b & 0x00FF00FF);
+        return (alphaGreen & 0xFF00FF00) | (redBlue & 0x00FF00FF);
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Delta(sbyte transform, sbyte colour) => (transform * colour) >> 5;
 }

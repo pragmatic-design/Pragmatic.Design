@@ -13,7 +13,7 @@ Runtime errors and their fixes.
 
 ### "Unable to load DLL 'Pragmatic.Imaging.Native'" or `DllNotFoundException`
 
-The native binary isn't findable. Only writing WebP, AVIF, GIF, BMP and TIFF (and a CMYK, 12-bit or arithmetic-coded JPEG) need it: PNG, JPEG, reading WebP, the operations and QR codes are managed, so an app that fails here is writing WebP, or loading or encoding one of the others. In order of likelihood:
+The native binary isn't findable. Only AVIF, GIF, BMP and TIFF (and a CMYK, 12-bit or arithmetic-coded JPEG) need it: PNG, JPEG, WebP, the operations and QR codes are managed, so an app that fails here is loading or encoding one of those formats. In order of likelihood:
 
 1. **Wrong RID / unsupported platform.** The NuGet ships `win-x64`, `linux-x64` (glibc) and `osx-arm64`; any other RID needs a locally-built binary. See [native-deployment.md](/modules/imaging/native-deployment/).
 2. **Alpine Linux (musl libc).** The native library requires glibc. Use a Debian/Ubuntu image, or build for musl.
@@ -81,7 +81,7 @@ You passed a low `quality`. `50` is visibly degraded for photos; `75` is accepta
 
 ### WebP or AVIF ignores `quality`
 
-Expected. WebP encodes lossless and AVIF uses the library default in `image` 0.25: `quality` only affects JPEG. For controllable lossy size, encode JPEG.
+Expected. WebP is written lossless, and lossy WebP is to come as an explicit opt-in (#853); AVIF uses the library default in `image` 0.25. `quality` only affects JPEG. For controllable lossy size, encode JPEG.
 
 ---
 
@@ -105,7 +105,7 @@ Likely oversubscribed: CPU-bound image work doesn't scale past physical cores. U
 
 ### First call is slow, subsequent calls are fast
 
-The first call JIT-compiles the codecs (and, for writing WebP or for AVIF, GIF, BMP or TIFF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
+The first call JIT-compiles the codecs (and, for AVIF, GIF, BMP or TIFF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
 
 ```csharp
 // In Program.cs startup: compiles the PNG path

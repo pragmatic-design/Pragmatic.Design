@@ -41,6 +41,10 @@ public static unsafe class NativePipeline
         return (int)w;
     }
 
+    /// <summary>The lossless WebP encoder alone, from pixels already in memory.</summary>
+    public static byte[] EncodeWebP(byte* rgba, nuint length, uint width, uint height)
+        => RustImaging.Encode(rgba, length, width, height, ImageFormat.WebP, 90);
+
     /// <summary>The encoder alone, from pixels already in memory.</summary>
     public static byte[] EncodeJpeg(byte* rgba, nuint length, uint width, uint height)
         => RustImaging.Encode(rgba, length, width, height, ImageFormat.Jpeg, Fixtures.JpegQuality);
