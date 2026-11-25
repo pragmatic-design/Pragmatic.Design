@@ -39,6 +39,13 @@ public static class Verification
 
         CheckDecodes(ManagedPipeline.EncodeJpeg(small), Fixtures.SmallWidth, "managed JPEG encode");
 
+        Check(NativePipeline.Decode(Fixtures.WebPLossy4Mp) == Fixtures.JpegWidth, "native WebP lossy decode width");
+        Check(ManagedPipeline.DecodeWebP(Fixtures.WebPLossy4Mp) == Fixtures.JpegWidth, "managed WebP lossy decode width");
+        Check(NativePipeline.Decode(Fixtures.WebPLossless2Mp) == Fixtures.PngWidth, "native WebP lossless decode width");
+        Check(ManagedPipeline.DecodeWebP(Fixtures.WebPLossless2Mp) == Fixtures.PngWidth, "managed WebP lossless decode width");
+        Check(Fixtures.WebPLossy4Mp.AsSpan(12, 4).SequenceEqual("VP8 "u8), "the lossy fixture is a VP8 file");
+        Check(Fixtures.WebPLossless2Mp.AsSpan(12, 4).SequenceEqual("VP8L"u8), "the lossless fixture is a VP8L file");
+
         // What the PNG rows write, not only how fast: the deflate level trades one for the other.
         Console.WriteLine($"PNG 2MP round trip, bytes written: native {nativePng.Length:N0}, managed " +
             $"Optimal {ManagedPipeline.DecodeEncodePng(Fixtures.Png2Mp).Length:N0}, " +

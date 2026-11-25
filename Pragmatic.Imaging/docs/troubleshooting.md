@@ -8,7 +8,7 @@ Runtime errors and their fixes.
 
 ### "Unable to load DLL 'Pragmatic.Imaging.Native'" or `DllNotFoundException`
 
-The native binary isn't findable. Only WebP, AVIF, GIF, BMP and TIFF (and a CMYK, 12-bit or arithmetic-coded JPEG) need it: PNG, JPEG, the operations and QR codes are managed, so an app that fails here is loading or encoding one of those formats. In order of likelihood:
+The native binary isn't findable. Only writing WebP, AVIF, GIF, BMP and TIFF (and a CMYK, 12-bit or arithmetic-coded JPEG) need it: PNG, JPEG, reading WebP, the operations and QR codes are managed, so an app that fails here is writing WebP, or loading or encoding one of the others. In order of likelihood:
 
 1. **Wrong RID / unsupported platform.** The NuGet ships `win-x64`, `linux-x64` (glibc) and `osx-arm64`; any other RID needs a locally-built binary. See [native-deployment.md](native-deployment.md).
 2. **Alpine Linux (musl libc).** The native library requires glibc. Use a Debian/Ubuntu image, or build for musl.
@@ -100,7 +100,7 @@ Likely oversubscribed: CPU-bound image work doesn't scale past physical cores. U
 
 ### First call is slow, subsequent calls are fast
 
-The first call JIT-compiles the codecs (and, for WebP, AVIF, GIF, BMP or TIFF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
+The first call JIT-compiles the codecs (and, for writing WebP or for AVIF, GIF, BMP or TIFF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
 
 ```csharp
 // In Program.cs startup: compiles the PNG path
@@ -125,7 +125,7 @@ Reserve `Lanczos3` for hero images and large outputs.
 
 ### Image is rotated 90°
 
-The source has an EXIF orientation tag (common from phone cameras). For JPEG and PNG the decoder applies it, so the image loads upright: if yours comes out turned, check that your code does not also rotate by the tag (it would turn it twice). WebP, AVIF, GIF, BMP and TIFF still go through the native library, which does not read the tag: for those, read it yourself and apply `Rotate(...)`.
+The source has an EXIF orientation tag (common from phone cameras). For JPEG and PNG the decoder applies it, so the image loads upright: if yours comes out turned, check that your code does not also rotate by the tag (it would turn it twice). For WebP, AVIF, GIF, BMP and TIFF the tag is not read (the managed WebP decoder returns the image as stored, as the native library did): for those, read it yourself and apply `Rotate(...)`.
 
 ### Colours look off
 

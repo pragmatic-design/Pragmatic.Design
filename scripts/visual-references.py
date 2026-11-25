@@ -3,6 +3,7 @@ recorded for them.
 
     python -I scripts/visual-references.py photographs   # the photographs Pragmatic.Imaging.Tests encodes
     python -I scripts/visual-references.py metrics       # the image pairs and the values the metrics are held to
+    python -I scripts/visual-references.py webp          # WebP files libwebp wrote, for the managed decoder
 
 Needs scikit-image, Pillow and NumPy (pip install scikit-image pillow, in a virtual environment: docs/TESTING.md,
 "Images and PDF pages, compared visually"); `metrics` also downloads the CIEDE2000 test data from scikit-image's
@@ -23,12 +24,13 @@ from pathlib import Path
 import numpy as np
 import PIL
 import skimage
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, features
 from skimage import color, data, metrics
 
 ROOT = Path(__file__).resolve().parent.parent
 PHOTOGRAPHS = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' / 'References' / 'Photographs'
 METRICS = ROOT / 'shared' / 'VisualTesting.Tests' / 'References'
+WEBP = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Codecs.Tests' / 'References' / 'WebP'
 TODAY = datetime.date.today().isoformat()
 TOOLS = f'scikit-image {skimage.__version__}, Pillow {PIL.__version__}, NumPy {np.__version__}'
 SKIMAGE_DATA = Path(data.__file__).parent
@@ -172,7 +174,108 @@ def metric_fixtures():
     write_manifest(METRICS, entries)
 
 
-COMMANDS = {'photographs': photographs, 'metrics': metric_fixtures}
+def webp_files():
+    """WebP files libwebp wrote, through Pillow, for the managed decoder to read: every mode of the format the
+    encoder reaches through Pillow's options, on crops of the photographs and on synthetic images."""
+    WEBP.mkdir(parents=True, exist_ok=True)
+    for old in WEBP.glob('*.webp'):
+        old.unlink()
+    entries = {}
+    libwebp = features.version('webp')
+    tools = f'Pillow {PIL.__version__} with libwebp {libwebp}, NumPy {np.__version__}'
+
+    def save(file, image, how, source=None, **options):
+        image.save(WEBP / file, 'WEBP', **options)
+        settings = ', '.join(f'{key}={value!r}' for key, value in sorted(options.items()) if key not in ('append_images', 'exif'))
+        entries[file] = {
+            'origin': f'scikit-image {skimage.__version__}, skimage.data.{source}' if source else 'synthetic, made by the script',
+            'licence': SOURCES[source][2] if source else 'no licence needed: generated pixels',
+            'producedBy': f'scripts/visual-references.py webp, {tools}: {how}, saved with {settings}',
+            'date': TODAY,
+        }
+
+    # Crops of an odd size, so the last macroblock row and column are partial.
+    crops = {
+        'astronaut': Image.fromarray(data.astronaut()[60:211, 140:343]),
+        'coffee': Image.fromarray(data.coffee()[120:271, 200:403]),
+        'chelsea': Image.fromarray(data.chelsea()[40:191, 100:303]),
+    }
+    for name, crop in crops.items():
+        how = f'a 203 x 151 crop of skimage.data.{name}'
+        for quality in (20, 75, 95):
+            save(f'lossy-{name}-q{quality}.webp', crop, how, name, quality=quality, method=4)
+        for method in (0, 6):
+            save(f'lossless-{name}-m{method}.webp', crop, how, name, lossless=True, method=method)
+    save('lossy-coffee-m0.webp', crops['coffee'], 'a 203 x 151 crop of skimage.data.coffee', 'coffee', quality=60, method=0)
+    save('lossy-coffee-m6.webp', crops['coffee'], 'a 203 x 151 crop of skimage.data.coffee', 'coffee', quality=60, method=6)
+
+    # Alpha over a photograph: a radial ramp, and a hard-edged disc that is fully transparent.
+    rgb = np.asarray(crops['chelsea'])
+    yy, xx = np.mgrid[0:rgb.shape[0], 0:rgb.shape[1]]
+    ramp = np.clip(255 - np.hypot(yy - 75, xx - 100) * 2.2, 0, 255).astype(np.uint8)
+    ramp[np.hypot(yy - 40, xx - 160) < 18] = 0
+    rgba = Image.fromarray(np.dstack([rgb, ramp]))
+    how = 'the chelsea crop with a radial alpha ramp and a transparent disc'
+    save('lossy-alpha-q75.webp', rgba, how, 'chelsea', quality=75, alpha_quality=100)
+    save('lossy-alpha-aq40.webp', rgba, how, 'chelsea', quality=75, alpha_quality=40)
+    save('lossless-alpha.webp', rgba, how, 'chelsea', lossless=True)
+    save('lossless-alpha-exact.webp', rgba, how + ', the colour under alpha 0 kept', 'chelsea', lossless=True, exact=True)
+
+    # Few colours, so the encoder indexes them: 2, 4 and 16 colours pack 8, 4 and 2 pixels per byte.
+    rng = np.random.default_rng(853)
+    for colours in (2, 4, 16, 200):
+        palette = rng.integers(0, 256, size=(colours, 4), dtype=np.uint8)
+        palette[:, 3] = 255 if colours != 16 else palette[:, 3]
+        index = (np.add.outer(np.arange(67) // 5, np.arange(45) // 3) + rng.integers(0, 2, size=(67, 45))) % colours
+        save(f'lossless-palette-{colours}.webp', Image.fromarray(palette[index]),
+             f'a 45 x 67 pattern over {colours} random colours, NumPy default_rng(853)', lossless=True)
+
+    gradient = np.dstack([np.tile(np.arange(256, dtype=np.uint8), (64, 1)),
+                          np.tile(np.arange(64, dtype=np.uint8)[:, None] * 4, (1, 256)),
+                          np.full((64, 256), 128, np.uint8)])
+    save('lossless-gradient.webp', Image.fromarray(gradient), 'a 256 x 64 two-way ramp', lossless=True)
+    save('lossy-gradient.webp', Image.fromarray(gradient), 'a 256 x 64 two-way ramp', quality=50)
+
+    # The smallest images, and one row or one column.
+    for width, height in ((1, 1), (13, 1), (1, 13), (31, 13)):
+        tile = Image.fromarray(rng.integers(0, 256, size=(height, width, 3), dtype=np.uint8))
+        how = f'{width} x {height} random pixels, NumPy default_rng(853)'
+        save(f'lossy-{width}x{height}.webp', tile, how, quality=80)
+        save(f'lossless-{width}x{height}.webp', tile, how, lossless=True)
+
+    # Metadata in the extended container, which the decoder steps over.
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    exif[0x010F] = 'Pragmatic'
+    save('lossy-exif.webp', crops['astronaut'], 'the astronaut crop with an EXIF block (orientation 6)', 'astronaut',
+         quality=75, exif=exif.tobytes())
+
+    # Animations: the first frame is the image; later frames change a corner.
+    base = crops['coffee']
+    frames = [base]
+    for shift in (1, 2):
+        frame = np.asarray(base).copy()
+        frame[10:60, 10:90] = np.roll(frame[10:60, 10:90], shift * 17, axis=1)
+        frames.append(Image.fromarray(frame))
+    how = 'three frames: the coffee crop, then two with a shifted rectangle'
+    save('animated-lossy.webp', frames[0], how, 'coffee', save_all=True, append_images=frames[1:], duration=100, loop=0, quality=70)
+    save('animated-lossless.webp', frames[0], how, 'coffee', save_all=True, append_images=frames[1:], duration=100, loop=0, lossless=True)
+    translucent = [Image.fromarray(np.dstack([np.asarray(f), ramp])) for f in frames]
+    save('animated-alpha.webp', translucent[0], how + ', with the chelsea alpha ramp', 'coffee', save_all=True,
+         append_images=translucent[1:], duration=80, loop=2, quality=70, background=(255, 0, 0, 255))
+    # Every alpha from 0 to 255 over white, in the first frame of an animation: a decoder that blends the
+    # first frame onto its transparent canvas, instead of writing it, rounds the colour of the faint ones.
+    faint = np.zeros((16, 16, 4), np.uint8)
+    faint[..., :3] = 255
+    faint[..., 3] = np.arange(256, dtype=np.uint8).reshape(16, 16)
+    second = faint.copy()
+    second[0:4, 0:4] = (0, 0, 255, 255)
+    save('animated-translucent.webp', Image.fromarray(faint), 'two 16 x 16 frames: white at every alpha, then a blue corner',
+         save_all=True, append_images=[Image.fromarray(second)], duration=100, lossless=True, exact=True)
+    write_manifest(WEBP, entries)
+
+
+COMMANDS = {'photographs': photographs, 'metrics': metric_fixtures, 'webp': webp_files}
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or sys.argv[1] not in COMMANDS:

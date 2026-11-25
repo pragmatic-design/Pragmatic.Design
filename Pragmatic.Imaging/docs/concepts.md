@@ -1,6 +1,6 @@
 # Architecture and Core Concepts
 
-`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG and every operation, and a Rust native library built on the `image` crate, still shipped, for WebP, AVIF, GIF, BMP and TIFF until their managed codecs land. It exists to give server-side .NET code a small, AOT-friendly, predictable image pipeline without adopting a heavy managed dependency.
+`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG, reading WebP and every operation, and a Rust native library built on the `image` crate, still shipped, for writing WebP and for AVIF, GIF, BMP and TIFF until their managed codecs land. It exists to give server-side .NET code a small, AOT-friendly, predictable image pipeline without adopting a heavy managed dependency.
 
 ---
 
@@ -16,8 +16,8 @@ Pragmatic.Imaging takes a different shape: a small, purposeful API over its own 
 
 ## The approach
 
-- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
-- **Native library, for the rest**: WebP, AVIF, GIF, BMP and TIFF are decoded and encoded by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
+- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
+- **Native library, for the rest**: WebP is encoded, and AVIF, GIF, BMP and TIFF are decoded and encoded, by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
 - **Controlled native memory**: decoded pixels live in a `PixelBuffer`, native memory from a pool the garbage collector does not move or count, whichever engine decoded them.
 
 ```
@@ -32,12 +32,13 @@ Pragmatic.Imaging takes a different shape: a small, purposeful API over its own 
           ├──────────────────────────┐
           ▼                          ▼
     Pragmatic.Imaging.Codecs   Pragmatic.Imaging.Native.dll / .so / .dylib
-    PNG, JPEG (managed)        WebP, AVIF, GIF, BMP, TIFF (LibraryImport P/Invoke)
+    PNG, JPEG, WebP decode     WebP encode, AVIF, GIF, BMP, TIFF
+    (managed)                  (LibraryImport P/Invoke)
 ```
 
 The native library file is named `Pragmatic.Imaging.Native.dll` on Windows and
 `libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS: the name the P/Invoke asks for. An
-application that only reads and writes PNG and JPEG never loads it.
+application that only reads and writes PNG and JPEG, and reads WebP, never loads it.
 
 ---
 

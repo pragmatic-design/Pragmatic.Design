@@ -4,8 +4,8 @@ using Pragmatic.Imaging.Native;
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     The native library, for the formats the managed core does not read or write yet: WebP, AVIF, GIF,
-///     BMP and TIFF, and a JPEG whose frame the managed decoder does not handle (CMYK, 12-bit, arithmetic
+///     The native library, for what the managed core does not read or write yet: AVIF, GIF, BMP and TIFF,
+///     writing WebP, and a JPEG whose frame the managed decoder does not handle (CMYK, 12-bit, arithmetic
 ///     coding). Decoded pixels are copied into a <see cref="PixelBuffer" /> and the native buffer freed at
 ///     once, so every operation after a load runs managed whatever engine decoded the file.
 /// </summary>

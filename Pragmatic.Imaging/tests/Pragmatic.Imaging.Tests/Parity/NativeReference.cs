@@ -58,6 +58,22 @@ internal static unsafe class NativeReference
         return buffer.ToArray();
     }
 
+    /// <summary>The native decoder: what the managed one replaced, on the same file.</summary>
+    public static Image Decode(byte[] encoded)
+    {
+        nint output;
+        nuint length;
+        uint width, height;
+        fixed (byte* data = encoded)
+        {
+            var rc = NativeImports.pragmatic_image_decode(data, (nuint)encoded.Length, &output, &length, &width, &height);
+            NativeError.CheckResult(rc, "reference decode");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return new Image(buffer.ToArray(), (int)width, (int)height);
+    }
+
     public static Image Crop(Image source, int x, int y, int width, int height)
     {
         nint output;

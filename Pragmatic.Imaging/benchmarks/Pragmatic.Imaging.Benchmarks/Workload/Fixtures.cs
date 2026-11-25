@@ -32,6 +32,12 @@ public static class Fixtures
     public static readonly byte[] Jpeg4Mp = Encode(JpegWidth, JpegHeight, SKEncodedImageFormat.Jpeg, 90);
     public static readonly byte[] Png2Mp = Encode(PngWidth, PngHeight, SKEncodedImageFormat.Png, 100);
 
+    /// <summary>The 4 MP photo as a lossy WebP at quality 80, written by libwebp through SkiaSharp.</summary>
+    public static readonly byte[] WebPLossy4Mp = EncodeWebP(JpegWidth, JpegHeight, SKWebpEncoderCompression.Lossy, 80);
+
+    /// <summary>The 2 MP image as a lossless WebP, written by libwebp through SkiaSharp.</summary>
+    public static readonly byte[] WebPLossless2Mp = EncodeWebP(PngWidth, PngHeight, SKWebpEncoderCompression.Lossless, 75);
+
     /// <summary>The 4 MP photo as raw RGBA, for the stages measured without a decode in front.</summary>
     public static readonly byte[] Rgba4Mp = SyntheticPhoto.Rgba(JpegWidth, JpegHeight);
 
@@ -44,6 +50,18 @@ public static class Fixtures
         using var bitmap = new SKBitmap(info);
         Marshal.Copy(rgba, 0, bitmap.GetPixels(), rgba.Length);
         using var data = bitmap.Encode(format, quality);
+        return data.ToArray();
+    }
+
+    private static byte[] EncodeWebP(int width, int height, SKWebpEncoderCompression compression, float quality)
+    {
+        var rgba = SyntheticPhoto.Rgba(width, height);
+        var info = new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Opaque);
+        using var bitmap = new SKBitmap(info);
+        Marshal.Copy(rgba, 0, bitmap.GetPixels(), rgba.Length);
+        using var pixmap = bitmap.PeekPixels();
+        using var data = pixmap.Encode(new SKWebpEncoderOptions(compression, quality))
+            ?? throw new InvalidOperationException("SkiaSharp did not encode the WebP fixture.");
         return data.ToArray();
     }
 }

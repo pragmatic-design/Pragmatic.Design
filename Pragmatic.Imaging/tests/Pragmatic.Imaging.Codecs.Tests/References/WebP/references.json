@@ -1,0 +1,245 @@
+{
+  "about": "Every reference in this directory, with what produced it. Regenerate with scripts/visual-references.py; a reference is never produced by the code it checks.",
+  "references": {
+    "animated-alpha.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: three frames: the coffee crop, then two with a shifted rectangle, with the chelsea alpha ramp, saved with background=(255, 0, 0, 255), duration=80, loop=2, quality=70, save_all=True",
+      "date": "2026-11-25"
+    },
+    "animated-lossless.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: three frames: the coffee crop, then two with a shifted rectangle, saved with duration=100, loop=0, lossless=True, save_all=True",
+      "date": "2026-11-25"
+    },
+    "animated-lossy.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: three frames: the coffee crop, then two with a shifted rectangle, saved with duration=100, loop=0, quality=70, save_all=True",
+      "date": "2026-11-25"
+    },
+    "animated-translucent.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: two 16 x 16 frames: white at every alpha, then a blue corner, saved with duration=100, exact=True, lossless=True, save_all=True",
+      "date": "2026-11-25"
+    },
+    "lossless-13x1.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 13 x 1 random pixels, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-1x1.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 1 x 1 random pixels, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-1x13.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 1 x 13 random pixels, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-31x13.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 31 x 13 random pixels, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-alpha-exact.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: the chelsea crop with a radial alpha ramp and a transparent disc, the colour under alpha 0 kept, saved with exact=True, lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-alpha.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: the chelsea crop with a radial alpha ramp and a transparent disc, saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-astronaut-m0.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, saved with lossless=True, method=0",
+      "date": "2026-11-25"
+    },
+    "lossless-astronaut-m6.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, saved with lossless=True, method=6",
+      "date": "2026-11-25"
+    },
+    "lossless-chelsea-m0.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, saved with lossless=True, method=0",
+      "date": "2026-11-25"
+    },
+    "lossless-chelsea-m6.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, saved with lossless=True, method=6",
+      "date": "2026-11-25"
+    },
+    "lossless-coffee-m0.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with lossless=True, method=0",
+      "date": "2026-11-25"
+    },
+    "lossless-coffee-m6.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with lossless=True, method=6",
+      "date": "2026-11-25"
+    },
+    "lossless-gradient.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 256 x 64 two-way ramp, saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-palette-16.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 45 x 67 pattern over 16 random colours, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-palette-2.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 45 x 67 pattern over 2 random colours, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-palette-200.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 45 x 67 pattern over 200 random colours, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossless-palette-4.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 45 x 67 pattern over 4 random colours, NumPy default_rng(853), saved with lossless=True",
+      "date": "2026-11-25"
+    },
+    "lossy-13x1.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 13 x 1 random pixels, NumPy default_rng(853), saved with quality=80",
+      "date": "2026-11-25"
+    },
+    "lossy-1x1.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 1 x 1 random pixels, NumPy default_rng(853), saved with quality=80",
+      "date": "2026-11-25"
+    },
+    "lossy-1x13.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 1 x 13 random pixels, NumPy default_rng(853), saved with quality=80",
+      "date": "2026-11-25"
+    },
+    "lossy-31x13.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: 31 x 13 random pixels, NumPy default_rng(853), saved with quality=80",
+      "date": "2026-11-25"
+    },
+    "lossy-alpha-aq40.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: the chelsea crop with a radial alpha ramp and a transparent disc, saved with alpha_quality=40, quality=75",
+      "date": "2026-11-25"
+    },
+    "lossy-alpha-q75.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: the chelsea crop with a radial alpha ramp and a transparent disc, saved with alpha_quality=100, quality=75",
+      "date": "2026-11-25"
+    },
+    "lossy-astronaut-q20.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, saved with method=4, quality=20",
+      "date": "2026-11-25"
+    },
+    "lossy-astronaut-q75.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, saved with method=4, quality=75",
+      "date": "2026-11-25"
+    },
+    "lossy-astronaut-q95.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, saved with method=4, quality=95",
+      "date": "2026-11-25"
+    },
+    "lossy-chelsea-q20.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, saved with method=4, quality=20",
+      "date": "2026-11-25"
+    },
+    "lossy-chelsea-q75.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, saved with method=4, quality=75",
+      "date": "2026-11-25"
+    },
+    "lossy-chelsea-q95.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, saved with method=4, quality=95",
+      "date": "2026-11-25"
+    },
+    "lossy-coffee-m0.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with method=0, quality=60",
+      "date": "2026-11-25"
+    },
+    "lossy-coffee-m6.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with method=6, quality=60",
+      "date": "2026-11-25"
+    },
+    "lossy-coffee-q20.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with method=4, quality=20",
+      "date": "2026-11-25"
+    },
+    "lossy-coffee-q75.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with method=4, quality=75",
+      "date": "2026-11-25"
+    },
+    "lossy-coffee-q95.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, saved with method=4, quality=95",
+      "date": "2026-11-25"
+    },
+    "lossy-exif.webp": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: the astronaut crop with an EXIF block (orientation 6), saved with quality=75",
+      "date": "2026-11-25"
+    },
+    "lossy-gradient.webp": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py webp, Pillow 13.0.0 with libwebp 1.6.0, NumPy 2.5.5: a 256 x 64 two-way ramp, saved with quality=50",
+      "date": "2026-11-25"
+    }
+  }
+}

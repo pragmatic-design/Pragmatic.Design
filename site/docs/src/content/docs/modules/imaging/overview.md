@@ -26,7 +26,9 @@ Image processing for .NET: a managed engine for PNG, JPEG and every operation, a
 | | Managed (`Pragmatic.Imaging.Codecs`) | Native library |
 |---|---|---|
 | PNG, JPEG: header, decode, encode | yes | a JPEG the managed decoder does not handle: CMYK, 12-bit, arithmetic-coded, lossless |
-| WebP, AVIF, GIF, BMP, TIFF: header, decode, encode | | yes, until their managed codecs land (#853, #854, #855) |
+| WebP: header, decode (lossless, lossy, alpha, an animation's first frame) | yes | |
+| WebP: encode | | yes, until the managed encoder lands (#853) |
+| AVIF, GIF, BMP, TIFF: header, decode, encode | | yes, until their managed codecs land (#854, #855) |
 | Resize, thumbnail, crop, rotate, flip, filters | yes, whatever format was loaded | |
 | QR codes, `StripExif` for JPEG and PNG | yes | |
 
@@ -101,8 +103,9 @@ These limits guard against oversized inputs and decompression-bomb style payload
 | Linux x64 (glibc) | shipped in the package |
 | macOS arm64 | shipped in the package (built by the `Imaging Native` CI workflow; not yet exercised by a test on macOS) |
 
-The native library serves only the formats in the table above. If it is missing at runtime, loading or
-encoding one of those fails on first use; PNG, JPEG, every operation and QR codes work without it.
+The native library serves only what the table above gives it. If it is missing at runtime, loading or
+encoding one of those fails on first use; PNG, JPEG, reading WebP, every operation and QR codes work
+without it.
 
 ## DI
 
@@ -112,8 +115,8 @@ encoding one of those fails on first use; PNG, JPEG, every operation and QR code
 
 ```text
 C# API -> Engine/ (routes by format)
-            ├── PNG, JPEG, operations, QR -> Pragmatic.Imaging.Codecs (managed)
-            └── WebP, AVIF, GIF, BMP, TIFF -> LibraryImport P/Invoke -> Rust native library
+            ├── PNG, JPEG, WebP decode, operations, QR -> Pragmatic.Imaging.Codecs (managed)
+            └── WebP encode, AVIF, GIF, BMP, TIFF -> LibraryImport P/Invoke -> Rust native library
 ```
 
 Whatever decoded a file, its pixels sit in a `PixelBuffer` (native memory from a pool, not the
@@ -132,7 +135,9 @@ Important public entrypoints:
 
 A second package in this module holds the managed engine that replaces the native library, piece by
 piece (#821): JPEG decode (baseline, progressive, scaled 1/2 to 1/8) and encode (optimised or standard
-Huffman tables), PNG decode and encode (every colour type, 1–16 bits, Adam7), resampling with five
+Huffman tables), PNG decode and encode (every colour type, 1–16 bits, Adam7), WebP decode (lossless
+VP8L, lossy VP8 with its alpha plane, the extended container and an animation's first frame, to the
+pixels libwebp reads), resampling with five
 filters, and the QR, Code 128, Code 39 and EAN symbologies as matrices and bar widths. It is managed
 code only, with AVX2 paths where they pay.
 
@@ -142,7 +147,7 @@ as much as imaging does.
 
 It is the **low-level layer** under `Pragmatic.Imaging` and `Pragmatic.Documents.Pdf`: its types are
 public because two packages use it, and an application normally reaches it through those.
-`Pragmatic.Imaging` runs on it for PNG, JPEG and every operation.
+`Pragmatic.Imaging` runs on it for PNG, JPEG, reading WebP and every operation.
 
 **Native AOT.** The package ships a `buildTransitive` targets file that sets
 `IlcInstructionSet=x86-64-v3` (AVX2, FMA, BMI: every x64 processor since 2013) when `PublishAot` is on
@@ -165,8 +170,8 @@ path at 32.6 ms on v2 and 27.4 ms on v3 (one run each, 2026-10-17). To target ol
 
 ## Status
 
-**Preview** within 1.0.0-alpha: PNG and JPEG, every operation and QR codes run on the managed engine;
-WebP, AVIF, GIF, BMP and TIFF still run on the native library. The package ships native binaries for
+**Preview** within 1.0.0-alpha: PNG and JPEG, reading WebP, every operation and QR codes run on the
+managed engine; writing WebP, and AVIF, GIF, BMP and TIFF, still run on the native library. The package ships native binaries for
 `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging
 Native` CI workflow on a macOS runner, and no test runs it on macOS yet
 ([native-deployment.md](/modules/imaging/native-deployment/)). See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
@@ -187,8 +192,9 @@ Samples:
 ## Requirements
 
 - .NET 10.0+
-- For WebP, AVIF, GIF, BMP and TIFF, one of the platforms above: the native library is loaded from the
-  package's `runtimes/` folder. PNG, JPEG, the operations and QR codes run anywhere .NET does.
+- To write WebP, and for AVIF, GIF, BMP and TIFF, one of the platforms above: the native library is
+  loaded from the package's `runtimes/` folder. PNG, JPEG, reading WebP, the operations and QR codes run
+  anywhere .NET does.
 
 ## License
 

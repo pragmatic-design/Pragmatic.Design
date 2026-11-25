@@ -2,16 +2,17 @@ using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Metadata;
 using Pragmatic.Imaging.Codecs.Png;
+using Pragmatic.Imaging.Codecs.WebP;
 
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Reads a file with the engine that handles it: PNG and JPEG with the managed core, every other
+///     Reads a file with the engine that handles it: PNG, JPEG and WebP with the managed core, every other
 ///     format with the native library, and a JPEG whose frame the managed decoder does not handle (CMYK,
 ///     12-bit, arithmetic coding) with the native library too, chosen from the frame header. A JPEG or
 ///     PNG is returned the way it is shown, its EXIF orientation applied whichever engine decoded it, and
 ///     <see cref="Identify" /> reports that size, so the limits are checked against the image that will
-///     exist.
+///     exist. A WebP is returned as stored, its EXIF chunk not read, as the native library returned it.
 /// </summary>
 internal static class ImageDecoding
 {
@@ -25,13 +26,20 @@ internal static class ImageDecoding
         (int Width, int Height) size;
         try
         {
-            size = format == ImageFormat.Png ? PngDecoder.Identify(data) : JpegDecoder.Identify(data);
+            size = format switch
+            {
+                ImageFormat.Png => PngDecoder.Identify(data),
+                ImageFormat.WebP => WebPDecoder.Identify(data),
+                _ => JpegDecoder.Identify(data),
+            };
         }
         catch (ImageDecodeException e)
         {
             throw Failed(e);
         }
 
+        if (format == ImageFormat.WebP)
+            return new ImageInfo((uint)size.Width, (uint)size.Height, format);
         return ExifOrientation.SwapsAxes(ExifOrientation.Read(data))
             ? new ImageInfo((uint)size.Height, (uint)size.Width, format)
             : new ImageInfo((uint)size.Width, (uint)size.Height, format);
@@ -48,6 +56,7 @@ internal static class ImageDecoding
             {
                 ImageFormat.Png => PngDecoder.Decode(data),
                 ImageFormat.Jpeg when JpegDecoder.CanDecode(span) => JpegDecoder.Decode(data),
+                ImageFormat.WebP => WebPDecoder.Decode(span),
                 _ => NativeCodec.Decode(span),
             };
         }
@@ -60,7 +69,6 @@ internal static class ImageDecoding
             // The PNG decoder inflates through ZLibStream, which reports corrupt deflate data this way.
             throw Failed(e);
         }
-
         return format is ImageFormat.Png or ImageFormat.Jpeg
             ? ExifOrientation.Apply(image, ExifOrientation.Read(span))
             : image;
