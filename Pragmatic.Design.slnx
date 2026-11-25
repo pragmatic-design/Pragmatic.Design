@@ -1003,6 +1003,7 @@
     <Project Path="Pragmatic.Testing/tests/Pragmatic.Testing.Tests/Pragmatic.Testing.Tests.csproj" />
     <Project Path="Pragmatic.Validation/tests/Pragmatic.Validation.Tests/Pragmatic.Validation.Tests.csproj" />
     <Project Path="shared/SourceGen.Tests/Pragmatic.SourceGen.Tests.csproj" />
+    <Project Path="shared/VisualTesting.Tests/Pragmatic.VisualTesting.Tests.csproj" />
   </Folder>
   <Folder Name="/Integration &amp; E2E/">
     <Project Path="Pragmatic.Documents/tests/Pragmatic.Documents.E2E.Tests/Pragmatic.Documents.E2E.Tests.csproj" />

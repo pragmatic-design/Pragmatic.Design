@@ -1,0 +1,136 @@
+{
+  "about": "The value of every metric on every pair, computed by the tools named here, which the C# metrics must match.",
+  "tools": "scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5",
+  "luma": "Rec. 601: 0.299 R + 0.587 G + 0.114 B",
+  "ssim": "skimage.metrics.structural_similarity(data_range=255, gaussian_weights=True, sigma=1.5, use_sample_covariance=False)",
+  "psnr": "skimage.metrics.peak_signal_noise_ratio(data_range=255), over the three channels",
+  "deltaE2000": "skimage.color.deltaE_ciede2000 over skimage.color.rgb2lab (D65, 2 degrees)",
+  "pairs": {
+    "astronaut-face.original.png|astronaut-face.jpeg-q25.png": {
+      "maxAbsolute": [
+        76,
+        100,
+        124
+      ],
+      "meanAbsolute": [
+        5.12255859375,
+        4.521728515625,
+        5.77984619140625
+      ],
+      "psnr": 30.424160370142843,
+      "ssimLuma": 0.9066062916232702,
+      "ssimChannels": [
+        0.8819289602943311,
+        0.9009363520649278,
+        0.8448415200730133
+      ],
+      "deltaE2000Mean": 3.205205455507609,
+      "deltaE2000Max": 30.924908468854102
+    },
+    "astronaut-face.original.png|astronaut-face.blur.png": {
+      "maxAbsolute": [
+        129,
+        144,
+        165
+      ],
+      "meanAbsolute": [
+        6.17193603515625,
+        6.47491455078125,
+        6.914794921875
+      ],
+      "psnr": 26.692798270549677,
+      "ssimLuma": 0.870593676108955,
+      "ssimChannels": [
+        0.874164543530272,
+        0.865939457774001,
+        0.845140209988672
+      ],
+      "deltaE2000Mean": 2.605511682722546,
+      "deltaE2000Max": 49.98432500945526
+    },
+    "astronaut-face.original.png|astronaut-face.noise.png": {
+      "maxAbsolute": [
+        12,
+        12,
+        12
+      ],
+      "meanAbsolute": [
+        5.88458251953125,
+        5.71124267578125,
+        5.57080078125
+      ],
+      "psnr": 31.43291563723754,
+      "ssimLuma": 0.8550122429237447,
+      "ssimChannels": [
+        0.7666253741362092,
+        0.7741383113063139,
+        0.7817037114098506
+      ],
+      "deltaE2000Mean": 5.326861038136783,
+      "deltaE2000Max": 20.44069390271356
+    },
+    "coffee-texture.original.png|coffee-texture.jpeg-q25.png": {
+      "maxAbsolute": [
+        75,
+        69,
+        94
+      ],
+      "meanAbsolute": [
+        5.56689453125,
+        4.20501708984375,
+        5.9056396484375
+      ],
+      "psnr": 29.840886345979317,
+      "ssimLuma": 0.9146502909248342,
+      "ssimChannels": [
+        0.8481157142396792,
+        0.8851278085380537,
+        0.7802484747577646
+      ],
+      "deltaE2000Mean": 2.874063921548472,
+      "deltaE2000Max": 24.460499736533503
+    },
+    "coffee-texture.original.png|coffee-texture.blur.png": {
+      "maxAbsolute": [
+        139,
+        138,
+        147
+      ],
+      "meanAbsolute": [
+        4.49176025390625,
+        5.21893310546875,
+        5.37298583984375
+      ],
+      "psnr": 27.4911509141725,
+      "ssimLuma": 0.8903696416055233,
+      "ssimChannels": [
+        0.9005045719433736,
+        0.8768408928387897,
+        0.8592857357266299
+      ],
+      "deltaE2000Mean": 2.041629370780938,
+      "deltaE2000Max": 49.61003018165038
+    },
+    "coffee-texture.original.png|coffee-texture.noise.png": {
+      "maxAbsolute": [
+        12,
+        12,
+        12
+      ],
+      "meanAbsolute": [
+        6.19281005859375,
+        5.8853759765625,
+        5.381591796875
+      ],
+      "psnr": 31.408300661077753,
+      "ssimLuma": 0.8513292173600051,
+      "ssimChannels": [
+        0.7105649044047833,
+        0.7354719530042483,
+        0.7437504757557994
+      ],
+      "deltaE2000Mean": 3.6863287645941605,
+      "deltaE2000Max": 15.978512739671634
+    }
+  }
+}

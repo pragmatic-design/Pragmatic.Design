@@ -18,6 +18,17 @@
           "Microsoft.TestPlatform.TestHost": "17.11.1"
         }
       },
+      "PDFiumCore": {
+        "type": "Direct",
+        "requested": "[157.0.8100, )",
+        "resolved": "157.0.8100",
+        "contentHash": "YtIi9SKS37Ub9NJSKTzf8xnHGJcdgcprH0KsMUEL4usP5LL50G1P6dCrmvQDTBhd7/16XQPLz2r4fGe7joI72A==",
+        "dependencies": {
+          "bblanchon.PDFium.Linux": "157.0.8100",
+          "bblanchon.PDFium.Win32": "157.0.8100",
+          "bblanchon.PDFium.macOS": "157.0.8100"
+        }
+      },
       "Verify.Xunit": {
         "type": "Direct",
         "requested": "[26.6.0, )",
@@ -50,6 +61,21 @@
         "type": "Transitive",
         "resolved": "0.21.0",
         "contentHash": "c515pzYDOmF3o8TywrIsTjxbc5KJwSdZW3I7JkhhduLz15wAlxo53nLg2UnD+dqTAT838LcuawRNgneK83A30Q=="
+      },
+      "bblanchon.PDFium.Linux": {
+        "type": "Transitive",
+        "resolved": "157.0.8100",
+        "contentHash": "+VKTzJDX1aMJ2AX33qxtyLQY2d5IA1o1FwDbQeaJQnYevSFbYAFjVeQeinaPcjiEA4qUSicjhh7uGCQD4qqFyw=="
+      },
+      "bblanchon.PDFium.macOS": {
+        "type": "Transitive",
+        "resolved": "157.0.8100",
+        "contentHash": "dfRqlwdZJsEAi0sgvZvpZSG19NdWTjCaePnQsWIt56TsTjz2lKb1C+NO2lzzbsg8D+BsNpcRtJNe274d0q4itg=="
+      },
+      "bblanchon.PDFium.Win32": {
+        "type": "Transitive",
+        "resolved": "157.0.8100",
+        "contentHash": "OeimMc5Zn7XFuiczK1/C88Xfe3Ney4fxIxnhKfO44TVIvMhNqEbkbrRYaFGS5SMveaw3uDG0lewgV9qICZjpAQ=="
       },
       "DiffEngine": {
         "type": "Transitive",
@@ -338,6 +364,17 @@
           "Microsoft.TestPlatform.TestHost": "17.11.1"
         }
       },
+      "PDFiumCore": {
+        "type": "Direct",
+        "requested": "[157.0.8100, )",
+        "resolved": "157.0.8100",
+        "contentHash": "YtIi9SKS37Ub9NJSKTzf8xnHGJcdgcprH0KsMUEL4usP5LL50G1P6dCrmvQDTBhd7/16XQPLz2r4fGe7joI72A==",
+        "dependencies": {
+          "bblanchon.PDFium.Linux": "157.0.8100",
+          "bblanchon.PDFium.Win32": "157.0.8100",
+          "bblanchon.PDFium.macOS": "157.0.8100"
+        }
+      },
       "Verify.Xunit": {
         "type": "Direct",
         "requested": "[26.6.0, )",
@@ -370,6 +407,21 @@
         "type": "Transitive",
         "resolved": "0.21.0",
         "contentHash": "c515pzYDOmF3o8TywrIsTjxbc5KJwSdZW3I7JkhhduLz15wAlxo53nLg2UnD+dqTAT838LcuawRNgneK83A30Q=="
+      },
+      "bblanchon.PDFium.Linux": {
+        "type": "Transitive",
+        "resolved": "157.0.8100",
+        "contentHash": "+VKTzJDX1aMJ2AX33qxtyLQY2d5IA1o1FwDbQeaJQnYevSFbYAFjVeQeinaPcjiEA4qUSicjhh7uGCQD4qqFyw=="
+      },
+      "bblanchon.PDFium.macOS": {
+        "type": "Transitive",
+        "resolved": "157.0.8100",
+        "contentHash": "dfRqlwdZJsEAi0sgvZvpZSG19NdWTjCaePnQsWIt56TsTjz2lKb1C+NO2lzzbsg8D+BsNpcRtJNe274d0q4itg=="
+      },
+      "bblanchon.PDFium.Win32": {
+        "type": "Transitive",
+        "resolved": "157.0.8100",
+        "contentHash": "OeimMc5Zn7XFuiczK1/C88Xfe3Ney4fxIxnhKfO44TVIvMhNqEbkbrRYaFGS5SMveaw3uDG0lewgV9qICZjpAQ=="
       },
       "DiffEngine": {
         "type": "Transitive",

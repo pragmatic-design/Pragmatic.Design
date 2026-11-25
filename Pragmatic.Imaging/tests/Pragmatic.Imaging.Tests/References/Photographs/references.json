@@ -1,0 +1,29 @@
+{
+  "about": "Every reference in this directory, with what produced it. Regenerate with scripts/visual-references.py; a reference is never produced by the code it checks.",
+  "references": {
+    "astronaut.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut: NASA, the astronaut Eileen Collins",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py photographs, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: copied byte for byte from skimage/data/astronaut.png",
+      "date": "2026-11-25"
+    },
+    "chelsea.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea: Stefan van der Walt",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py photographs, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: copied byte for byte from skimage/data/chelsea.png",
+      "date": "2026-11-25"
+    },
+    "coffee.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee: Rachel Michetti, courtesy of Pikolo Espresso Bar",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py photographs, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: copied byte for byte from skimage/data/coffee.png",
+      "date": "2026-11-25"
+    },
+    "rocket.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.rocket: SpaceX, the launch of DSCOVR on Falcon 9",
+      "licence": "Public domain: \"The image was captured by SpaceX and released in the public domain.\"",
+      "producedBy": "scripts/visual-references.py photographs, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: skimage/data/rocket.jpg decoded by Pillow and written as PNG (the source is itself a JPEG)",
+      "date": "2026-11-25"
+    }
+  }
+}

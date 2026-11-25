@@ -1,0 +1,65 @@
+{
+  "about": "Every reference in this directory, with what produced it. Regenerate with scripts/visual-references.py; a reference is never produced by the code it checks.",
+  "references": {
+    "astronaut-face.blur.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: the original through Pillow ImageFilter.GaussianBlur(radius=1.5)",
+      "date": "2026-11-25"
+    },
+    "astronaut-face.jpeg-q25.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: the original encoded by Pillow as JPEG at quality 25, then decoded by Pillow",
+      "date": "2026-11-25"
+    },
+    "astronaut-face.noise.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: the original plus NumPy default_rng(1014).integers(-12, 13) per sample, clipped to 0..255",
+      "date": "2026-11-25"
+    },
+    "astronaut-face.original.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: a 128 x 128 crop at row 100, column 160 of skimage.data.astronaut",
+      "date": "2026-11-25"
+    },
+    "ciede2000_test_data.txt": {
+      "origin": "G. Sharma, W. Wu, E. N. Dalal, \"The CIEDE2000 Color-Difference Formula: Implementation Notes, Supplementary Test Data, and Mathematical Observations\", Color Research and Application 30(1), 2005; as transcribed by scikit-image at v0.26.0, tests/skimage/color/ciede2000_test_data.txt",
+      "licence": "published test data; the transcription is part of scikit-image, BSD-3-Clause",
+      "producedBy": "scripts/visual-references.py metrics: downloaded from https://raw.githubusercontent.com/scikit-image/scikit-image/v0.26.0/tests/skimage/color/ciede2000_test_data.txt",
+      "date": "2026-11-25"
+    },
+    "coffee-texture.blur.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: the original through Pillow ImageFilter.GaussianBlur(radius=1.5)",
+      "date": "2026-11-25"
+    },
+    "coffee-texture.jpeg-q25.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: the original encoded by Pillow as JPEG at quality 25, then decoded by Pillow",
+      "date": "2026-11-25"
+    },
+    "coffee-texture.noise.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: the original plus NumPy default_rng(1014).integers(-12, 13) per sample, clipped to 0..255",
+      "date": "2026-11-25"
+    },
+    "coffee-texture.original.png": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5: a 128 x 128 crop at row 150, column 230 of skimage.data.coffee",
+      "date": "2026-11-25"
+    },
+    "metrics.json": {
+      "origin": "computed on the image pairs in this directory",
+      "licence": "derived values, no licence of their own",
+      "producedBy": "scripts/visual-references.py metrics, scikit-image 0.26.0, Pillow 13.0.0, NumPy 2.5.5",
+      "date": "2026-11-25"
+    }
+  }
+}

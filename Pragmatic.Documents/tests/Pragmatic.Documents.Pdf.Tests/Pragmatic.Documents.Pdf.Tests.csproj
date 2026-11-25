@@ -3,6 +3,8 @@
   <PropertyGroup>
     <ExcludeSharedTesting>true</ExcludeSharedTesting>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <!-- Pages compared as images, rasterised by PDFium (shared/VisualTesting). -->
+    <IncludeVisualTestingPdf>true</IncludeVisualTestingPdf>
   </PropertyGroup>
 
   <ItemGroup>
