@@ -92,6 +92,26 @@ test('a row whose allocations follow a cache moves by its measured spread, and n
   assert.equal(compareAllocations({ [constant]: 113_875 * 1.007 + 1 }, baseline).failed, true);
 });
 
+// Ten samples of the imaging rows on the runner, five runs at one commit (#1011): one measured 12,335 B more
+// on the native pipeline, once, over 5 operations, while the other nine were 20,096 to the byte; before
+// that, on BenchmarkDotNet 0.14.0, 18,876 B landed on the native contrast over 13 operations. Another
+// thread's allocations, counted by a process-wide counter, on rows that measure few operations.
+test('an allocation from another thread during a slow imaging row is allowed over its operations, and no more', () => {
+  const pipeline = 'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Pipeline_Native';
+  const contrast = 'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Contrast_Native';
+  const blur = 'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Blur_Managed';
+  const baseline = { [pipeline]: 20_096, [contrast]: 0, [blur]: 104 };
+  const judge = (measured, operations) => {
+    const own = Object.fromEntries(Object.keys(measured).map((name) => [name, baseline[name]]));
+    return compareAllocations(measured, own, null, null, operations).failed;
+  };
+
+  assert.equal(judge({ [pipeline]: 22_563 }, { [pipeline]: 5 }), false);
+  assert.equal(judge({ [contrast]: 1452 }, { [contrast]: 13 }), false);
+  assert.equal(judge({ [contrast]: Math.ceil(18_876 / 13) + 1 }, { [contrast]: 13 }), true);
+  assert.equal(judge({ [blur]: 104 + 24 }, { [blur]: 2048 }), true);
+});
+
 test('a benchmark with no baseline fails, so a new one arrives with its baseline', () => {
   const result = compareAllocations({ 'A.B.New': 100 }, {});
 

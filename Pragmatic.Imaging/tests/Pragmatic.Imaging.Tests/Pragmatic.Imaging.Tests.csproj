@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
+    <!-- The benchmark rows themselves, so the allocations pinned here are the ones the ratchet measures
+         (TheBenchmarkedOperationsAllocateWhatTheyDidTests). -->
+    <ProjectReference Include="..\..\benchmarks\Pragmatic.Imaging.Benchmarks\Pragmatic.Imaging.Benchmarks.csproj" />
   </ItemGroup>
 
   <!-- Independent decoders: SkiaSharp reads the EXIF orientation of the fixtures, ZXing reads the QR

@@ -266,7 +266,11 @@ a module's source, the shared code or a file every project is built with, throug
   `ROW_TOLERANCES` (`scripts/benchmarks.mjs`), stated beside the spread measured on the runner. One
   that allocates a fixed amount once per measurement, which BenchmarkDotNet divides by however many
   operations it chose for the runner's speed, has a bound in bytes in `ONE_OFF_BYTES`, allowed over the
-  operations the row was measured on.
+  operations the row was measured on. The same table holds the slow imaging rows for another reason:
+  BenchmarkDotNet counts the allocations of every thread in the process, so what another thread
+  allocates during one of their measurements of a few operations moved a row by kilobytes (#1011). An
+  allowance hides a regression smaller than itself, so what those rows allocate is pinned to the byte
+  on the calling thread by a test in the gate (`TheBenchmarkedOperationsAllocateWhatTheyDidTests`).
   The last one matters because BenchmarkDotNet exits 0 when it cannot build a benchmark. One that
   allocates less asks for the baseline to come down.
   ⚠️ The figures are only as good as BenchmarkDotNet's reading of the runtime. A version that does not
