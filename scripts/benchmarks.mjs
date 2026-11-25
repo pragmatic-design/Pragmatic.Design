@@ -141,6 +141,19 @@ export const ROW_TOLERANCES = {
  * 128, with forced collections off, with tiered compilation off and after 30 warmup iterations alike: not
  * the array pool, not the JIT, not a cold start. STJ's fast path, on the same documents, measures 0 B.
  * Where it comes from inside the serializer is not known.
+ *
+ * The imaging rows below are the other case: not every measurement, but any one of them. BenchmarkDotNet
+ * 0.15.8 reads `GC.GetTotalAllocatedBytes(precise: true)`, which counts every thread of the process, and
+ * these rows measure few operations, one to fifteen on the slowest, so what another thread allocates while
+ * a measurement is open is divided by almost nothing. Ten samples on the runner, five runs at one commit
+ * (#1011): every imaging row identical to the byte in all ten, except the native pipeline, 20,096 B in nine
+ * and 22,563 in one, 12,335 B more in one measurement of 5 operations (and 1 B on two native rows, once
+ * each). Before that, on 0.14.0, 18,876 B over 13 operations on the native contrast and about 13 KB on the
+ * managed blur, on rows that allocate 0 and 104. The bound is the largest of those. The thread is not known;
+ * the benchmarked code is ruled out, being the same in the nine samples that measured nothing more. Listed
+ * are the rows whose tolerance it raises, over the fewest operations measured on the runner; what they
+ * allocate is held to the byte on the calling thread by `TheBenchmarkedOperationsAllocateWhatTheyDidTests`
+ * in Pragmatic.Imaging.Tests, which this allowance cannot hide from.
  */
 export const ONE_OFF_BYTES = {
   'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Canada.Root_.Host_GeneratedMetadata': 2048,
@@ -149,6 +162,30 @@ export const ONE_OFF_BYTES = {
   'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_CitmCatalog.Root_.Host_Reflection': 2048,
   'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Twitter.Root_.Host_GeneratedMetadata': 2048,
   'Pragmatic.Endpoints.Benchmarks.ResponseSerializationBenchmarks_Twitter.Root_.Host_Reflection': 2048,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Blur_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Blur_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Brightness_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Brightness_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Contrast_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Contrast_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Crop_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.FlipHorizontal_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.FlipHorizontal_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Grayscale_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Grayscale_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Rotate90_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Rotate90_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Sharpen_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.OperationBenchmarks.Sharpen_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Decode_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Decode_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Encode_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Pipeline_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Pipeline_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Resize_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Resize_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Thumbnail_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Thumbnail_Native': 18_876,
 };
 
 /**
