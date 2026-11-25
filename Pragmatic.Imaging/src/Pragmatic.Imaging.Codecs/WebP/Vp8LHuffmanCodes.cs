@@ -1,53 +1,69 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
-///     One canonical prefix code of the lossless format, as a two-level lookup table: eight bits index
-///     the root, and a longer code continues in a second-level table the root entry points at. Codes are
-///     read least significant bit first, so the table is indexed by the bit-reversed code, the way zlib
-///     and libwebp build theirs.
+///     The canonical prefix codes of one lossless stream, every one in a single pooled block, as libwebp
+///     keeps them: each code is a two-level lookup table at an offset in the block. Eight bits index the
+///     root; a longer code continues in a second-level table the root entry points at. Codes are read
+///     least significant bit first, so the tables are indexed by the bit-reversed code, the way zlib and
+///     libwebp build theirs.
 /// </summary>
 /// <remarks>
-///     An entry packs the number of bits in its upper 16 bits and the symbol (or, for a root entry that
-///     continues, the offset of its second-level table) in the lower 16. A code with a single symbol takes
-///     no bits at all, as the format defines.
+///     An entry packs the number of bits in its low 5 bits and, above them, the symbol (or, for a root
+///     entry that continues, the absolute offset of its second-level table). A code with a single symbol
+///     takes no bits, as the format defines.
 /// </remarks>
-internal sealed class Vp8LHuffmanTable
+internal sealed class Vp8LHuffmanCodes : IDisposable
 {
-    private const int RootBits = 8;
+    public const int RootBits = 8;
+    private const int RootSize = 1 << RootBits;
     private const int MaxLength = 15;
+    private const int LengthBits = 5;
+    private const int LengthMask = (1 << LengthBits) - 1;
 
-    private readonly int[] _entries;
+    private int[] _entries;
+    private int _used;
 
-    private Vp8LHuffmanTable(int[] entries) => _entries = entries;
+    public Vp8LHuffmanCodes(int expectedCodes) => _entries = ArrayPool<int>.Shared.Rent(Math.Max(1, expectedCodes) * RootSize * 2);
+
+    /// <summary>The block every code's table lives in; a code is its root offset in it.</summary>
+    public int[] Entries => _entries;
+
+    public void Dispose() => ArrayPool<int>.Shared.Return(_entries);
 
     /// <summary>The symbol at the reader's position, its bits consumed.</summary>
-    public int ReadSymbol(Vp8LBitReader reader)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int ReadSymbol(int[] entries, int root, Vp8LBitReader reader)
     {
         var bits = reader.Peek();
-        var entry = _entries[bits & ((1 << RootBits) - 1)];
-        var length = entry >> 16;
+        var entry = entries[root + (int)(bits & (RootSize - 1))];
+        var length = entry & LengthMask;
         if (length > RootBits)
         {
             reader.Skip(RootBits);
-            entry = _entries[(entry & 0xFFFF) + (int)((bits >> RootBits) & ((1u << (length - RootBits)) - 1))];
-            length = entry >> 16;
+            entry = entries[(entry >> LengthBits) + (int)((bits >> RootBits) & ((1u << (length - RootBits)) - 1))];
+            length = entry & LengthMask;
         }
 
         reader.Skip(length);
-        return entry & 0xFFFF;
+        return entry >> LengthBits;
     }
 
-    /// <summary>Whether every symbol of the code is <paramref name="symbol" />: the code then takes no bits.</summary>
-    public bool IsSingle(out int symbol)
+    /// <summary>The one symbol of the code at <paramref name="root" />, which then takes no bits, or -1 if it has more.</summary>
+    public static int SingleSymbol(int[] entries, int root)
     {
-        var entry = _entries[0];
-        symbol = entry & 0xFFFF;
-        return entry >> 16 == 0;
+        var entry = entries[root];
+        return (entry & LengthMask) == 0 ? entry >> LengthBits : -1;
     }
 
-    /// <summary>The code whose symbol <c>s</c> has length <c>lengths[s]</c> (0 for a symbol not used).</summary>
+    /// <summary>
+    ///     Adds the code whose symbol <c>s</c> has length <c>lengths[s]</c> (0 for a symbol not used) and
+    ///     returns its root offset. <paramref name="sorted" /> is scratch of at least as many entries.
+    /// </summary>
     /// <exception cref="ImageDecodeException">The lengths do not describe a complete prefix code.</exception>
-    public static Vp8LHuffmanTable Build(ReadOnlySpan<int> lengths)
+    public int Add(ReadOnlySpan<int> lengths, Span<int> sorted)
     {
         Span<int> count = stackalloc int[MaxLength + 1];
         var used = 0;
@@ -66,8 +82,13 @@ internal sealed class Vp8LHuffmanTable
 
         if (used == 0)
             throw new ImageDecodeException("WebP: a prefix code has no symbol.");
+
+        var root = Allocate(RootSize);
         if (used == 1)
-            return new Vp8LHuffmanTable(Filled(1 << RootBits, only));
+        {
+            _entries.AsSpan(root, RootSize).Fill(only << LengthBits);
+            return root;
+        }
 
         // Kraft: the code must be neither over-subscribed nor incomplete.
         var left = 1;
@@ -85,26 +106,18 @@ internal sealed class Vp8LHuffmanTable
         Span<int> offset = stackalloc int[MaxLength + 2];
         for (var length = 1; length <= MaxLength; length++)
             offset[length + 1] = offset[length] + count[length];
-        var sorted = new int[used];
         for (var symbol = 0; symbol < lengths.Length; symbol++)
         {
             if (lengths[symbol] != 0)
                 sorted[offset[lengths[symbol]]++] = symbol;
         }
 
-        return new Vp8LHuffmanTable(Fill(sorted, count));
+        Fill(root, sorted[..used], count);
+        return root;
     }
 
-    private static int[] Filled(int size, int symbol)
+    private void Fill(int root, ReadOnlySpan<int> sorted, Span<int> count)
     {
-        var entries = new int[size];
-        Array.Fill(entries, symbol);
-        return entries;
-    }
-
-    private static int[] Fill(int[] sorted, Span<int> count)
-    {
-        var entries = new List<int>(new int[1 << RootBits]);
         var key = 0;
         var next = 0;
 
@@ -113,13 +126,13 @@ internal sealed class Vp8LHuffmanTable
         {
             for (; count[length] > 0; count[length]--)
             {
-                Replicate(entries, key, step, 1 << RootBits, (length << 16) | sorted[next++]);
+                Replicate(root + key, step, RootSize, (sorted[next++] << LengthBits) | length);
                 key = NextKey(key, length);
             }
         }
 
         // Longer codes: a second-level table for each root slot they share.
-        const int mask = (1 << RootBits) - 1;
+        const int mask = RootSize - 1;
         var low = -1;
         var tableStart = 0;
         var tableSize = 0;
@@ -131,25 +144,38 @@ internal sealed class Vp8LHuffmanTable
                 {
                     var tableBits = TableBits(count, length);
                     tableSize = 1 << tableBits;
-                    tableStart = entries.Count;
-                    entries.AddRange(new int[tableSize]);
+                    tableStart = Allocate(tableSize);
                     low = key & mask;
-                    entries[low] = ((tableBits + RootBits) << 16) | tableStart;
+                    _entries[root + low] = (tableStart << LengthBits) | (tableBits + RootBits);
                 }
 
-                Replicate(entries, tableStart + (key >> RootBits), step, tableSize, ((length - RootBits) << 16) | sorted[next++]);
+                Replicate(tableStart + (key >> RootBits), step, tableSize, (sorted[next++] << LengthBits) | (length - RootBits));
                 key = NextKey(key, length);
             }
         }
+    }
 
-        return [.. entries];
+    /// <summary>Space for <paramref name="size" /> entries at the end of the block, which grows when full.</summary>
+    private int Allocate(int size)
+    {
+        if (_used + size > _entries.Length)
+        {
+            var larger = ArrayPool<int>.Shared.Rent(Math.Max(_entries.Length * 2, _used + size));
+            _entries.AsSpan(0, _used).CopyTo(larger);
+            ArrayPool<int>.Shared.Return(_entries);
+            _entries = larger;
+        }
+
+        var start = _used;
+        _used += size;
+        return start;
     }
 
     /// <summary>Writes <paramref name="entry" /> at <paramref name="start" /> and every <paramref name="step" /> after it, up to <paramref name="end" />.</summary>
-    private static void Replicate(List<int> entries, int start, int step, int end, int entry)
+    private void Replicate(int start, int step, int end, int entry)
     {
         for (var i = end - step; i >= 0; i -= step)
-            entries[start + i] = entry;
+            _entries[start + i] = entry;
     }
 
     /// <summary>The bit-reversed increment of <paramref name="key" />, a code of <paramref name="length" /> bits.</summary>

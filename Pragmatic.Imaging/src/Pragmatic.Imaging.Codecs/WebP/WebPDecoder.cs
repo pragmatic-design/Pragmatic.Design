@@ -1,3 +1,7 @@
+using System.Buffers;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -33,10 +37,19 @@ public static class WebPDecoder
             // decoded, not blended (libwebp's anim_decode.c).
             result.Pixels.Clear();
             var (width, height) = FrameSize(layout, image);
-            var frame = new byte[width * height * 4];
-            DecodeFrame(image, encoded, layout, frame);
-            for (var y = 0; y < height; y++)
-                frame.AsSpan(y * width * 4, width * 4).CopyTo(result.Row(layout.FrameY + y)[(layout.FrameX * 4)..]);
+            var length = width * height * 4;
+            var frame = ArrayPool<byte>.Shared.Rent(length);
+            try
+            {
+                DecodeFrame(image, encoded, layout, frame.AsSpan(0, length));
+                for (var y = 0; y < height; y++)
+                    frame.AsSpan(y * width * 4, width * 4).CopyTo(result.Row(layout.FrameY + y)[(layout.FrameX * 4)..]);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(frame);
+            }
+
             return result;
         }
         catch
@@ -50,26 +63,36 @@ public static class WebPDecoder
     {
         if (layout.IsLossless)
         {
-            var argb = Vp8LDecoder.Decode(image, out _, out _);
-            for (var i = 0; i < argb.Length; i++)
-            {
-                var pixel = argb[i];
-                rgba[i * 4] = (byte)(pixel >> 16);
-                rgba[i * 4 + 1] = (byte)(pixel >> 8);
-                rgba[i * 4 + 2] = (byte)pixel;
-                rgba[i * 4 + 3] = (byte)(pixel >> 24);
-            }
-
+            // ARGB as a little-endian word is the bytes B, G, R, A: decoded in place, then R and B swapped.
+            Vp8LDecoder.Decode(image, MemoryMarshal.Cast<byte, uint>(rgba));
+            SwapRedAndBlue(rgba);
             return;
         }
 
-        var frame = Vp8Decoder.Decode(image);
+        using var frame = Vp8Decoder.Decode(image);
         Vp8YuvConverter.ToRgba(frame, rgba);
 
         // An ALPH chunk counts only when the extended header says the image has alpha: libwebp's reading
         // (through Skia) and the native library's both leave the image opaque otherwise.
         if (layout.HasAlpha && layout.Alpha.Length > 0)
             WebPAlpha.Apply(file.Slice(layout.Alpha.Offset, layout.Alpha.Length), frame.Width, frame.Height, rgba);
+    }
+
+    private static void SwapRedAndBlue(Span<byte> pixels)
+    {
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+            for (; i + 16 <= pixels.Length; i += 16)
+            {
+                var block = Vector128.Create<byte>(pixels[i..]);
+                Vector128.Shuffle(block, order).CopyTo(pixels[i..]);
+            }
+        }
+
+        for (; i < pixels.Length; i += 4)
+            (pixels[i], pixels[i + 2]) = (pixels[i + 2], pixels[i]);
     }
 
     private static (int Width, int Height) FrameSize(WebPLayout layout, ReadOnlySpan<byte> image)

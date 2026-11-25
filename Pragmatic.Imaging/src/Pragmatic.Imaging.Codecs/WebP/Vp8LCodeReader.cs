@@ -9,11 +9,21 @@ internal static class Vp8LCodeReader
     private const int CodeLengthCodes = 19;
     private const int DefaultRepeatLength = 8;
 
+    /// <summary>The largest alphabet: 256 literals, 24 lengths and a colour cache of 2^11.</summary>
+    public const int MaxAlphabet = 256 + 24 + (1 << 11);
+
     private static ReadOnlySpan<byte> CodeLengthOrder => [17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
-    public static Vp8LHuffmanTable Read(Vp8LBitReader reader, int alphabetSize)
+    /// <summary>Reads a code over <paramref name="alphabetSize" /> symbols into <paramref name="codes" /> and returns its root.</summary>
+    /// <param name="reader">The stream, at the code.</param>
+    /// <param name="codes">The block the code is added to.</param>
+    /// <param name="alphabetSize">How many symbols the code is over.</param>
+    /// <param name="scratch">Two times <see cref="MaxAlphabet" /> of working space.</param>
+    public static int Read(Vp8LBitReader reader, Vp8LHuffmanCodes codes, int alphabetSize, Span<int> scratch)
     {
-        var lengths = new int[alphabetSize];
+        var lengths = scratch[..alphabetSize];
+        var sorted = scratch.Slice(MaxAlphabet, alphabetSize);
+        lengths.Clear();
         if (reader.ReadBits(1) == 1)
         {
             var symbols = (int)reader.ReadBits(1) + 1;
@@ -21,14 +31,15 @@ internal static class Vp8LCodeReader
             Set(lengths, first);
             if (symbols == 2)
                 Set(lengths, (int)reader.ReadBits(8));
-            return Vp8LHuffmanTable.Build(lengths);
+            return codes.Add(lengths, sorted);
         }
 
         Span<int> codeLengthLengths = stackalloc int[CodeLengthCodes];
         var count = 4 + (int)reader.ReadBits(4);
         for (var i = 0; i < count; i++)
             codeLengthLengths[CodeLengthOrder[i]] = (int)reader.ReadBits(3);
-        var codeLengthCode = Vp8LHuffmanTable.Build(codeLengthLengths);
+        Span<int> codeLengthSorted = stackalloc int[CodeLengthCodes];
+        var codeLengthCode = codes.Add(codeLengthLengths, codeLengthSorted);
 
         var maxSymbol = alphabetSize;
         if (reader.ReadBits(1) == 1)
@@ -45,7 +56,7 @@ internal static class Vp8LCodeReader
         {
             if (maxSymbol-- == 0)
                 break;
-            var code = codeLengthCode.ReadSymbol(reader);
+            var code = Vp8LHuffmanCodes.ReadSymbol(codes.Entries, codeLengthCode, reader);
             if (code < 16)
             {
                 lengths[symbol++] = code;
@@ -63,14 +74,14 @@ internal static class Vp8LCodeReader
             var repeat = offset + (int)reader.ReadBits(extraBits);
             if (symbol + repeat > alphabetSize)
                 throw new ImageDecodeException("WebP: a run of code lengths overflows the alphabet.");
-            lengths.AsSpan(symbol, repeat).Fill(value);
+            lengths.Slice(symbol, repeat).Fill(value);
             symbol += repeat;
         }
 
-        return Vp8LHuffmanTable.Build(lengths);
+        return codes.Add(lengths, sorted);
     }
 
-    private static void Set(int[] lengths, int symbol)
+    private static void Set(Span<int> lengths, int symbol)
     {
         if (symbol >= lengths.Length)
             throw new ImageDecodeException("WebP: a simple prefix code names a symbol outside its alphabet.");

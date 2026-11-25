@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -43,8 +45,16 @@ internal static unsafe class Vp8Decoder
             var header = Vp8FrameHeader.Read(modesReader);
             var tokens = Partitions(data + FrameHeaderSize + firstPartition, chunk.Length - FrameHeaderSize - firstPartition, header.Partitions);
             var frame = new Vp8Frame(width, height);
-            Decode(frame, header, modesReader, tokens);
-            return frame;
+            try
+            {
+                Decode(frame, header, modesReader, tokens);
+                return frame;
+            }
+            catch
+            {
+                frame.Dispose();
+                throw;
+            }
         }
     }
 
@@ -75,12 +85,49 @@ internal static unsafe class Vp8Decoder
     {
         var wide = frame.MacroblocksWide;
         var strengths = header.FilterLevel == 0 ? null : Vp8FilterStrength.ForSegments(header);
-        var filters = strengths is null ? null : new Vp8FilterStrength[wide * frame.MacroblocksHigh];
-        var reconstructor = new Vp8Reconstructor(frame);
+        var filters = strengths is null ? null : ArrayPool<Vp8FilterStrength>.Shared.Rent(wide * frame.MacroblocksHigh);
+        try
+        {
+            DecodeMacroblocks(frame, header, modesReader, tokens, strengths, filters);
+            if (filters is not null)
+                Vp8FrameFilter.Apply(frame, filters, header.SimpleFilter);
+        }
+        finally
+        {
+            if (filters is not null)
+                ArrayPool<Vp8FilterStrength>.Shared.Return(filters);
+        }
+    }
+
+    private static void DecodeMacroblocks(Vp8Frame frame, Vp8FrameHeader header, Vp8BoolDecoder modesReader, Vp8BoolDecoder[] tokens,
+        Vp8FilterStrength[]? strengths, Vp8FilterStrength[]? filters)
+    {
+        var wide = frame.MacroblocksWide;
+        using var reconstructor = new Vp8Reconstructor(frame);
         var modes = new Vp8MacroblockModes();
-        var aboveModes = new byte[wide * 4];
+        var contexts = ArrayPool<byte>.Shared.Rent(wide * (4 + Vp8Residuals.ContextCount));
+        try
+        {
+            DecodeRows(frame, header, modesReader, tokens, strengths, filters, reconstructor, modes, contexts);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(contexts);
+        }
+    }
+
+    private static void DecodeRows(Vp8Frame frame, Vp8FrameHeader header, Vp8BoolDecoder modesReader, Vp8BoolDecoder[] tokens,
+        Vp8FilterStrength[]? strengths, Vp8FilterStrength[]? filters, Vp8Reconstructor reconstructor, Vp8MacroblockModes modes, byte[] contexts)
+    {
+        var wide = frame.MacroblocksWide;
+
+        // Above every macroblock column: its four subblock modes, then its non-zero flags. Both start
+        // at zero, which is B_DC_PRED and "no coefficients".
+        var aboveModes = contexts.AsSpan(0, wide * 4);
+        var aboveFlags = contexts.AsSpan(wide * 4, wide * Vp8Residuals.ContextCount);
+        aboveModes.Clear();
+        aboveFlags.Clear();
         Span<byte> leftModes = stackalloc byte[4];
-        var aboveFlags = new byte[wide * Vp8Residuals.ContextCount];
         Span<byte> leftFlags = stackalloc byte[Vp8Residuals.ContextCount];
         Span<short> coefficients = stackalloc short[384];
 
@@ -91,8 +138,8 @@ internal static unsafe class Vp8Decoder
             var reader = tokens[mbY & (tokens.Length - 1)];
             for (var mbX = 0; mbX < wide; mbX++)
             {
-                modes.Read(modesReader, header, aboveModes.AsSpan(mbX * 4, 4), leftModes);
-                var above = aboveFlags.AsSpan(mbX * Vp8Residuals.ContextCount, Vp8Residuals.ContextCount);
+                modes.Read(modesReader, header, aboveModes.Slice(mbX * 4, 4), leftModes);
+                var above = aboveFlags.Slice(mbX * Vp8Residuals.ContextCount, Vp8Residuals.ContextCount);
                 var nonZero = 0;
                 coefficients.Clear();
                 if (!modes.Skip)
@@ -116,8 +163,5 @@ internal static unsafe class Vp8Decoder
                 throw new ImageDecodeException("WebP: the first partition of the lossy frame is truncated.");
             reconstructor.EndRow();
         }
-
-        if (filters is not null)
-            Vp8FrameFilter.Apply(frame, filters, header.SimpleFilter);
     }
 }

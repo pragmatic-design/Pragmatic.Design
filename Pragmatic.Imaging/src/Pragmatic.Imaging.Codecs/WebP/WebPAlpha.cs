@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -19,23 +21,39 @@ internal static class WebPAlpha
         if (compression > 1 || ((header >> 4) & 3) > 1)
             throw new ImageDecodeException("WebP: the alpha chunk has an unknown compression or pre-processing.");
 
-        var plane = new byte[width * height];
-        if (compression == 0)
+        var count = width * height;
+        var plane = ArrayPool<byte>.Shared.Rent(count);
+        try
         {
-            if (chunk.Length - 1 < plane.Length)
-                throw new ImageDecodeException("WebP: the raw alpha plane is truncated.");
-            chunk.Slice(1, plane.Length).CopyTo(plane);
-        }
-        else
-        {
-            var argb = Vp8LDecoder.DecodeHeaderless(chunk[1..], width, height);
-            for (var i = 0; i < plane.Length; i++)
-                plane[i] = (byte)(argb[i] >> 8);
-        }
+            if (compression == 0)
+            {
+                if (chunk.Length - 1 < count)
+                    throw new ImageDecodeException("WebP: the raw alpha plane is truncated.");
+                chunk.Slice(1, count).CopyTo(plane);
+            }
+            else
+            {
+                var argb = ArrayPool<uint>.Shared.Rent(count);
+                try
+                {
+                    Vp8LDecoder.DecodeHeaderless(chunk[1..], width, height, argb);
+                    for (var i = 0; i < count; i++)
+                        plane[i] = (byte)(argb[i] >> 8);
+                }
+                finally
+                {
+                    ArrayPool<uint>.Shared.Return(argb);
+                }
+            }
 
-        Unfilter(plane, width, height, filter);
-        for (var i = 0; i < plane.Length; i++)
-            rgba[i * 4 + 3] = plane[i];
+            Unfilter(plane, width, height, filter);
+            for (var i = 0; i < count; i++)
+                rgba[i * 4 + 3] = plane[i];
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(plane);
+        }
     }
 
     /// <summary>

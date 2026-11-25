@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -7,15 +9,15 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     the left 129 (RFC 6386, section 12.2). The result goes to the frame's planes, which the loop filter
 ///     then works on in place.
 /// </summary>
-internal sealed class Vp8Reconstructor
+internal sealed class Vp8Reconstructor : IDisposable
 {
     private const int S = Vp8Prediction.Stride;
     private const int Origin = S + 8;
 
     private readonly Vp8Frame _frame;
-    private readonly byte[] _y = new byte[S * 17];
-    private readonly byte[] _u = new byte[S * 9];
-    private readonly byte[] _v = new byte[S * 9];
+    private readonly byte[] _y = ArrayPool<byte>.Shared.Rent(S * 17);
+    private readonly byte[] _u = ArrayPool<byte>.Shared.Rent(S * 9);
+    private readonly byte[] _v = ArrayPool<byte>.Shared.Rent(S * 9);
     private byte[] _topY;
     private byte[] _topU;
     private byte[] _topV;
@@ -26,12 +28,27 @@ internal sealed class Vp8Reconstructor
     public Vp8Reconstructor(Vp8Frame frame)
     {
         _frame = frame;
-        _topY = new byte[frame.MacroblocksWide * 16];
-        _topU = new byte[frame.MacroblocksWide * 8];
-        _topV = new byte[frame.MacroblocksWide * 8];
-        _nextTopY = new byte[_topY.Length];
-        _nextTopU = new byte[_topU.Length];
-        _nextTopV = new byte[_topV.Length];
+        var pool = ArrayPool<byte>.Shared;
+        _topY = pool.Rent(frame.MacroblocksWide * 16);
+        _topU = pool.Rent(frame.MacroblocksWide * 8);
+        _topV = pool.Rent(frame.MacroblocksWide * 8);
+        _nextTopY = pool.Rent(frame.MacroblocksWide * 16);
+        _nextTopU = pool.Rent(frame.MacroblocksWide * 8);
+        _nextTopV = pool.Rent(frame.MacroblocksWide * 8);
+    }
+
+    public void Dispose()
+    {
+        var pool = ArrayPool<byte>.Shared;
+        pool.Return(_y);
+        pool.Return(_u);
+        pool.Return(_v);
+        pool.Return(_topY);
+        pool.Return(_topU);
+        pool.Return(_topV);
+        pool.Return(_nextTopY);
+        pool.Return(_nextTopU);
+        pool.Return(_nextTopV);
     }
 
     /// <summary>Called after the last macroblock of a row: its bottom samples become the next row's top.</summary>

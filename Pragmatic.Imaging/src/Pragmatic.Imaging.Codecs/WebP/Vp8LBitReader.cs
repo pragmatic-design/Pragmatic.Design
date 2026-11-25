@@ -1,9 +1,13 @@
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
 ///     The bit reader of the lossless format: least significant bit first, over bytes the caller keeps
-///     pinned. Reading past the end yields zeros, the way libwebp's reader does, and is reported by
-///     <see cref="IsPastEnd" /> so the decoder can refuse a truncated stream once it has finished.
+///     pinned. The buffer is refilled eight bytes at a time while there are eight to read. Reading past the
+///     end yields zeros, the way libwebp's reader does, and is reported by <see cref="IsPastEnd" /> so the
+///     decoder can refuse a truncated stream.
 /// </summary>
 internal sealed unsafe class Vp8LBitReader
 {
@@ -23,10 +27,9 @@ internal sealed unsafe class Vp8LBitReader
     /// <summary>Whether more bits were consumed than the stream holds.</summary>
     public bool IsPastEnd => _consumed > (long)_length * 8;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public uint ReadBits(int count)
     {
-        if (count == 0)
-            return 0;
         if (_bits < count)
             Fill();
         var value = (uint)(_buffer & ((1UL << count) - 1));
@@ -37,6 +40,7 @@ internal sealed unsafe class Vp8LBitReader
     }
 
     /// <summary>The next 32 bits without consuming them: enough for any prefix code, whose longest is 15.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public uint Peek()
     {
         if (_bits < 32)
@@ -44,6 +48,7 @@ internal sealed unsafe class Vp8LBitReader
         return (uint)_buffer;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Skip(int count)
     {
         _buffer >>= count;
@@ -53,6 +58,16 @@ internal sealed unsafe class Vp8LBitReader
 
     private void Fill()
     {
+        if (_position + 8 <= _length)
+        {
+            // Take whole bytes up to 56 bits held; the bytes read past that are read again next time.
+            var take = (63 - _bits) >> 3;
+            _buffer |= BinaryPrimitives.ReadUInt64LittleEndian(new ReadOnlySpan<byte>(_data + _position, 8)) << _bits;
+            _position += take;
+            _bits += take * 8;
+            return;
+        }
+
         while (_bits <= 56)
         {
             if (_position < _length)
