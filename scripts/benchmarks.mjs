@@ -87,6 +87,9 @@ export const BASELINE = 'benchmarks/allocation-baseline.json';
  * One more allocation is at least 24 bytes on x64 (an object header and a method table pointer), so 16
  * still catches it, and leaves room for the averaging of benchmarks that run many operations per
  * invocation and report a fraction.
+ *
+ * ⚠️ Only on a BenchmarkDotNet that recognises the runtime: one that does not reports 0 for any measured
+ * iteration of 8 KB or less, and there no tolerance catches anything (`RUNTIMES_BY_BENCHMARKDOTNET`, #1012).
  */
 export const TOLERANCE_BYTES = 16;
 
@@ -158,6 +161,41 @@ export function toleranceFor(base, name = '', operations = 0) {
 }
 
 // ── Reading BenchmarkDotNet's output ────────────────────────────────────────────────────────────
+
+/**
+ * The newest .NET each BenchmarkDotNet version recognises, read in its `CoreRuntime.FromVersion`.
+ *
+ * ⚠️ A runtime BenchmarkDotNet does not recognise gets `RuntimeMoniker.NotRecognized`, which sorts before
+ * .NET Core 2.0, and `GcStats.GetBytesAllocatedPerOperation` then applies that runtime's workaround: a
+ * measured iteration that allocates no more than the allocation quantum (about 8 KB) is reported as 0. On
+ * 0.14.0, which stops at .NET 9, `Blur_Managed` allocated 1,592 B over 11 operations and the ratchet read 0;
+ * on the runner the same row jumped to 1,416 B the time something else in the process pushed its iteration
+ * past 8 KB (#1011, #1012). A version goes in here only after its source has been read.
+ */
+export const RUNTIMES_BY_BENCHMARKDOTNET = {
+  '0.14.0': 9,
+  '0.15.8': 10,
+};
+
+/** The BenchmarkDotNet the suites use, from `Directory.Packages.props`; a test holds the two together. */
+export const KNOWN_BENCHMARKDOTNET = '0.15.8';
+
+/**
+ * The reports under `dir` whose BenchmarkDotNet does not recognise the runtime they ran on, or does not
+ * say: their allocations cannot be trusted below 8 KB per iteration, so the ratchet refuses them.
+ */
+export function blindReports(dir) {
+  const blind = [];
+  for (const file of filesEndingWith(dir, '-report-full-compressed.json')) {
+    const host = JSON.parse(readFileSync(file, 'utf8')).HostEnvironmentInfo ?? {};
+    const newest = RUNTIMES_BY_BENCHMARKDOTNET[host.BenchmarkDotNetVersion];
+    const major = Number(/^\.NET (\d+)\./.exec(host.RuntimeVersion ?? '')?.[1]);
+    if (newest === undefined || !(major <= newest)) {
+      blind.push({ report: basename(file, '-report-full-compressed.json'), benchmarkDotNet: host.BenchmarkDotNetVersion, runtime: host.RuntimeVersion });
+    }
+  }
+  return blind;
+}
 
 /** Every file under `dir` whose name ends with `suffix`, recursively. */
 export function filesEndingWith(dir, suffix) {
@@ -323,9 +361,10 @@ export function timesFromCsv(dir) {
  * looked at, since nothing measured it. `listed` are the classes the suites list for the run, the
  * selected ones on a partial run and every one on a full run, where `classes` is null. `operations` are
  * what each measurement was averaged over (`operationsFromJson`), which the rows in `ONE_OFF_BYTES` need.
+ * `blind` are the reports `blindReports` refuses: any one fails the run, whatever its figures say.
  */
-export function compareAllocations(measured, baseline, classes = null, listed = classes, operations = {}) {
-  const result = { regressions: [], unbaselined: [], improvements: [], missing: [], notRun: [] };
+export function compareAllocations(measured, baseline, classes = null, listed = classes, operations = {}, blind = []) {
+  const result = { regressions: [], unbaselined: [], improvements: [], missing: [], notRun: [], blind };
   const judged = classes === null
     ? baseline
     : Object.fromEntries(Object.entries(baseline).filter(([name]) => classes.some((c) => belongsTo(name, c))));
@@ -342,7 +381,7 @@ export function compareAllocations(measured, baseline, classes = null, listed = 
     if (!Object.keys(measured).some((name) => belongsTo(name, c))) result.notRun.push({ name: c });
   }
   result.failed = result.regressions.length > 0 || result.unbaselined.length > 0 || result.missing.length > 0
-    || result.notRun.length > 0;
+    || result.notRun.length > 0 || result.blind.length > 0;
   return result;
 }
 
@@ -355,8 +394,18 @@ export function allocationReport(result, measuredCount) {
     lines.push(`### ${title}`, '', '| Benchmark | Baseline | Measured |', '|---|---:|---:|', ...items.map(row), '');
   };
 
+  if (result.blind?.length > 0) {
+    lines.push(
+      `**FAIL**: ${result.blind.length} report(s) from a BenchmarkDotNet that does not know the runtime it ran on, so it reports 0 for any iteration that allocates 8 KB or less (\`RUNTIMES_BY_BENCHMARKDOTNET\`, #1012).`,
+      '',
+      '| Report | BenchmarkDotNet | Runtime |',
+      '|---|---|---|',
+      ...result.blind.map((b) => `| \`${b.report}\` | ${b.benchmarkDotNet ?? '—'} | ${b.runtime ?? '—'} |`),
+      '',
+    );
+  }
   lines.push(result.failed
-    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} listed class(es) measured nothing.`
+    ? `**FAIL**: ${result.regressions.length} allocate more than the baseline, ${result.unbaselined.length} have no baseline, ${result.missing.length} in the baseline did not run, ${result.notRun.length} listed class(es) measured nothing, ${result.blind?.length ?? 0} report(s) from a BenchmarkDotNet blind to the runtime.`
     : measuredCount === 0
       ? '**FAIL**: no benchmark was measured.'
       : `**ok**: ${measuredCount} benchmark(s), none allocates more than the baseline (tolerance ${TOLERANCE_BYTES} B or ${TOLERANCE_SHARE * 100}%, whichever is larger; ${Object.keys(ROW_TOLERANCES).length} row(s) have their own share, in \`ROW_TOLERANCES\`, and ${Object.keys(ONE_OFF_BYTES).length} a one-off allowance per measurement, in \`ONE_OFF_BYTES\`).`, '');
@@ -536,7 +585,7 @@ function ci(options) {
   const baseline = existsSync(join(options.head, BASELINE))
     ? JSON.parse(readFileSync(join(options.head, BASELINE), 'utf8'))
     : {};
-  const allocations = compareAllocations(measured, baseline, classes, listed, operationsFromJson(join(out, 'head')));
+  const allocations = compareAllocations(measured, baseline, classes, listed, operationsFromJson(join(out, 'head')), blindReports(join(out, 'head')));
   const nothingToRun = classes !== null && classes.length === 0;
 
   // What the baseline would be if this run were accepted: uploaded with the reports, so a new or
@@ -601,7 +650,7 @@ function main(argv) {
         return 0;
       }
       const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : {};
-      const result = compareAllocations(measured, baseline, null, null, operationsFromJson(options.results));
+      const result = compareAllocations(measured, baseline, null, null, operationsFromJson(options.results), blindReports(options.results));
       console.log(allocationReport(result, Object.keys(measured).length));
       return result.failed ? 1 : 0;
     }
