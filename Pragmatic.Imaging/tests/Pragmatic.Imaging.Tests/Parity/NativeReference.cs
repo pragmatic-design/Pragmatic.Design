@@ -42,6 +42,22 @@ internal static unsafe class NativeReference
         return new Image(buffer.ToArray(), (int)width, (int)height);
     }
 
+    /// <summary>The native JPEG encoder: what the managed one replaced, at the same quality setting.</summary>
+    public static byte[] EncodeJpeg(Image source, byte quality)
+    {
+        nint output;
+        nuint length;
+        fixed (byte* pixels = source.Rgba)
+        {
+            var rc = NativeImports.pragmatic_image_encode(pixels, (nuint)source.Rgba.Length, (uint)source.Width, (uint)source.Height,
+                (int)ImageFormat.Jpeg, quality, &output, &length);
+            NativeError.CheckResult(rc, "reference encode");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return buffer.ToArray();
+    }
+
     public static Image Crop(Image source, int x, int y, int width, int height)
     {
         nint output;

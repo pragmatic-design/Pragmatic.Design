@@ -271,6 +271,18 @@
     <Compile Include="$(SharedTestingPath)**\*.cs" LinkBase="Shared" />
   </ItemGroup>
 
+  <!-- The visual comparison harness (shared/VisualTesting): image metrics, the reference manifest and the
+       images a failed comparison leaves. Test-only, and only where a project asks for it with
+       <IncludeVisualTesting>true</IncludeVisualTesting>. The PDF page rasteriser needs PDFium, so it comes
+       with <IncludeVisualTestingPdf>true</IncludeVisualTestingPdf> and brings that package along. -->
+  <ItemGroup Condition="'$(IsTest)' == 'true' AND ('$(IncludeVisualTesting)' == 'true' OR '$(IncludeVisualTestingPdf)' == 'true')">
+    <Compile Include="$(PragmaticRoot)shared\VisualTesting\*.cs" LinkBase="Shared\VisualTesting" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsTest)' == 'true' AND '$(IncludeVisualTestingPdf)' == 'true'">
+    <Compile Include="$(PragmaticRoot)shared\VisualTesting\Pdf\*.cs" LinkBase="Shared\VisualTesting\Pdf" />
+    <PackageReference Include="PDFiumCore" />
+  </ItemGroup>
+
   <!-- ============================================
        Benchmark Projects
        ============================================ -->

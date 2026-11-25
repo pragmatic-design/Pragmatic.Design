@@ -159,6 +159,10 @@
     <PackageVersion Include="SkiaSharp" Version="4.153.1" />
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
     <PackageVersion Include="ZXing.Net" Version="0.16.10" />
+    <!-- Test oracle for PDF pages (shared/VisualTesting/Pdf, #1014): PDFium, the renderer Chromium ships, rasterises
+         a page so it is compared like an image. PDFiumCore is Apache-2.0, with PDFium's binaries for Windows,
+         Linux and macOS. Test projects only, through <IncludeVisualTestingPdf>. -->
+    <PackageVersion Include="PDFiumCore" Version="157.0.8100" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
     <!-- Fuzzing (#158): property tests in the hermetic suites, and coverage-guided harnesses run nightly. Test-only;
          neither reaches a package. -->

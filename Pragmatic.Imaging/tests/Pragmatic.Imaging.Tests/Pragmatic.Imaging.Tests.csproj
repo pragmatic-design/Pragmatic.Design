@@ -6,6 +6,8 @@
     <!-- The parity tests call the native library directly, through its P/Invoke signatures, as the
          reference the managed engine is held to. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Encoded images measured against their source (shared/VisualTesting). -->
+    <IncludeVisualTesting>true</IncludeVisualTesting>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +27,7 @@
 
   <ItemGroup>
     <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="References\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

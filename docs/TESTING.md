@@ -356,6 +356,46 @@ A crash fails the run. Its input goes under `Regressions/<target>/` with the fix
 **`fast` is not the gate.** It builds incrementally, on purpose, to stay quick. Use `all` before you
 commit.
 
+## Images and PDF pages, compared visually
+
+An image or a PDF page is right when it looks right, and "it decodes" or "it opens" does not show that (#1014).
+`shared/VisualTesting/` is a test-only library that a test project asks for: `<IncludeVisualTesting>true</IncludeVisualTesting>`,
+or `<IncludeVisualTestingPdf>true</IncludeVisualTestingPdf>` for the PDF page rasteriser as well, which brings
+PDFium (PDFiumCore) along. It ships in no package.
+
+- **Metrics**: per-channel largest and mean absolute difference, PSNR, SSIM (Gaussian window 11, σ 1.5, on Rec. 601
+  luma or on one channel) and CIEDE2000 over sRGB converted to L\*a\*b\*. Each matches an independent implementation
+  on committed fixtures, in `shared/VisualTesting.Tests`: scikit-image and NumPy to 1e-9 (`References/metrics.json`
+  names the versions that computed it), and CIEDE2000 the 34 pairs Sharma, Wu and Dalal published, to their four
+  decimals. A metric nobody checked is not used.
+- **A failed comparison leaves something to look at.** `VisualComparison.AssertSimilar` writes the actual, the
+  expected and a difference image amplified eight times under `artifacts/visual/` (or `PRAGMATIC_VISUAL_OUTPUT`),
+  and its message gives every metric, its bound and the 16 × 16 region where the two differ most. CI uploads that
+  directory as `visual-differences` when the gate fails.
+- **PDF pages become images through PDFium**, an independent renderer, at a fixed resolution with fixed rendering
+  flags (`PdfPageRasterizer`). A document that embeds its fonts renders the same anywhere; one that does not is drawn
+  with whatever the machine substitutes, and is no reference to compare across machines.
+- **Lossy output is measured against its source**, decoded by an independent decoder, beside the encoder it replaces
+  at the same setting and at the same file size (`TheJpegEncoderHoldsItsQualityTests`).
+
+**References carry their provenance.** Every reference sits next to the tests that use it, with an entry in the
+`references.json` beside it: where it comes from (`origin`), under what terms (`licence`), what produced it, a tool
+and its version (`producedBy`), and when (`date`). `ReferenceManifest.AssertComplete` fails on a file with no entry,
+an entry with no file, or an entry missing a field; each directory of references has a test that calls it.
+
+**A reference is never produced by the code it checks.** They are written by `scripts/visual-references.py`, from
+scikit-image, Pillow and NumPy:
+
+```bash
+python -m venv artifacts/visual-venv      # once, under the ignored artifacts/
+artifacts/visual-venv/Scripts/python -m pip install scikit-image pillow   # bin/ instead of Scripts/ on Linux
+artifacts/visual-venv/Scripts/python -I scripts/visual-references.py photographs   # Pragmatic.Imaging.Tests/References/Photographs
+artifacts/visual-venv/Scripts/python -I scripts/visual-references.py metrics       # shared/VisualTesting.Tests/References
+```
+
+The script writes the files and their manifest entries together. No test runs it: a regenerated reference is a
+change in the diff of its pull request, read like any other.
+
 ## The three traps this replaces
 
 **1. An incremental build hides errors.** MSBuild does not re-evaluate projects it considers
