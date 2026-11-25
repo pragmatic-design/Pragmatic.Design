@@ -69,7 +69,7 @@ var qr = QrCode.Encode("https://pragmaticdesign.net");
 Check(qr.Version == 3 && qr.Size == 29, $"QR code version {qr.Version}, {qr.Size} modules");
 
 // Pragmatic.Imaging: PNG, JPEG and every operation are managed, so they run without its native library,
-// which the smoke script deletes from the publish output before running this.
+// which the project builds the module without (PragmaticImagingWithoutNative).
 string[] nativeNames = ["Pragmatic.Imaging.Native.dll", "libPragmatic.Imaging.Native.so", "libPragmatic.Imaging.Native.dylib", "libpragmatic_imaging_native.so"];
 Check(!nativeNames.Any(name => File.Exists(Path.Combine(AppContext.BaseDirectory, name))), "no native imaging library in the publish output");
 

@@ -29,11 +29,6 @@ $exe = Get-ChildItem -Recurse -Path (Join-Path $PSScriptRoot 'Pragmatic.Aot.Code
     Where-Object { $_.FullName -match 'publish' -and $_.FullName -match "[\\/]$smokeTarget[\\/]" } | Select-Object -First 1
 if (-not $exe) { throw "Native binary not found" }
 
-# Pragmatic.Imaging's project reference copies its Rust library into the output. The smoke takes it out
-# before running: what it then exercises of the module (PNG, JPEG, the operations, QR codes) must not need it.
-Get-ChildItem -Path $exe.DirectoryName -Filter '*Pragmatic.Imaging.Native*' | Remove-Item
-Get-ChildItem -Path $exe.DirectoryName -Filter '*pragmatic_imaging_native*' | Remove-Item
-
 Write-Host "Running $($exe.FullName)..."
 # Joined: on an array of lines -notmatch returns the lines that do not match, which is truthy whenever there is more than one.
 $output = (& $exe.FullName 2>&1) -join "`n"
