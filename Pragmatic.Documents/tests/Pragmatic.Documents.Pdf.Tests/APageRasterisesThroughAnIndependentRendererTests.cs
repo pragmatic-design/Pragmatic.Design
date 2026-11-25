@@ -36,11 +36,6 @@ public sealed class APageRasterisesThroughAnIndependentRendererTests
 
         var first = PdfPageRasterizer.Render(pdf, 0, DotsPerInch);
         var second = PdfPageRasterizer.Render(pdf, 0, DotsPerInch);
-        for (var y = 100; y < 140; y++)
-        {
-            for (var x = 90; x < 400; x++)
-                second.Pixels[(y * second.Width + x) * 4] = (byte)Math.Max(0, second.Pixels[(y * second.Width + x) * 4] - 60);
-        }
 
         VisualComparison.AssertSimilar(second, first, VisualThresholds.Identical, nameof(Render_OfOnePageTwice_GivesTheSamePixels));
     }
