@@ -7,9 +7,10 @@ sidebar:
 ---
 `Pragmatic.Imaging` ships with a Rust-compiled native library, loaded under the name
 `Pragmatic.Imaging.Native`: the file is `Pragmatic.Imaging.Native.dll` on Windows and
-`libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS. It serves WebP, AVIF, GIF, BMP and
-TIFF (and a JPEG the managed decoder does not handle: CMYK, 12-bit, arithmetic-coded) until their
-managed codecs land; PNG, JPEG, every operation and QR codes are managed and never load it. This
+`libPragmatic.Imaging.Native.so` / `.dylib` on Linux / macOS. It writes WebP and serves AVIF, GIF,
+BMP and TIFF (and a JPEG the managed decoder does not handle: CMYK, 12-bit, arithmetic-coded) until
+their managed codecs land; PNG, JPEG, reading WebP, every operation and QR codes are managed and never
+load it. This
 guide covers platform coverage, publish options, and container considerations.
 
 ---

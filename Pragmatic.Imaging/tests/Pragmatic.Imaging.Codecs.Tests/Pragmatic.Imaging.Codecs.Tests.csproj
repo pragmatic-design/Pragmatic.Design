@@ -5,7 +5,12 @@
     <NoWarn>$(NoWarn);CA2007</NoWarn>
     <!-- The pool test compares raw pointers. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeVisualTesting>true</IncludeVisualTesting>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="References\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Imaging.Codecs\Pragmatic.Imaging.Codecs.csproj" />

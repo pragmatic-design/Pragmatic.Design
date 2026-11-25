@@ -10,6 +10,11 @@
     <IncludeVisualTesting>true</IncludeVisualTesting>
   </PropertyGroup>
 
+  <!-- A lossless WebP built bit by bit, shared with the codec tests that hold it to libwebp. -->
+  <ItemGroup>
+    <Compile Include="..\Pragmatic.Imaging.Codecs.Tests\WebP\IndexPastThePalette.cs" Link="WebP\IndexPastThePalette.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Pragmatic.Imaging\Pragmatic.Imaging.csproj" />
     <!-- The benchmark rows themselves, so the allocations pinned here are the ones the ratchet measures
@@ -28,6 +33,8 @@
   <ItemGroup>
     <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="References\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The WebP files libwebp wrote, kept once with their manifest in the codec tests. -->
+    <None Include="..\Pragmatic.Imaging.Codecs.Tests\References\WebP\*.webp" Link="References\WebP\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

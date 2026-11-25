@@ -3,6 +3,7 @@ using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
 using Pragmatic.Imaging.Codecs.Transforms;
+using Pragmatic.Imaging.Codecs.WebP;
 
 namespace Pragmatic.Imaging.Benchmarks.Pipelines;
 
@@ -12,6 +13,12 @@ public static class ManagedPipeline
     public static int Decode(byte[] encoded)
     {
         using var image = JpegDecoder.Decode(encoded);
+        return image.Width;
+    }
+
+    public static int DecodeWebP(byte[] encoded)
+    {
+        using var image = WebPDecoder.Decode(encoded);
         return image.Width;
     }
 

@@ -1,7 +1,9 @@
+using Pragmatic.Imaging.Codecs.WebP;
+
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Whether encoded bytes are a PNG or a JPEG, from their signature: the formats the managed core
+///     Whether encoded bytes are a PNG, a JPEG or a WebP, from their signature: the formats the managed core
 ///     reads. Anything else is <see cref="ImageFormat.Unknown" /> here and goes to the native library,
 ///     which names its own formats. Nothing past the first bytes is read, and no extension is trusted.
 /// </summary>
@@ -15,6 +17,8 @@ internal static class FormatSniffer
             return ImageFormat.Png;
         if (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
             return ImageFormat.Jpeg;
+        if (WebPDecoder.IsWebP(data))
+            return ImageFormat.WebP;
         return ImageFormat.Unknown;
     }
 }
