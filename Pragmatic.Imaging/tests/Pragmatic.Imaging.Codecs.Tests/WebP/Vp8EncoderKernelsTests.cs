@@ -45,17 +45,24 @@ public sealed class Vp8EncoderKernelsTests
         for (var trial = 0; trial < 2000; trial++)
         {
             var coefficients = new short[16];
-            var range = trial % 2 == 0 ? 2048 : 200;
+
+            // Up to the 16-bit form's bound, well inside it, past it where 16 bits would overflow, and far past it.
+            var range = (trial % 4) switch { 0 => 2049, 1 => 200, 2 => 8000, _ => 30000 };
             for (var i = 0; i < 16; i++)
                 coefficients[i] = (short)random.Next(-range, range);
             var scalar = new byte[S * 17];
             random.NextBytes(scalar);
             var vector = (byte[])scalar.Clone();
+            var sse2 = (byte[])scalar.Clone();
 
             Vp8InverseTransform.AddInverseDctScalar(coefficients, scalar, Vp8Borders.Origin, S);
             Vp8InverseTransform.AddInverseDctVector(coefficients, vector, Vp8Borders.Origin, S);
 
             Assert.Equal(scalar, vector);
+            if (!System.Runtime.Intrinsics.X86.Sse2.IsSupported)
+                continue;
+            Vp8InverseTransform.AddInverseDctSse2(coefficients, sse2, Vp8Borders.Origin, S);
+            Assert.Equal(scalar, sse2);
         }
     }
 

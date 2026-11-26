@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -14,11 +15,98 @@ internal static class Vp8InverseTransform
     /// <summary>Adds the inverse DCT of <paramref name="input" /> (16 coefficients, raster order) to a 4 x 4 block.</summary>
     public static void AddInverseDct(ReadOnlySpan<short> input, Span<byte> block, int offset, int stride)
     {
-        if (Vp8Transpose.IsAccelerated)
+        if (Sse2.IsSupported)
+            AddInverseDctSse2(input, block, offset, stride);
+        else if (Vp8Transpose.IsAccelerated)
             AddInverseDctVector(input, block, offset, stride);
         else
             AddInverseDctScalar(input, block, offset, stride);
     }
+
+    /// <summary>The largest coefficient magnitude for which every intermediate of the 16-bit form stays in 16 bits.</summary>
+    private const int Sse2Bound = 2048;
+
+    /// <summary>
+    ///     The same arithmetic in 16-bit lanes, as libwebp's <c>ITransform_SSE2</c> does it: <c>x * 85627 >> 16</c>
+    ///     is <c>x + (x * 20091 >> 16)</c> and <c>x * 35468 >> 16</c> is <c>x + (x * -30068 >> 16)</c>, each a
+    ///     16-bit high multiply. With every coefficient within <see cref="Sse2Bound" /> no sum leaves 16 bits
+    ///     (the largest, in the second pass, stays under 30,400); a block with a larger one goes the 32-bit way,
+    ///     so the result is the reference arithmetic's for every input.
+    /// </summary>
+    internal static void AddInverseDctSse2(ReadOnlySpan<short> input, Span<byte> block, int offset, int stride)
+    {
+        if (input.Length < 16 || block.Length < offset + 3 * stride + 4)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var coefficients = ref MemoryMarshal.GetReference(input);
+        var in01 = Vector128.LoadUnsafe(ref coefficients);
+        var in23 = Vector128.LoadUnsafe(ref coefficients, 8);
+        var bound = Vector128.Create((short)Sse2Bound);
+        if (!Vector128.LessThanOrEqualAll((in01 + bound).AsUInt16(), Vector128.Create((ushort)(2 * Sse2Bound))) ||
+            !Vector128.LessThanOrEqualAll((in23 + bound).AsUInt16(), Vector128.Create((ushort)(2 * Sse2Bound))))
+        {
+            AddInverseDctVector(input, block, offset, stride);
+            return;
+        }
+
+        var (v01, v23) = Pass(in01, in23, Vector128<short>.Zero);
+        var (t01, t23) = Transpose(v01, v23);
+        var (h01, h23) = Pass(t01, t23, Vector128.Create((short)4, 4, 4, 4, 0, 0, 0, 0));
+        var (residue01, residue23) = Transpose(Sse2.ShiftRightArithmetic(h01, 3), Sse2.ShiftRightArithmetic(h23, 3));
+
+        ref var pixels = ref Unsafe.Add(ref MemoryMarshal.GetReference(block), offset);
+        var zero = Vector128<byte>.Zero;
+        var rows01 = Sse2.UnpackLow(PixelRow(ref pixels, 0), PixelRow(ref pixels, stride)).AsByte();
+        var rows23 = Sse2.UnpackLow(PixelRow(ref pixels, 2 * stride), PixelRow(ref pixels, 3 * stride)).AsByte();
+        var sum01 = Sse2.UnpackLow(rows01, zero).AsInt16() + residue01;
+        var sum23 = Sse2.UnpackLow(rows23, zero).AsInt16() + residue23;
+        var bytes = Sse2.PackUnsignedSaturate(sum01, sum23).AsUInt32();
+        Unsafe.WriteUnaligned(ref pixels, bytes.GetElement(0));
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, stride), bytes.GetElement(1));
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, 2 * stride), bytes.GetElement(2));
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, 3 * stride), bytes.GetElement(3));
+    }
+
+    /// <summary>
+    ///     One pass of the 16-bit form over the four columns (rows 0 and 1 in <paramref name="in01" />, 2 and 3
+    ///     in <paramref name="in23" />), <paramref name="rounding" /> added to the DC lanes: libwebp's arrangement,
+    ///     line for line. The results come out as rows 0 and 1, then 2 and 3.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<short> T01, Vector128<short> T23) Pass(Vector128<short> in01, Vector128<short> in23, Vector128<short> rounding)
+    {
+        var k1k2 = Vector128.Create((short)20091, 20091, 20091, 20091, -30068, -30068, -30068, -30068);
+        var k2k1 = Vector128.Create((short)-30068, -30068, -30068, -30068, 20091, 20091, 20091, 20091);
+        var in1 = Sse2.UnpackHigh(in01.AsInt64(), in01.AsInt64()).AsInt16();
+        var in3 = Sse2.UnpackHigh(in23.AsInt64(), in23.AsInt64()).AsInt16();
+        var dc = in01 + rounding;
+
+        // c = MUL(in1, K2) - MUL(in3, K1) = MUL(in1, k2) - MUL(in3, k1) + in1 - in3, and d alike.
+        var ad3 = dc + in23;
+        var bc3 = dc - in23;
+        var c1d1 = Sse2.MultiplyHigh(in1, k2k1);
+        var c2d2 = Sse2.MultiplyHigh(in3, k1k2);
+        var c = Sse2.UnpackHigh(bc3.AsInt64(), bc3.AsInt64()).AsInt16() + (c1d1 - c2d2);
+        var du = ad3 + (c1d1 + c2d2);
+        var d = Sse2.UnpackHigh(du.AsInt64(), du.AsInt64()).AsInt16();
+
+        var ab = Sse2.UnpackLow(ad3.AsInt64(), bc3.AsInt64()).AsInt16();
+        var dcPair = Sse2.UnpackLow(d.AsInt64(), c.AsInt64()).AsInt16();
+        return (ab + dcPair, Sse2.Shuffle((ab - dcPair).AsInt32(), 0x4E).AsInt16());
+    }
+
+    /// <summary>The 4 x 4 transpose of two vectors of two rows each, by two rounds of 16-bit unpacks.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<short> T01, Vector128<short> T23) Transpose(Vector128<short> rows01, Vector128<short> rows23)
+    {
+        var x0 = Sse2.UnpackLow(rows01, rows23);
+        var x1 = Sse2.UnpackHigh(rows01, rows23);
+        return (Sse2.UnpackLow(x0, x1), Sse2.UnpackHigh(x0, x1));
+    }
+
+    /// <summary>A row's four pixels, in the low lanes.</summary>
+    private static Vector128<int> PixelRow(ref byte block, int at) =>
+        Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref block, at))).AsInt32();
 
     /// <summary>
     ///     The same arithmetic four lanes at a time: the first pass combines the coefficient rows as loaded,
