@@ -29,6 +29,12 @@ public sealed class Vp8EncoderKernelsTests
             Vp8ForwardTransform.DctVector(source, prediction, offset, vector);
 
             Assert.Equal(scalar, vector);
+
+            if (!System.Runtime.Intrinsics.X86.Sse2.IsSupported)
+                continue;
+            var sse2 = new short[16];
+            Vp8ForwardTransform.DctSse2(source, prediction, offset, sse2);
+            Assert.Equal(scalar, sse2);
         }
     }
 

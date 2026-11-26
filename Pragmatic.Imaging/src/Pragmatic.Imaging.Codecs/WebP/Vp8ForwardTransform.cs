@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -19,11 +20,81 @@ internal static class Vp8ForwardTransform
     /// </summary>
     public static void Dct(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prediction, int offset, Span<short> output)
     {
-        if (Vp8Transpose.IsAccelerated)
+        if (Sse2.IsSupported)
+            DctSse2(source, prediction, offset, output);
+        else if (Vp8Transpose.IsAccelerated)
             DctVector(source, prediction, offset, output);
         else
             DctScalar(source, prediction, offset, output);
     }
+
+    /// <summary>
+    ///     The same arithmetic in 16-bit lanes, as libwebp's <c>FTransform_SSE2</c> does it: each product pair
+    ///     of a pass (<c>a2 * 2217 + a3 * 5352</c> and the like) is one multiply-add into 32 bits, packed back
+    ///     straight after. The block's differences are 9-bit and no intermediate leaves 16 bits.
+    /// </summary>
+    internal static void DctSse2(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prediction, int offset, Span<short> output)
+    {
+        const int s = Vp8Prediction.Stride;
+        var end = offset + 3 * s + 4;
+        if (source.Length < end || prediction.Length < end || output.Length < 16)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var src = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), offset);
+        ref var pred = ref Unsafe.Add(ref MemoryMarshal.GetReference(prediction), offset);
+
+        // Rows 0 and 1, then 2 and 3, interleaved two pixels at a time: 00 01 10 11 02 03 12 13.
+        var src01 = Sse2.UnpackLow(Row(ref src, 0), Row(ref src, s));
+        var src23 = Sse2.UnpackLow(Row(ref src, 2 * s), Row(ref src, 3 * s));
+        var pred01 = Sse2.UnpackLow(Row(ref pred, 0), Row(ref pred, s));
+        var pred23 = Sse2.UnpackLow(Row(ref pred, 2 * s), Row(ref pred, 3 * s));
+        var zero = Vector128<byte>.Zero;
+        var row01 = Sse2.UnpackLow(src01.AsByte(), zero).AsInt16() - Sse2.UnpackLow(pred01.AsByte(), zero).AsInt16();
+        var row23 = Sse2.UnpackLow(src23.AsByte(), zero).AsInt16() - Sse2.UnpackLow(pred23.AsByte(), zero).AsInt16();
+
+        // First pass, across each row.
+        var shuffled01 = Sse2.ShuffleHigh(row01, 0xB1);
+        var shuffled23 = Sse2.ShuffleHigh(row23, 0xB1);
+        var s01 = Sse2.UnpackLow(shuffled01.AsInt64(), shuffled23.AsInt64()).AsInt16();
+        var s32 = Sse2.UnpackHigh(shuffled01.AsInt64(), shuffled23.AsInt64()).AsInt16();
+        var a01 = s01 + s32;
+        var a32 = s01 - s32;
+        var t0 = Sse2.MultiplyAddAdjacent(a01, Vector128.Create((short)8, 8, 8, 8, 8, 8, 8, 8));
+        var t2 = Sse2.MultiplyAddAdjacent(a01, Vector128.Create((short)8, -8, 8, -8, 8, -8, 8, -8));
+        var t1 = Sse2.ShiftRightArithmetic(Sse2.MultiplyAddAdjacent(a32, Vector128.Create((short)5352, 2217, 5352, 2217, 5352, 2217, 5352, 2217)) + Vector128.Create(1812), 9);
+        var t3 = Sse2.ShiftRightArithmetic(Sse2.MultiplyAddAdjacent(a32, Vector128.Create((short)2217, -5352, 2217, -5352, 2217, -5352, 2217, -5352)) + Vector128.Create(937), 9);
+        var s03 = Sse2.PackSignedSaturate(t0, t2);
+        var s12 = Sse2.PackSignedSaturate(t1, t3);
+        var low = Sse2.UnpackLow(s03, s12);
+        var high = Sse2.UnpackHigh(s03, s12);
+        var v01 = Sse2.UnpackLow(low.AsInt32(), high.AsInt32()).AsInt16();
+        var v32 = Sse2.Shuffle(Sse2.UnpackHigh(low.AsInt32(), high.AsInt32()), 0x4E).AsInt16();
+
+        // Second pass, down each column.
+        var b32 = v01 - v32;
+        var b22 = Sse2.UnpackHigh(b32.AsInt64(), b32.AsInt64()).AsInt16();
+        var b23 = Sse2.UnpackLow(b22, b32);
+        var e1 = Sse2.ShiftRightArithmetic(Sse2.MultiplyAddAdjacent(b23, Vector128.Create((short)2217, 5352, 2217, 5352, 2217, 5352, 2217, 5352)) + Vector128.Create(12000 + (1 << 16)), 16);
+        var e3 = Sse2.ShiftRightArithmetic(Sse2.MultiplyAddAdjacent(b23, Vector128.Create((short)-5352, 2217, -5352, 2217, -5352, 2217, -5352, 2217)) + Vector128.Create(51000), 16);
+        var f1 = Sse2.PackSignedSaturate(e1, e1);
+        var f3 = Sse2.PackSignedSaturate(e3, e3);
+
+        // f1 + (a3 != 0): the one is added above, and the comparison takes it away again where a3 is zero.
+        var g1 = f1 + Sse2.CompareEqual(b32, Vector128<short>.Zero);
+        var b01 = v01 + v32;
+        var b01Plus7 = b01 + Vector128.Create((short)7);
+        var b11 = Sse2.UnpackHigh(b01.AsInt64(), b01.AsInt64()).AsInt16();
+        var d0 = Sse2.ShiftRightArithmetic(b01Plus7 + b11, 4);
+        var d2 = Sse2.ShiftRightArithmetic(b01Plus7 - b11, 4);
+
+        ref var target = ref MemoryMarshal.GetReference(output);
+        Sse2.UnpackLow(d0.AsInt64(), g1.AsInt64()).AsInt16().StoreUnsafe(ref target);
+        Sse2.UnpackLow(d2.AsInt64(), f3.AsInt64()).AsInt16().StoreUnsafe(ref target, 8);
+    }
+
+    /// <summary>A row's four bytes, in the low lanes.</summary>
+    private static Vector128<short> Row(ref byte block, int at) =>
+        Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref block, at))).AsInt16();
 
     /// <summary>
     ///     The same arithmetic four lanes at a time: the block is loaded column by column, so the first pass
