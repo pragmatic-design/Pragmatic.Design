@@ -16,42 +16,70 @@ internal static class Vp8Prediction
 {
     public const int Stride = 32;
 
-    /// <summary>A 16 x 16 or 8 x 8 block predicted whole. <paramref name="hasTop" /> and <paramref name="hasLeft" /> matter only for DC.</summary>
+    /// <summary>
+    ///     A 16 x 16 or 8 x 8 block predicted whole, each row built in a register and stored in one move.
+    ///     <paramref name="hasTop" /> and <paramref name="hasLeft" /> matter only for DC.
+    /// </summary>
     public static void Block(byte[] buffer, int dst, int size, int mode, bool hasTop, bool hasLeft)
     {
+        // The row above is read 16 wide whatever the size: the work buffers keep the pixels above and to the
+        // right after it.
+        if ((size != 8 && size != 16) || dst - Stride - 1 < 0 || buffer.Length < dst + (size - 1) * Stride + 16)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var block = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), dst);
         switch (mode)
         {
             case Vp8Modes.V:
+                var top = Vector128.LoadUnsafe(ref Unsafe.Subtract(ref block, Stride));
                 for (var y = 0; y < size; y++)
-                    Array.Copy(buffer, dst - Stride, buffer, dst + y * Stride, size);
+                    StoreRow(ref Unsafe.Add(ref block, y * Stride), size, top);
                 return;
             case Vp8Modes.H:
                 for (var y = 0; y < size; y++)
-                    buffer.AsSpan(dst + y * Stride, size).Fill(buffer[dst + y * Stride - 1]);
+                {
+                    ref var row = ref Unsafe.Add(ref block, y * Stride);
+                    StoreRow(ref row, size, Vector128.Create(Unsafe.Subtract(ref row, 1)));
+                }
+
                 return;
             case Vp8Modes.Tm:
-                TrueMotion(buffer, dst, size);
+                TrueMotion(ref block, size);
                 return;
             default:
-                Fill(buffer, dst, size, Dc(buffer, dst, size, hasTop, hasLeft));
+                var dc = Vector128.Create(Dc(ref block, size, hasTop, hasLeft));
+                for (var y = 0; y < size; y++)
+                    StoreRow(ref Unsafe.Add(ref block, y * Stride), size, dc);
                 return;
         }
     }
 
-    private static byte Dc(byte[] buffer, int dst, int size, bool hasTop, bool hasLeft)
+    /// <summary>Stores the first <paramref name="size" /> (8 or 16) bytes of <paramref name="value" /> at <paramref name="row" />.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreRow(ref byte row, int size, Vector128<byte> value)
+    {
+        if (size == 16)
+            value.StoreUnsafe(ref row);
+        else
+            Unsafe.WriteUnaligned(ref row, value.AsUInt64().ToScalar());
+    }
+
+    private static byte Dc(ref byte block, int size, bool hasTop, bool hasLeft)
     {
         var shift = size == 16 ? 4 : 3;
         var sum = 0;
         if (hasTop)
         {
-            for (var i = 0; i < size; i++)
-                sum += buffer[dst - Stride + i];
+            var top = Vector128.LoadUnsafe(ref Unsafe.Subtract(ref block, Stride));
+            if (size == 8)
+                top = Vector128.Create(top.AsUInt64().ToScalar(), 0UL).AsByte();
+            sum += Vector128.Sum(Vector128.WidenLower(top) + Vector128.WidenUpper(top));
         }
 
         if (hasLeft)
         {
             for (var i = 0; i < size; i++)
-                sum += buffer[dst + i * Stride - 1];
+                sum += Unsafe.Add(ref block, i * Stride - 1);
         }
 
         if (hasTop && hasLeft)
@@ -61,49 +89,18 @@ internal static class Vp8Prediction
         return 0x80;
     }
 
-    private static void Fill(byte[] buffer, int dst, int size, byte value)
+    /// <summary>True motion, 8 or 16 wide: the row above widened once, each row's offset added and clamped.</summary>
+    private static void TrueMotion(ref byte block, int size)
     {
-        for (var y = 0; y < size; y++)
-            buffer.AsSpan(dst + y * Stride, size).Fill(value);
-    }
-
-    private static void TrueMotion(byte[] buffer, int dst, int size)
-    {
-        if (size >= 8 && Vector128.IsHardwareAccelerated)
-        {
-            TrueMotionVector(buffer, dst, size);
-            return;
-        }
-
-        var topLeft = buffer[dst - Stride - 1];
-        for (var y = 0; y < size; y++)
-        {
-            var left = buffer[dst + y * Stride - 1] - topLeft;
-            for (var x = 0; x < size; x++)
-                buffer[dst + y * Stride + x] = Clip(buffer[dst - Stride + x] + left);
-        }
-    }
-
-    /// <summary>The same for 8 or 16 wide: the row above widened once, each row's offset added and clamped.</summary>
-    private static void TrueMotionVector(byte[] buffer, int dst, int size)
-    {
-        if (dst - Stride - 1 < 0 || buffer.Length < dst + (size - 1) * Stride + 16)
-            throw new ArgumentException("The block reaches past its buffer.");
-
-        ref var origin = ref MemoryMarshal.GetArrayDataReference(buffer);
-        var top = Vector128.LoadUnsafe(ref origin, (nuint)(dst - Stride));
+        var top = Vector128.LoadUnsafe(ref Unsafe.Subtract(ref block, Stride));
         var topLow = Vector128.WidenLower(top).AsInt16();
         var topHigh = Vector128.WidenUpper(top).AsInt16();
-        int topLeft = buffer[dst - Stride - 1];
+        int topLeft = Unsafe.Subtract(ref block, Stride + 1);
         for (var y = 0; y < size; y++)
         {
-            var row = dst + y * Stride;
-            var offset = Vector128.Create((short)(buffer[row - 1] - topLeft));
-            var predicted = Vector128.Narrow(Clamp(topLow + offset), Clamp(topHigh + offset));
-            if (size == 16)
-                predicted.StoreUnsafe(ref origin, (nuint)row);
-            else
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, row), predicted.AsUInt64().ToScalar());
+            ref var row = ref Unsafe.Add(ref block, y * Stride);
+            var offset = Vector128.Create((short)(Unsafe.Subtract(ref row, 1) - topLeft));
+            StoreRow(ref row, size, Vector128.Narrow(Clamp(topLow + offset), Clamp(topHigh + offset)));
         }
     }
 
