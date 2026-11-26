@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -20,6 +21,7 @@ internal sealed class Vp8LBitWriter : IDisposable
     public ReadOnlySpan<byte> Written => _bytes.AsSpan(0, _length);
 
     /// <summary>Writes the low <paramref name="count" /> bits of <paramref name="value" />, at most 32.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(uint value, int count)
     {
         _buffer |= (ulong)value << _bits;

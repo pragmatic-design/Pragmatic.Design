@@ -43,5 +43,10 @@ public sealed class TheWebPEncoderIsNoLargerThanTheNativeOneTests
         var photographs = Path.Combine(AppContext.BaseDirectory, "References", "Photographs");
         foreach (var path in Directory.EnumerateFiles(photographs, "*.png").Order(StringComparer.Ordinal))
             yield return (Path.GetFileName(path), Codecs.Png.PngDecoder.Decode(File.ReadAllBytes(path)));
+
+        // The image the encode benchmark times.
+        var synthetic = new PixelBuffer(Benchmarks.Workload.Fixtures.PngWidth, Benchmarks.Workload.Fixtures.PngHeight);
+        Benchmarks.Workload.Fixtures.Rgba2Mp.CopyTo(synthetic.Pixels);
+        yield return ("benchmark synthetic 1600x1200", synthetic);
     }
 }

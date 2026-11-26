@@ -239,7 +239,7 @@ internal static class Vp8LEncoder
             red[(int)(p >> 16) & 0xFF]++;
             blue[(int)p & 0xFF]++;
             alpha[(int)(p >> 24)]++;
-            var run = Run(pixels, i, p);
+            var run = i < pixels.Length && pixels[i] == p ? Run(pixels, i, p) : 0;
             if (run > 0)
             {
                 green[LiteralCodes + Prefix(run, out _, out _)]++;
@@ -250,14 +250,32 @@ internal static class Vp8LEncoder
 
     private static void Emit(Vp8LBitWriter writer, ReadOnlySpan<uint> pixels, Code green, Code red, Code blue, Code alpha)
     {
+        // Each literal symbol's code and length in one word (length above bit 16): one load per channel.
+        Span<uint> greenTable = stackalloc uint[LiteralCodes];
+        Span<uint> redTable = stackalloc uint[LiteralCodes];
+        Span<uint> blueTable = stackalloc uint[LiteralCodes];
+        Span<uint> alphaTable = stackalloc uint[LiteralCodes];
+        for (var s = 0; s < LiteralCodes; s++)
+        {
+            greenTable[s] = green.Codes[s] | ((uint)green.Lengths[s] << 16);
+            redTable[s] = red.Codes[s] | ((uint)red.Lengths[s] << 16);
+            blueTable[s] = blue.Codes[s] | ((uint)blue.Lengths[s] << 16);
+            alphaTable[s] = alpha.Codes[s] | ((uint)alpha.Lengths[s] << 16);
+        }
+
         var i = 0;
         while (i < pixels.Length)
         {
             var p = pixels[i++];
-            int g = (int)(p >> 8) & 0xFF, r = (int)(p >> 16) & 0xFF, b = (int)p & 0xFF, a = (int)(p >> 24);
-            writer.Write((uint)green.Codes[g] | ((uint)red.Codes[r] << green.Lengths[g]), green.Lengths[g] + red.Lengths[r]);
-            writer.Write((uint)blue.Codes[b] | ((uint)alpha.Codes[a] << blue.Lengths[b]), blue.Lengths[b] + alpha.Lengths[a]);
-            var run = Run(pixels, i, p);
+            var g = greenTable[(int)(p >> 8) & 0xFF];
+            var r = redTable[(int)(p >> 16) & 0xFF];
+            var b = blueTable[(int)p & 0xFF];
+            var a = alphaTable[(int)(p >> 24)];
+            var greenLength = (int)(g >> 16);
+            var blueLength = (int)(b >> 16);
+            writer.Write((g & 0xFFFF) | ((r & 0xFFFF) << greenLength), greenLength + (int)(r >> 16));
+            writer.Write((b & 0xFFFF) | ((a & 0xFFFF) << blueLength), blueLength + (int)(a >> 16));
+            var run = i < pixels.Length && pixels[i] == p ? Run(pixels, i, p) : 0;
             if (run > 0)
             {
                 var symbol = LiteralCodes + Prefix(run, out var extraBits, out var extra);

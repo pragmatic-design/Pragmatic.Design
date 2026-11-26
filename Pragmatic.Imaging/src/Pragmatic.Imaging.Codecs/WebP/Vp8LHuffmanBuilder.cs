@@ -1,10 +1,10 @@
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
-///     Builds a length-limited canonical prefix code from symbol frequencies, for the lossless encoder.
-///     A tree too deep is rebuilt with every frequency raised to a floor that doubles each time, which is
-///     libwebp's way (<c>VP8LCreateHuffmanTree</c>). Codes are canonical, by length then symbol, as the
-///     decoder assigns them, and stored bit-reversed because the format writes least significant bit first.
+///     Builds a length-limited canonical prefix code from symbol frequencies, for the lossless encoder: a
+///     Huffman tree, and when that is deeper than the limit, the optimal lengths within it by package-merge.
+///     Codes are canonical, by length then symbol, as the decoder assigns them, and stored bit-reversed
+///     because the format writes least significant bit first.
 /// </summary>
 internal static class Vp8LHuffmanBuilder
 {
@@ -35,44 +35,46 @@ internal static class Vp8LHuffmanBuilder
         Span<ulong> weights = stackalloc ulong[2 * used];
         Span<int> parents = stackalloc int[2 * used];
 
-        for (ulong floor = 1; ; floor *= 2)
+        for (int i = 0, k = 0; i < n; i++)
         {
-            for (int i = 0, k = 0; i < n; i++)
-            {
-                if (frequencies[i] != 0)
-                    keys[k++] = (Math.Max(frequencies[i], floor) << 12) | (uint)i;
-            }
+            if (frequencies[i] != 0)
+                keys[k++] = ((ulong)frequencies[i] << 12) | (uint)i;
+        }
 
-            keys.Sort();
+        keys.Sort();
+        for (var i = 0; i < used; i++)
+        {
+            symbols[i] = (int)(keys[i] & 0xFFF);
+            weights[i] = keys[i] >> 12;
+        }
+
+        // Two queues: the sorted leaves, and the internal nodes, which come out in order of weight.
+        int leaf = 0, inner = used, next = used;
+        while (next < 2 * used - 1)
+        {
+            var a = Take(weights, ref leaf, used, ref inner, next);
+            var b = Take(weights, ref leaf, used, ref inner, next);
+            weights[next] = weights[a] + weights[b];
+            parents[a] = parents[b] = next;
+            next++;
+        }
+
+        var deepest = 0;
+        for (var i = 0; i < used; i++)
+        {
+            var depth = 0;
+            for (var node = i; node != 2 * used - 2; node = parents[node])
+                depth++;
+            lengths[symbols[i]] = (byte)depth;
+            deepest = Math.Max(deepest, depth);
+        }
+
+        if (deepest > limit)
+        {
+            Span<byte> limited = stackalloc byte[used];
+            Vp8LPackageMerge.Lengths(weights[..used], limit, limited);
             for (var i = 0; i < used; i++)
-            {
-                symbols[i] = (int)(keys[i] & 0xFFF);
-                weights[i] = keys[i] >> 12;
-            }
-
-            // Two queues: the sorted leaves, and the internal nodes, which come out in order of weight.
-            int leaf = 0, inner = used, next = used;
-            while (next < 2 * used - 1)
-            {
-                var a = Take(weights, ref leaf, used, ref inner, next);
-                var b = Take(weights, ref leaf, used, ref inner, next);
-                weights[next] = weights[a] + weights[b];
-                parents[a] = parents[b] = next;
-                next++;
-            }
-
-            var deepest = 0;
-            for (var i = 0; i < used; i++)
-            {
-                var depth = 0;
-                for (var node = i; node != 2 * used - 2; node = parents[node])
-                    depth++;
-                lengths[symbols[i]] = (byte)depth;
-                deepest = Math.Max(deepest, depth);
-            }
-
-            if (deepest <= limit)
-                break;
+                lengths[symbols[i]] = limited[i];
         }
 
         AssignCodes(lengths, codes, limit);
