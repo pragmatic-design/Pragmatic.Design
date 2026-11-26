@@ -84,8 +84,10 @@ public sealed class Vp8EncoderKernelsTests
             for (var i = 0; i < 16; i++)
                 scalar[i] = (short)random.Next(-range, range);
             var vector = (short[])scalar.Clone();
+            var avx2 = (short[])scalar.Clone();
             var scalarLevels = new short[16];
             var vectorLevels = new short[16];
+            var avx2Levels = new short[16];
             var first = trial % 2;
 
             var scalarNonZero = matrix.QuantizeScalar(scalar, scalarLevels, first);
@@ -94,6 +96,14 @@ public sealed class Vp8EncoderKernelsTests
             Assert.Equal(scalarNonZero, vectorNonZero);
             Assert.Equal(scalarLevels, vectorLevels);
             Assert.Equal(scalar, vector);
+
+            // Where the 16-bit path can run: the x64 CI machines all can.
+            if (!System.Runtime.Intrinsics.X86.Avx2.IsSupported)
+                continue;
+            var avx2NonZero = matrix.QuantizeAvx2(avx2, avx2Levels, first);
+            Assert.Equal(scalarNonZero, avx2NonZero);
+            Assert.Equal(scalarLevels, avx2Levels);
+            Assert.Equal(scalar, avx2);
         }
     }
 
