@@ -23,6 +23,7 @@ internal sealed class Vp8Costs : IDisposable
 
     private static readonly ushort[] Entropy = BuildEntropy();
     private static readonly ushort[] FixedLevelCosts = BuildFixedLevelCosts();
+    private static readonly int[] ExcessFixedCosts = BuildExcessFixedCosts();
     private static readonly int[] SubblockModeCosts = BuildSubblockModeCosts();
 
     // The tables under the default probabilities, filled by the static constructor once Entropy and
@@ -145,6 +146,7 @@ internal sealed class Vp8Costs : IDisposable
     ///     The cost of one block's levels (scan order) of <paramref name="type" />, from position
     ///     <paramref name="first" />, in context <paramref name="ctx0" /> (libwebp's <c>GetResidualCost</c>).
     /// </summary>
+    [SkipLocalsInit]
     public int Residual(int type, int first, int ctx0, ReadOnlySpan<short> levels)
     {
         if (levels.Length < 16)
@@ -164,26 +166,49 @@ internal sealed class Vp8Costs : IDisposable
         // The not-the-end bit of the first coefficient is in the tables only for a context above zero.
         var cost = ctx0 == 0 ? _notEndCosts[start] : 0;
 
-        // The tables hold the fixed bits of a level too, up to the last level whose adaptive part varies.
+        // The absolute levels, their clamp to the tables and the contexts they make, sixteen at once, as
+        // libwebp's GetResidualCost_SSE2 does: the loop below then takes no branch on a level. On a photograph
+        // the levels vary enough that those branches, mispredicted, cost more than the lookups.
+        var low = Vector128.Min(Vector128.Abs(Vector128.LoadUnsafe(ref values)), Vector128.Create((short)Vp8QuantMatrix.MaxLevel));
+        var high = Vector128.Min(Vector128.Abs(Vector128.LoadUnsafe(ref values, 8)), Vector128.Create((short)Vp8QuantMatrix.MaxLevel));
+        var variable = Vector128.Create((short)MaxVariableLevel);
+        var clamped = Vector128.Narrow(Vector128.Min(low, variable).AsUInt16(), Vector128.Min(high, variable).AsUInt16());
+        Span<byte> clamps = stackalloc byte[16];
+        Span<byte> contexts = stackalloc byte[16];
+        Span<ushort> absolutes = stackalloc ushort[16];
+        clamped.CopyTo(clamps);
+        Vector128.Min(clamped, Vector128.Create((byte)2)).CopyTo(contexts);
+        low.AsUInt16().CopyTo(absolutes);
+        high.AsUInt16().CopyTo(absolutes[8..]);
+        ref var clamp = ref MemoryMarshal.GetReference(clamps);
+        ref var context = ref MemoryMarshal.GetReference(contexts);
+        ref var absolute = ref MemoryMarshal.GetReference(absolutes);
+        ref var excess = ref MemoryMarshal.GetArrayDataReference(ExcessFixedCosts);
+
+        // The tables hold the fixed bits of a level too, up to the last level whose adaptive part varies; a
+        // larger level adds what its fixed bits cost beyond those.
         ref var table = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_levelCosts), type * 16 * Vp8Tables.NumContexts * Levels);
         var row = (first * Vp8Tables.NumContexts + ctx0) * Levels;
-        int v;
-        for (var n = first; ; n++)
+        var n = first;
+        for (; n < last; n++)
         {
-            v = Unsafe.Add(ref values, n);
-            if (v < 0)
-                v = -v;
-            cost += v <= MaxVariableLevel
-                ? Unsafe.Add(ref table, row + v)
-                : Unsafe.Add(ref table, row + MaxVariableLevel) + FixedLevelCosts[Math.Min(v, Vp8QuantMatrix.MaxLevel)] - FixedLevelCosts[MaxVariableLevel];
-            if (n == last)
-                break;
-            row = ((n + 1) * Vp8Tables.NumContexts + (v >= 2 ? 2 : v)) * Levels;
+            cost += Unsafe.Add(ref table, row + Unsafe.Add(ref clamp, n)) + Unsafe.Add(ref excess, Unsafe.Add(ref absolute, n));
+            row = ((n + 1) * Vp8Tables.NumContexts + Unsafe.Add(ref context, n)) * Levels;
         }
 
+        cost += Unsafe.Add(ref table, row + Unsafe.Add(ref clamp, n)) + Unsafe.Add(ref excess, Unsafe.Add(ref absolute, n));
         if (last < 15)
-            cost += _endCosts[(type * 16 + last + 1) * Vp8Tables.NumContexts + (v == 1 ? 1 : 2)];
+            cost += _endCosts[(type * 16 + last + 1) * Vp8Tables.NumContexts + (Unsafe.Add(ref absolute, n) == 1 ? 1 : 2)];
         return cost;
+    }
+
+    /// <summary>What the fixed bits of a level past <see cref="MaxVariableLevel" /> cost beyond those of that level; zero up to it.</summary>
+    private static int[] BuildExcessFixedCosts()
+    {
+        var table = new int[Vp8QuantMatrix.MaxLevel + 1];
+        for (var v = MaxVariableLevel + 1; v <= Vp8QuantMatrix.MaxLevel; v++)
+            table[v] = FixedLevelCosts[v] - FixedLevelCosts[MaxVariableLevel];
+        return table;
     }
 
     /// <summary>The cost of the adaptive nodes after the first two that code <paramref name="level" />.</summary>
