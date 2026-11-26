@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -8,25 +9,34 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 /// <summary>
 ///     What coding costs, in 1/256 of a bit: a bit at a given probability, an intra mode, and a coefficient
 ///     level at each position and context under the frame's current coefficient probabilities. The encoder's
-///     mode decision weighs these against distortion.
+///     mode decision weighs these against distortion. The tables come from the shared array pool; dispose it to
+///     give them back.
 /// </summary>
-internal sealed class Vp8Costs
+internal sealed class Vp8Costs : IDisposable
 {
     /// <summary>The level past which a coefficient's adaptive part costs the same (category 6's first node on).</summary>
     public const int MaxVariableLevel = 67;
 
     private const int Levels = MaxVariableLevel + 1;
+    private const int Positions = Vp8Tables.NumTypes * 16 * Vp8Tables.NumContexts;
 
     private static readonly ushort[] Entropy = BuildEntropy();
     private static readonly ushort[] FixedLevelCosts = BuildFixedLevelCosts();
     private static readonly int[] SubblockModeCosts = BuildSubblockModeCosts();
 
     // [type][position 0..15][context][level 0..67], the band of each position resolved.
-    private readonly ushort[] _levelCosts = new ushort[Vp8Tables.NumTypes * 16 * Vp8Tables.NumContexts * Levels];
+    private readonly ushort[] _levelCosts = ArrayPool<ushort>.Shared.Rent(Positions * Levels);
 
     // [type][position][context]: the end-of-block bit coded at that position, and its opposite.
-    private readonly ushort[] _endCosts = new ushort[Vp8Tables.NumTypes * 16 * Vp8Tables.NumContexts];
-    private readonly ushort[] _notEndCosts = new ushort[Vp8Tables.NumTypes * 16 * Vp8Tables.NumContexts];
+    private readonly ushort[] _endCosts = ArrayPool<ushort>.Shared.Rent(Positions);
+    private readonly ushort[] _notEndCosts = ArrayPool<ushort>.Shared.Rent(Positions);
+
+    public void Dispose()
+    {
+        ArrayPool<ushort>.Shared.Return(_levelCosts);
+        ArrayPool<ushort>.Shared.Return(_endCosts);
+        ArrayPool<ushort>.Shared.Return(_notEndCosts);
+    }
 
     /// <summary>The cost of coding <paramref name="bit" /> at <paramref name="probability" /> (of a zero, out of 256).</summary>
     public static int Bit(int bit, int probability) => Entropy[bit != 0 ? 256 - probability : probability];

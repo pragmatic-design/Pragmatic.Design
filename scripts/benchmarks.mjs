@@ -194,6 +194,8 @@ export const ONE_OFF_BYTES = {
   'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossy_Native': 18_876,
   'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossless_Managed': 18_876,
   'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossless_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossy_LibWebP': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossy_Managed': 18_876,
 };
 
 /**

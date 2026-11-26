@@ -42,48 +42,41 @@ internal static class Vp8Encoder
         var analysis = Vp8Analysis.Run(picture);
         var plan = Vp8SegmentPlan.Build(quality, analysis);
 
-        var tokens = new Vp8Tokens(count * 25);
-        var modes = new Vp8EncodedModes(count);
-        try
+        using var tokens = new Vp8Tokens(count * 25);
+        using var modes = new Vp8EncodedModes(count);
+        using var costs = new Vp8Costs();
+        costs.Update(tokens.Probabilities);
+        using (var coder = new Vp8MacroblockCoder(picture, costs, maxHeaderBits, quality <= ErrorDiffusionQuality))
         {
-            var costs = new Vp8Costs();
-            costs.Update(tokens.Probabilities);
-            using (var coder = new Vp8MacroblockCoder(picture, costs, maxHeaderBits, quality <= ErrorDiffusionQuality))
+            var decision = new Vp8MacroblockDecision();
+            // Refresh the cost tables from the tokens counted so far about eight times per frame.
+            var refresh = Math.Max(count >> 3, 96);
+            var untilRefresh = refresh;
+            for (var mbY = 0; mbY < high; mbY++)
             {
-                var decision = new Vp8MacroblockDecision();
-                // Refresh the cost tables from the tokens counted so far about eight times per frame.
-                var refresh = Math.Max(count >> 3, 96);
-                var untilRefresh = refresh;
-                for (var mbY = 0; mbY < high; mbY++)
+                coder.StartRow();
+                for (var mbX = 0; mbX < wide; mbX++)
                 {
-                    coder.StartRow();
-                    for (var mbX = 0; mbX < wide; mbX++)
+                    if (--untilRefresh < 0)
                     {
-                        if (--untilRefresh < 0)
-                        {
-                            tokens.ChooseProbabilities();
-                            costs.Update(tokens.Probabilities);
-                            untilRefresh = refresh;
-                        }
-
-                        var index = mbY * wide + mbX;
-                        var segment = analysis.SegmentOfMacroblock[index];
-                        coder.Decide(mbX, mbY, plan.Segments[segment], decision);
-                        coder.Commit(mbX, decision, tokens);
-                        modes.Store(index, segment, decision);
+                        tokens.ChooseProbabilities();
+                        costs.Update(tokens.Probabilities);
+                        untilRefresh = refresh;
                     }
 
-                    coder.EndRow();
+                    var index = mbY * wide + mbX;
+                    var segment = analysis.SegmentOfMacroblock[index];
+                    coder.Decide(mbX, mbY, plan.Segments[segment], decision);
+                    coder.Commit(mbX, decision, tokens);
+                    modes.Store(index, segment, decision);
                 }
-            }
 
-            tokens.ChooseProbabilities();
-            var filterLevel = plan.AdjustFilterStrengths();
-            return Vp8EncodedFrame.Write(picture, plan, filterLevel, modes, tokens);
+                coder.EndRow();
+            }
         }
-        finally
-        {
-            tokens.Dispose();
-        }
+
+        tokens.ChooseProbabilities();
+        var filterLevel = plan.AdjustFilterStrengths();
+        return Vp8EncodedFrame.Write(picture, plan, filterLevel, modes, tokens);
     }
 }

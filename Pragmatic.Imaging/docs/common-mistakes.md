@@ -125,17 +125,19 @@ Pragmatic.Imaging does not carry other EXIF through re-encoding. If you need it,
 
 ## 7. Expecting the `quality` argument to affect PNG or WebP
 
-`quality` applies to **JPEG only**.
+The `quality` of `Encode` applies to **JPEG only**.
 
 - **PNG / BMP / TIFF / GIF** are lossless or paletted: `quality` is ignored.
-- **WebP** encodes lossless and **AVIF** uses the library default: `quality` is ignored (an `image` 0.25 limitation).
+- **WebP** encodes lossless through `Encode`, whatever the quality; **AVIF** uses the library default (an `image` 0.25 limitation).
 
 ```csharp
-pipe.Encode(ImageFormat.Png, quality: 50);    // quality ignored, normal PNG
-pipe.Encode(ImageFormat.Jpeg, quality: 75);   // quality honoured
+pipe.Encode(ImageFormat.Png, quality: 50);                 // quality ignored, normal PNG
+pipe.Encode(ImageFormat.Jpeg, quality: 75);                // quality honoured
+pipe.Encode(ImageFormat.WebP, quality: 75);                // quality ignored, lossless WebP
+pipe.EncodeWebP(WebPEncoding.Lossy, quality: 75);          // quality honoured, lossy WebP
 ```
 
-For size-constrained lossy output, use JPEG.
+For size-constrained lossy output, use JPEG or lossy WebP.
 
 ---
 

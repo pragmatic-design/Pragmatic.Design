@@ -49,4 +49,15 @@ public class WebPBenchmarks
 
     [Benchmark, BenchmarkCategory("Encode WebP lossless 2MP")]
     public byte[] EncodeWebPLossless_Managed() => ManagedPipeline.EncodeWebP(_image);
+
+    // The native library never wrote lossy WebP: the reference is libwebp, through SkiaSharp, which runs
+    // it at method 3.
+    [Benchmark(Baseline = true), BenchmarkCategory("Encode WebP lossy 2MP")]
+    public byte[] EncodeWebPLossy_LibWebP() => LibWebP.EncodeLossy(_image, LossyQuality);
+
+    [Benchmark, BenchmarkCategory("Encode WebP lossy 2MP")]
+    public byte[] EncodeWebPLossy_Managed() => Codecs.WebP.WebPEncoder.EncodeLossy(_image, LossyQuality);
+
+    /// <summary>libwebp's default quality.</summary>
+    private const int LossyQuality = 75;
 }

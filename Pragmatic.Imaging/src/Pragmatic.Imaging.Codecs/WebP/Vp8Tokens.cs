@@ -12,12 +12,17 @@ internal sealed class Vp8Tokens : IDisposable
 {
     private const int ProbabilityCount = Vp8Tables.NumTypes * Vp8Tables.NumBands * Vp8Tables.NumContexts * Vp8Tables.NumProbabilities;
 
-    private readonly int[] _ones = new int[ProbabilityCount];
-    private readonly int[] _totals = new int[ProbabilityCount];
+    private readonly int[] _ones = ArrayPool<int>.Shared.Rent(ProbabilityCount);
+    private readonly int[] _totals = ArrayPool<int>.Shared.Rent(ProbabilityCount);
     private short[] _store;
     private int _length;
 
-    public Vp8Tokens(int expectedBlocks) => _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks * 4, 1024));
+    public Vp8Tokens(int expectedBlocks)
+    {
+        _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks * 4, 1024));
+        _ones.AsSpan(0, ProbabilityCount).Clear();
+        _totals.AsSpan(0, ProbabilityCount).Clear();
+    }
 
     /// <summary>The probabilities the frame codes its tokens with: [type, band, context, node].</summary>
     public byte[] Probabilities { get; } = Vp8Tables.DefaultCoefficientProbabilities.ToArray();
@@ -25,7 +30,12 @@ internal sealed class Vp8Tokens : IDisposable
     public static int Offset(int type, int band, int context) =>
         ((type * Vp8Tables.NumBands + band) * Vp8Tables.NumContexts + context) * Vp8Tables.NumProbabilities;
 
-    public void Dispose() => ArrayPool<short>.Shared.Return(_store);
+    public void Dispose()
+    {
+        ArrayPool<short>.Shared.Return(_store);
+        ArrayPool<int>.Shared.Return(_ones);
+        ArrayPool<int>.Shared.Return(_totals);
+    }
 
     /// <summary>
     ///     Records one block's levels (scan order) from position <paramref name="first" />, in context

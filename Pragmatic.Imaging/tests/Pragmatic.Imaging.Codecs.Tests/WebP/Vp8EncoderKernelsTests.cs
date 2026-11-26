@@ -102,7 +102,7 @@ public sealed class Vp8EncoderKernelsTests
         var probabilities = Vp8Tables.DefaultCoefficientProbabilities.ToArray();
         for (var i = 0; i < probabilities.Length; i++)
             probabilities[i] = (byte)random.Next(1, 256);
-        var costs = new Vp8Costs();
+        using var costs = new Vp8Costs();
         costs.Update(probabilities);
 
         for (var trial = 0; trial < 20000; trial++)

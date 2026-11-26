@@ -53,16 +53,19 @@ internal sealed class Vp8Analysis
                 Load(picture.U, picture.UvStride, mbX, mbY, 8, u, sourceU);
                 Load(picture.V, picture.UvStride, mbX, mbY, 8, v, sourceV);
 
+                // The two simplest predictions, DC and true motion, as libwebp's analysis tries.
                 var lumaAlpha = -1;
-                foreach (var mode in (ReadOnlySpan<int>)[Vp8Modes.Dc, Vp8Modes.Tm])
+                for (var m = 0; m < 2; m++)
                 {
+                    var mode = m == 0 ? Vp8Modes.Dc : Vp8Modes.Tm;
                     Vp8Prediction.Block(y, Vp8Borders.Origin, 16, mode, mbY > 0, mbX > 0);
                     lumaAlpha = Math.Max(lumaAlpha, Susceptibility(source, y, 16));
                 }
 
                 var chromaAlpha = -1;
-                foreach (var mode in (ReadOnlySpan<int>)[Vp8Modes.Dc, Vp8Modes.Tm])
+                for (var m = 0; m < 2; m++)
                 {
+                    var mode = m == 0 ? Vp8Modes.Dc : Vp8Modes.Tm;
                     Vp8Prediction.Block(u, Vp8Borders.Origin, 8, mode, mbY > 0, mbX > 0);
                     Vp8Prediction.Block(v, Vp8Borders.Origin, 8, mode, mbY > 0, mbX > 0);
                     chromaAlpha = Math.Max(chromaAlpha, ChromaSusceptibility(sourceU, u, sourceV, v));
@@ -76,9 +79,9 @@ internal sealed class Vp8Analysis
             }
         }
 
-        var segments = new byte[count];
-        var (alpha, beta) = AssignSegments(alphas, mbAlpha, segments);
-        return new Vp8Analysis(segments, alpha, beta, (int)(uvSum / count));
+        // Each macroblock's value becomes its segment, in place.
+        var (alpha, beta) = AssignSegments(alphas, mbAlpha, mbAlpha);
+        return new Vp8Analysis(mbAlpha, alpha, beta, (int)(uvSum / count));
     }
 
     /// <summary>

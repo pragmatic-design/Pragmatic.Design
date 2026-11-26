@@ -1,15 +1,21 @@
+using System.Buffers;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
 ///     Each macroblock's segment and intra modes, kept until the first partition is written after the tokens'
 ///     probabilities are known, and written there as the decoder's <see cref="Vp8MacroblockModes" /> reads them.
+///     The storage comes from the shared array pool; dispose it to give it back.
 /// </summary>
-internal sealed class Vp8EncodedModes(int macroblocks)
+internal sealed class Vp8EncodedModes(int macroblocks) : IDisposable
 {
     private const int Size = 19; // segment, kind, 16 luma modes, chroma mode
     private const int Luma16 = 0xFF;
 
-    private readonly byte[] _modes = new byte[macroblocks * Size];
+    private readonly byte[] _modes = ArrayPool<byte>.Shared.Rent(macroblocks * Size);
+    private readonly int _macroblocks = macroblocks;
+
+    public void Dispose() => ArrayPool<byte>.Shared.Return(_modes);
 
     public void Store(int index, int segment, Vp8MacroblockDecision decision)
     {
@@ -37,7 +43,7 @@ internal sealed class Vp8EncodedModes(int macroblocks)
         Span<byte> leftModes = stackalloc byte[4];
         var updateMap = plan.UpdateMap;
         var segmentProbabilities = plan.Probabilities;
-        var macroblocks = _modes.Length / Size;
+        var macroblocks = _macroblocks;
         for (var index = 0; index < macroblocks; index++)
         {
             var mbX = index % macroblocksWide;

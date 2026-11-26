@@ -21,7 +21,7 @@ Pragmatic.Imaging takes a different shape: a small, purposeful API over its own 
 
 ## The approach
 
-- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads and encodes it lossless, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
+- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads and encodes it lossless or, by name, lossy, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
 - **Native library, for the rest**: AVIF, GIF, BMP and TIFF are decoded and encoded by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
 - **Controlled native memory**: decoded pixels live in a `PixelBuffer`, native memory from a pool the garbage collector does not move or count, whichever engine decoded them.
 
@@ -84,7 +84,7 @@ PNG, JPEG, WebP, AVIF, GIF (first frame for static), BMP, TIFF.
 
 PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF: all decodable formats can also be encoded.
 
-The `quality` argument (1–100) applies to **JPEG only**. WebP is written lossless whatever it says: lossy WebP is to come as an explicit opt-in (#853), so a call that names no format option never changes what it writes. AVIF uses the native library default, which `image` 0.25 does not let a quality change. PNG/BMP/TIFF/GIF are lossless or paletted and ignore `quality` too.
+The `quality` argument (1–100) of `Encode` applies to **JPEG only**. WebP is written lossless whatever it says; lossy WebP is asked for by name, `EncodeWebP(WebPEncoding.Lossy, quality)`, so a call that names no encoding never changes what it writes. AVIF uses the native library default, which `image` 0.25 does not let a quality change. PNG/BMP/TIFF/GIF are lossless or paletted and ignore `quality` too.
 
 ---
 

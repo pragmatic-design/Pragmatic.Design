@@ -138,6 +138,13 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     [NativeRequiredFact]
     public void EncodeWebPLosslessNative_OneCall_AllocatesTheEncodedImage() => Expect(1498816, () => _webp.EncodeWebPLossless_Native());
 
+    // The file, the macroblocks' segments and the segments' tables; the planes, tokens and costs are pooled.
+    [Fact]
+    public void EncodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(53512, () => _webp.EncodeWebPLossy_Managed());
+
+    [Fact]
+    public void EncodeWebPLossyLibWebP_OneCall_AllocatesTheEncodedImage() => Expect(19504, () => _webp.EncodeWebPLossy_LibWebP());
+
     private static void Expect(long bytes, Action call)
     {
         call();
