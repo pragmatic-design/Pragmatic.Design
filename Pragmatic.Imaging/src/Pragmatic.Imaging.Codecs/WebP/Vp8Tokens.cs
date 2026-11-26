@@ -14,9 +14,21 @@ internal sealed class Vp8Tokens
 {
     private const int ProbabilityCount = Vp8Tables.NumTypes * Vp8Tables.NumBands * Vp8Tables.NumContexts * Vp8Tables.NumProbabilities;
 
+    /// <summary>
+    ///     The store comes in pages from the pool, each a whole number of block records (a record is at most
+    ///     17 shorts): it grows by a page and never copies, where an array that doubles leaves each size it
+    ///     outgrew in the pool, held for nothing.
+    /// </summary>
+    private const int PageSize = 16 * 1024;
+
     private readonly int[] _ones = new int[ProbabilityCount];
     private readonly int[] _totals = new int[ProbabilityCount];
-    private short[] _store = [];
+
+    // The full pages and how much of each holds records, then the page being written. The lists stay with
+    // the store from frame to frame, so a frame no larger than one before allocates nothing for them.
+    private readonly List<short[]> _pages = [];
+    private readonly List<int> _pageLengths = [];
+    private short[] _page = [];
     private int _length;
 
     /// <summary>The probabilities the frame codes its tokens with: [type, band, context, node].</summary>
@@ -25,12 +37,22 @@ internal sealed class Vp8Tokens
     public static int Offset(int type, int band, int context) =>
         ((type * Vp8Tables.NumBands + band) * Vp8Tables.NumContexts + context) * Vp8Tables.NumProbabilities;
 
-    /// <summary>Starts a frame: no tokens, no counts, the default probabilities, room for about <paramref name="expectedBlocks" />.</summary>
-    public void Begin(int expectedBlocks)
+    /// <summary>How many shorts the recorded blocks take: a frame's token partition is about a quarter of it in bytes.</summary>
+    public int Stored
+    {
+        get
+        {
+            var stored = _length;
+            foreach (var length in _pageLengths)
+                stored += length;
+            return stored;
+        }
+    }
+
+    /// <summary>Starts a frame: no tokens, no counts, the default probabilities.</summary>
+    public void Begin()
     {
         Release();
-        _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks, 1024));
-        _length = 0;
         _ones.AsSpan().Clear();
         _totals.AsSpan().Clear();
         Vp8Tables.DefaultCoefficientProbabilities.CopyTo(Probabilities);
@@ -39,9 +61,14 @@ internal sealed class Vp8Tokens
     /// <summary>Gives the token storage back to the pool.</summary>
     public void Release()
     {
-        if (_store.Length > 0)
-            ArrayPool<short>.Shared.Return(_store);
-        _store = [];
+        var pool = ArrayPool<short>.Shared;
+        foreach (var page in _pages)
+            pool.Return(page);
+        _pages.Clear();
+        _pageLengths.Clear();
+        if (_page.Length > 0)
+            pool.Return(_page);
+        _page = [];
         _length = 0;
     }
 
@@ -62,10 +89,12 @@ internal sealed class Vp8Tokens
         }
 
         var count = last < 0 ? 0 : last + 1 - first;
-        Ensure(count + 1);
-        _store[_length++] = (short)(type | (ctx << 2) | (first << 4) | (count << 5));
+        if (_length + count + 1 > _page.Length)
+            NextPage();
+        var page = _page;
+        page[_length++] = (short)(type | (ctx << 2) | (first << 4) | (count << 5));
         for (var n = first; n <= last; n++)
-            _store[_length++] = levels[n];
+            page[_length++] = levels[n];
 
         Count(type, first, ctx, levels, last);
         return last >= 0;
@@ -111,17 +140,24 @@ internal sealed class Vp8Tokens
     public void Emit(Vp8BoolEncoder output)
     {
         Span<short> levels = stackalloc short[16];
+        for (var p = 0; p < _pages.Count; p++)
+            Emit(output, _pages[p], _pageLengths[p], levels);
+        Emit(output, _page, _length, levels);
+    }
+
+    private void Emit(Vp8BoolEncoder output, short[] page, int length, Span<short> levels)
+    {
         var i = 0;
-        while (i < _length)
+        while (i < length)
         {
-            var head = _store[i++];
+            var head = page[i++];
             var type = head & 3;
             var ctx = (head >> 2) & 3;
             var first = (head >> 4) & 1;
             var count = (head >> 5) & 31;
             levels.Clear();
             for (var n = 0; n < count; n++)
-                levels[first + n] = _store[i++];
+                levels[first + n] = page[i++];
             Write(output, type, first, ctx, levels, count == 0 ? -1 : first + count - 1);
         }
     }
@@ -279,13 +315,16 @@ internal sealed class Vp8Tokens
     private static int Branch(int ones, int total, int probability) =>
         ones * Vp8Costs.Bit(1, probability) + (total - ones) * Vp8Costs.Bit(0, probability);
 
-    private void Ensure(int more)
+    /// <summary>Closes the page being written, if any, and starts a new one from the pool.</summary>
+    private void NextPage()
     {
-        if (_length + more <= _store.Length)
-            return;
-        var larger = ArrayPool<short>.Shared.Rent(Math.Max(_store.Length * 2, _length + more));
-        _store.AsSpan(0, _length).CopyTo(larger);
-        ArrayPool<short>.Shared.Return(_store);
-        _store = larger;
+        if (_page.Length > 0)
+        {
+            _pages.Add(_page);
+            _pageLengths.Add(_length);
+        }
+
+        _page = ArrayPool<short>.Shared.Rent(PageSize);
+        _length = 0;
     }
 }

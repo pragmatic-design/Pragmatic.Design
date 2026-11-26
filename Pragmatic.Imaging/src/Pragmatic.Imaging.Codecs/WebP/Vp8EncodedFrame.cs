@@ -57,7 +57,9 @@ internal sealed class Vp8EncodedFrame
         modes.Write(first, picture.MacroblocksWide, plan);
         first.Finish();
 
-        _tokens.Begin(count * 4);
+        // Sized from the tokens, generously, so it does not grow (and leave the sizes it grew from in the pool):
+        // what is rented and never written does not reach the working set.
+        _tokens.Begin(Math.Max(count * 4, tokens.Stored / 2));
         tokens.Emit(_tokens);
         _tokens.Finish();
     }

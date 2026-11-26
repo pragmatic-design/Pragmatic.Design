@@ -55,7 +55,7 @@ internal static class Vp8Encoder
         plan.Make(quality, analysis);
 
         var tokens = workspace.Tokens;
-        tokens.Begin(count * 25);
+        tokens.Begin();
         var modes = workspace.Modes;
         modes.Begin(count);
         var costs = workspace.Costs;
