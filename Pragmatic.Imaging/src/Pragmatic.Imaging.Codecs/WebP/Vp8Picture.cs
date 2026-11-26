@@ -10,7 +10,7 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     averages its four pixels in a gamma-compressed light (gamma 0.8, as libwebp does, so dark and light
 ///     pixels weigh as they look), weighted by alpha where the four are partly transparent.
 /// </summary>
-internal sealed class Vp8Picture : IDisposable
+internal sealed class Vp8Picture
 {
     private const int GammaFix = 12;
     private const int GammaTableFix = 7;
@@ -19,8 +19,10 @@ internal sealed class Vp8Picture : IDisposable
     private static readonly ushort[] GammaToLinear = BuildGammaToLinear();
     private static readonly int[] LinearToGammaTable = BuildLinearToGamma();
 
-    public Vp8Picture(ReadOnlySpan<byte> rgba, int width, int height)
+    /// <summary>Converts <paramref name="rgba" /> into planes from the pool, in place of the picture before.</summary>
+    public void Load(ReadOnlySpan<byte> rgba, int width, int height)
     {
+        Release();
         Width = width;
         Height = height;
         MacroblocksWide = (width + 15) >> 4;
@@ -40,30 +42,35 @@ internal sealed class Vp8Picture : IDisposable
         Pad(V, UvStride, uvWidth, uvHeight, MacroblocksHigh * 8);
     }
 
-    public int Width { get; }
+    public int Width { get; private set; }
 
-    public int Height { get; }
+    public int Height { get; private set; }
 
-    public int MacroblocksWide { get; }
+    public int MacroblocksWide { get; private set; }
 
-    public int MacroblocksHigh { get; }
+    public int MacroblocksHigh { get; private set; }
 
-    public byte[] Y { get; }
+    public byte[] Y { get; private set; } = [];
 
-    public byte[] U { get; }
+    public byte[] U { get; private set; } = [];
 
-    public byte[] V { get; }
+    public byte[] V { get; private set; } = [];
 
-    public int YStride { get; }
+    public int YStride { get; private set; }
 
-    public int UvStride { get; }
+    public int UvStride { get; private set; }
 
-    public void Dispose()
+    /// <summary>Gives the planes back to the pool.</summary>
+    public void Release()
     {
         var pool = ArrayPool<byte>.Shared;
-        pool.Return(Y);
-        pool.Return(U);
-        pool.Return(V);
+        if (Y.Length > 0)
+            pool.Return(Y);
+        if (U.Length > 0)
+            pool.Return(U);
+        if (V.Length > 0)
+            pool.Return(V);
+        Y = U = V = [];
     }
 
     private void ConvertLuma(ReadOnlySpan<byte> rgba)

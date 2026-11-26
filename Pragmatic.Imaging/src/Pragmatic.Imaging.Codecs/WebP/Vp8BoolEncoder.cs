@@ -7,18 +7,36 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 /// <summary>
 ///     VP8's boolean entropy encoder (RFC 6386, section 7), the inverse of <see cref="Vp8BoolDecoder" />,
 ///     into a buffer from the shared array pool that grows when full. A byte of 0xFF is held back until the
-///     next one shows whether a carry runs into it. Dispose it to give the buffer back.
+///     next one shows whether a carry runs into it. An encoder reuses one partition after another:
+///     <see cref="Begin" /> starts it empty, and <see cref="Release" /> gives the buffer back.
 /// </summary>
-internal sealed class Vp8BoolEncoder : IDisposable
+internal sealed class Vp8BoolEncoder
 {
-    private byte[] _bytes;
+    private byte[] _bytes = [];
     private int _length;
-    private int _range = 255 - 1; // the range less one, so a split is (range * probability) >> 8
+    private int _range;
     private int _value;
-    private int _bits = -8;
+    private int _bits;
     private int _pendingFF;
 
-    public Vp8BoolEncoder(int expectedBytes) => _bytes = ArrayPool<byte>.Shared.Rent(Math.Max(expectedBytes, 256));
+    /// <summary>Starts an empty partition with room for about <paramref name="expectedBytes" />.</summary>
+    public void Begin(int expectedBytes)
+    {
+        Release();
+        _bytes = ArrayPool<byte>.Shared.Rent(Math.Max(expectedBytes, 256));
+        _range = 255 - 1; // the range less one, so a split is (range * probability) >> 8
+        _value = 0;
+        _bits = -8;
+        _pendingFF = 0;
+    }
+
+    public void Release()
+    {
+        if (_bytes.Length > 0)
+            ArrayPool<byte>.Shared.Return(_bytes);
+        _bytes = [];
+        _length = 0;
+    }
 
     /// <summary>The bytes written, once <see cref="Finish" /> has been called.</summary>
     public ReadOnlySpan<byte> Written => _bytes.AsSpan(0, _length);
@@ -68,8 +86,6 @@ internal sealed class Vp8BoolEncoder : IDisposable
         _bits = 0;
         Flush();
     }
-
-    public void Dispose() => ArrayPool<byte>.Shared.Return(_bytes);
 
     private void Renormalize()
     {

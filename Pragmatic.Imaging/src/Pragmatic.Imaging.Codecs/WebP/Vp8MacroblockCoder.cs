@@ -12,65 +12,69 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     quantized, and the one whose distortion and coded size weigh least is kept. The reconstruction it keeps
 ///     is exactly what the decoder will compute.
 /// </summary>
-internal sealed partial class Vp8MacroblockCoder : IDisposable
+internal sealed partial class Vp8MacroblockCoder
 {
     private const int S = Vp8Prediction.Stride;
     private const int Origin = Vp8Borders.Origin;
     private const int ContextCount = Vp8Residuals.ContextCount;
     private const int Y2Context = 8;
 
-    private readonly Vp8Picture _picture;
     private readonly Vp8Costs _costs;
-    private readonly int _maxSubblockHeaderBits;
+    private Vp8Picture _picture = null!;
+    private int _maxSubblockHeaderBits;
 
     // The source of the macroblock, and its neighbours and reconstruction, laid out as Vp8Borders lays them.
-    private readonly byte[] _sourceY = Rent(S * Vp8Borders.LumaRows);
-    private readonly byte[] _sourceU = Rent(S * Vp8Borders.ChromaRows);
-    private readonly byte[] _sourceV = Rent(S * Vp8Borders.ChromaRows);
-    private readonly byte[] _y = Rent(S * Vp8Borders.LumaRows);
-    private readonly byte[] _u = Rent(S * Vp8Borders.ChromaRows);
-    private readonly byte[] _v = Rent(S * Vp8Borders.ChromaRows);
+    private readonly byte[] _sourceY = new byte[S * Vp8Borders.LumaRows];
+    private readonly byte[] _sourceU = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _sourceV = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _y = new byte[S * Vp8Borders.LumaRows];
+    private readonly byte[] _u = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _v = new byte[S * Vp8Borders.ChromaRows];
 
     // Scratch for the candidates: their predictions and reconstructions.
-    private byte[] _prediction = Rent(S * Vp8Borders.LumaRows);
-    private byte[] _candidate = Rent(S * Vp8Borders.LumaRows);
-    private byte[] _best = Rent(S * Vp8Borders.LumaRows);
-    private readonly byte[] _predictionU = Rent(S * Vp8Borders.ChromaRows);
-    private readonly byte[] _predictionV = Rent(S * Vp8Borders.ChromaRows);
-    private byte[] _candidateU = Rent(S * Vp8Borders.ChromaRows);
-    private byte[] _candidateV = Rent(S * Vp8Borders.ChromaRows);
-    private byte[] _bestU = Rent(S * Vp8Borders.ChromaRows);
-    private byte[] _bestV = Rent(S * Vp8Borders.ChromaRows);
+    private byte[] _prediction = new byte[S * Vp8Borders.LumaRows];
+    private byte[] _candidate = new byte[S * Vp8Borders.LumaRows];
+    private byte[] _best = new byte[S * Vp8Borders.LumaRows];
+    private readonly byte[] _predictionU = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _predictionV = new byte[S * Vp8Borders.ChromaRows];
+    private byte[] _candidateU = new byte[S * Vp8Borders.ChromaRows];
+    private byte[] _candidateV = new byte[S * Vp8Borders.ChromaRows];
+    private byte[] _bestU = new byte[S * Vp8Borders.ChromaRows];
+    private byte[] _bestV = new byte[S * Vp8Borders.ChromaRows];
 
     private readonly short[] _coefficients = new short[16 * 16];
     private readonly short[] _levels = new short[16 * 16];
     private readonly short[] _y2Levels = new short[16];
     private readonly short[] _chromaLevels = new short[8 * 16];
 
-    // The bottom row of the macroblock row above, and the one this row is writing for the next.
-    private byte[] _topY;
-    private byte[] _topU;
-    private byte[] _topV;
-    private byte[] _nextTopY;
-    private byte[] _nextTopU;
-    private byte[] _nextTopV;
+    // The bottom row of the macroblock row above, and the one this row is writing for the next; and the
+    // decoder's contexts above, per macroblock column. As wide as the picture: from the pool, frame by frame.
+    private byte[] _topY = [];
+    private byte[] _topU = [];
+    private byte[] _topV = [];
+    private byte[] _nextTopY = [];
+    private byte[] _nextTopU = [];
+    private byte[] _nextTopV = [];
+    private byte[] _aboveModes = [];
+    private byte[] _aboveNonZero = [];
 
-    // The decoder's contexts: subblock modes and non-zero flags above (per macroblock column) and to the left.
-    private readonly byte[] _aboveModes;
-    private readonly byte[] _aboveNonZero;
+    // The decoder's contexts to the left: subblock modes and non-zero flags.
     private readonly byte[] _leftModes = new byte[4];
     private readonly byte[] _leftNonZero = new byte[ContextCount];
 
-    private readonly bool _diffuseErrors;
+    private bool _diffuseErrors;
 
-    /// <param name="picture">The planes to encode.</param>
     /// <param name="costs">The costs, which the caller refreshes as the probabilities are learned.</param>
+    public Vp8MacroblockCoder(Vp8Costs costs) => _costs = costs;
+
+    /// <summary>Starts a frame of <paramref name="picture" />.</summary>
+    /// <param name="picture">The planes to encode.</param>
     /// <param name="maxSubblockHeaderBits">The most a macroblock's 4 x 4 modes may cost, in 1/256 bit; 0 forbids them.</param>
     /// <param name="diffuseErrors">Whether the chroma DC errors are diffused, as libwebp does below quality 99.</param>
-    public Vp8MacroblockCoder(Vp8Picture picture, Vp8Costs costs, int maxSubblockHeaderBits, bool diffuseErrors)
+    public void Begin(Vp8Picture picture, int maxSubblockHeaderBits, bool diffuseErrors)
     {
+        Release();
         _picture = picture;
-        _costs = costs;
         _maxSubblockHeaderBits = maxSubblockHeaderBits;
         _diffuseErrors = diffuseErrors;
         var wide = picture.MacroblocksWide;
@@ -81,24 +85,39 @@ internal sealed partial class Vp8MacroblockCoder : IDisposable
         _nextTopY = pool.Rent(wide * 16);
         _nextTopU = pool.Rent(wide * 8);
         _nextTopV = pool.Rent(wide * 8);
-        _aboveModes = new byte[wide * 4];
-        _aboveNonZero = new byte[wide * ContextCount];
-        _aboveError = new sbyte[wide * 4];
+
+        // The contexts above the first row are all zero: no levels, DC modes, no error to diffuse.
+        _aboveModes = pool.Rent(wide * 4);
+        _aboveNonZero = pool.Rent(wide * ContextCount);
+        _aboveError = ArrayPool<sbyte>.Shared.Rent(wide * 4);
+        _aboveModes.AsSpan(0, wide * 4).Clear();
+        _aboveNonZero.AsSpan(0, wide * ContextCount).Clear();
+        _aboveError.AsSpan(0, wide * 4).Clear();
     }
 
-    public void Dispose()
+    /// <summary>Gives the rows as wide as the picture back to the pool.</summary>
+    public void Release()
     {
         var pool = ArrayPool<byte>.Shared;
-        foreach (var buffer in (byte[][])[
-                     _topY, _topU, _topV, _nextTopY, _nextTopU, _nextTopV,
-                     _sourceY, _sourceU, _sourceV, _y, _u, _v,
-                     _prediction, _candidate, _best, _predictionU, _predictionV, _candidateU, _candidateV, _bestU, _bestV,
-                 ])
-            pool.Return(buffer);
+        Return(pool, ref _topY);
+        Return(pool, ref _topU);
+        Return(pool, ref _topV);
+        Return(pool, ref _nextTopY);
+        Return(pool, ref _nextTopU);
+        Return(pool, ref _nextTopV);
+        Return(pool, ref _aboveModes);
+        Return(pool, ref _aboveNonZero);
+        if (_aboveError.Length > 0)
+            ArrayPool<sbyte>.Shared.Return(_aboveError);
+        _aboveError = [];
     }
 
-    /// <summary>A work buffer from the pool. Whatever it held is overwritten before it is read.</summary>
-    private static byte[] Rent(int length) => ArrayPool<byte>.Shared.Rent(length);
+    private static void Return(ArrayPool<byte> pool, ref byte[] buffer)
+    {
+        if (buffer.Length > 0)
+            pool.Return(buffer);
+        buffer = [];
+    }
 
     /// <summary>Called before the first macroblock of a row.</summary>
     public void StartRow()

@@ -66,7 +66,15 @@ public static class WebPEncoder
         ArgumentOutOfRangeException.ThrowIfNegative(quality);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, 100);
 
-        using var frame = Vp8Encoder.Encode(image.Pixels, image.Width, image.Height, quality);
+        var workspace = Vp8EncoderWorkspace.Take();
+        var file = Wrap(image, Vp8Encoder.Encode(workspace, image.Pixels, image.Width, image.Height, quality));
+        Vp8EncoderWorkspace.Give(workspace);
+        return file;
+    }
+
+    /// <summary>The RIFF file around <paramref name="frame" />, with the image's alpha beside it when it has any.</summary>
+    private static byte[] Wrap(PixelBuffer image, Vp8EncodedFrame frame)
+    {
         var frameChunk = ChunkHeaderSize + Padded(frame.Length);
         if (!WebPAlphaEncoder.HasAlpha(image.Pixels))
         {

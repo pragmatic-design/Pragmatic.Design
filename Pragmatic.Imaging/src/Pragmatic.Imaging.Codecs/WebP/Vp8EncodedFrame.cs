@@ -4,71 +4,62 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
 ///     A written VP8 key frame: the ten bytes of frame tag, start code and dimensions (RFC 6386, section 9.1),
-///     the first partition (header and modes) and the one token partition. Dispose it to give the partitions'
-///     buffers back.
+///     the first partition (header and modes) and the one token partition. An encoder reuses its frame:
+///     <see cref="Write" /> writes it anew, and <see cref="Release" /> gives the partitions' buffers back.
 /// </summary>
-internal sealed class Vp8EncodedFrame : IDisposable
+internal sealed class Vp8EncodedFrame
 {
     private const int TagSize = 10;
 
-    private readonly Vp8BoolEncoder _first;
-    private readonly Vp8BoolEncoder _tokens;
-    private readonly int _width;
-    private readonly int _height;
-
-    private Vp8EncodedFrame(Vp8BoolEncoder first, Vp8BoolEncoder tokens, int width, int height)
-    {
-        _first = first;
-        _tokens = tokens;
-        _width = width;
-        _height = height;
-    }
+    private readonly Vp8BoolEncoder _first = new();
+    private readonly Vp8BoolEncoder _tokens = new();
+    private int _width;
+    private int _height;
 
     public int FirstPartitionLength => _first.Written.Length;
 
     /// <summary>The frame's size in bytes, as the payload of a <c>VP8 </c> chunk.</summary>
     public int Length => TagSize + _first.Written.Length + _tokens.Written.Length;
 
-    public static Vp8EncodedFrame Write(Vp8Picture picture, Vp8SegmentPlan plan, int filterLevel, Vp8EncodedModes modes, Vp8Tokens tokens)
+    public void Release()
+    {
+        _first.Release();
+        _tokens.Release();
+    }
+
+    public void Write(Vp8Picture picture, Vp8SegmentPlan plan, int filterLevel, Vp8EncodedModes modes, Vp8Tokens tokens)
     {
         var count = picture.MacroblocksWide * picture.MacroblocksHigh;
-        var first = new Vp8BoolEncoder(count + 1024);
-        var partition = new Vp8BoolEncoder(count * 4);
-        try
-        {
-            first.PutBitUniform(0); // colour space
-            first.PutBitUniform(0); // clamping required
-            WriteSegmentation(first, plan);
+        _width = picture.Width;
+        _height = picture.Height;
+        var first = _first;
+        first.Begin(count + 1024);
+        first.PutBitUniform(0); // colour space
+        first.PutBitUniform(0); // clamping required
+        WriteSegmentation(first, plan);
 
-            first.PutBitUniform(0); // the normal loop filter, not the simple one
-            first.PutLiteral(filterLevel, 6);
-            first.PutLiteral(0, 3); // sharpness
-            first.PutBitUniform(0); // no filter deltas by mode or reference
+        first.PutBitUniform(0); // the normal loop filter, not the simple one
+        first.PutLiteral(filterLevel, 6);
+        first.PutLiteral(0, 3); // sharpness
+        first.PutBitUniform(0); // no filter deltas by mode or reference
 
-            first.PutLiteral(0, 2); // one token partition
-            first.PutLiteral(plan.Segments[0].Quantizer, 7);
-            first.PutOptionalSigned(0, 4); // luma DC
-            first.PutOptionalSigned(0, 4); // Y2 DC
-            first.PutOptionalSigned(0, 4); // Y2 AC
-            first.PutOptionalSigned(plan.UvDcDelta, 4);
-            first.PutOptionalSigned(plan.UvAcDelta, 4);
-            first.PutBitUniform(0); // refresh entropy probabilities: meaningless for a still image
-            tokens.WriteProbabilities(first);
-            first.PutBitUniform(0); // no skip flags: every macroblock codes its tokens
+        first.PutLiteral(0, 2); // one token partition
+        first.PutLiteral(plan.Segments[0].Quantizer, 7);
+        first.PutOptionalSigned(0, 4); // luma DC
+        first.PutOptionalSigned(0, 4); // Y2 DC
+        first.PutOptionalSigned(0, 4); // Y2 AC
+        first.PutOptionalSigned(plan.UvDcDelta, 4);
+        first.PutOptionalSigned(plan.UvAcDelta, 4);
+        first.PutBitUniform(0); // refresh entropy probabilities: meaningless for a still image
+        tokens.WriteProbabilities(first);
+        first.PutBitUniform(0); // no skip flags: every macroblock codes its tokens
 
-            modes.Write(first, picture.MacroblocksWide, plan);
-            first.Finish();
+        modes.Write(first, picture.MacroblocksWide, plan);
+        first.Finish();
 
-            tokens.Emit(partition);
-            partition.Finish();
-            return new Vp8EncodedFrame(first, partition, picture.Width, picture.Height);
-        }
-        catch
-        {
-            first.Dispose();
-            partition.Dispose();
-            throw;
-        }
+        _tokens.Begin(count * 4);
+        tokens.Emit(_tokens);
+        _tokens.Finish();
     }
 
     public void CopyTo(Span<byte> destination)
@@ -86,12 +77,6 @@ internal sealed class Vp8EncodedFrame : IDisposable
         BinaryPrimitives.WriteUInt16LittleEndian(destination[8..], (ushort)_height);
         _first.Written.CopyTo(destination[TagSize..]);
         _tokens.Written.CopyTo(destination[(TagSize + _first.Written.Length)..]);
-    }
-
-    public void Dispose()
-    {
-        _first.Dispose();
-        _tokens.Dispose();
     }
 
     private static void WriteSegmentation(Vp8BoolEncoder output, Vp8SegmentPlan plan)

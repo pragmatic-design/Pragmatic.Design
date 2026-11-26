@@ -4,41 +4,35 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     The quantizers and filter strengths of a frame's segments, from the quality setting and the analysis
 ///     (libwebp's <c>VP8SetSegmentParams</c> at its default spatial noise shaping of 50 and filter strength of
 ///     60): the quality maps to a base quantizer, each segment's susceptibility moves its own around it, and
-///     segments that end up alike are merged.
+///     segments that end up alike are merged. An encoder reuses its plan image after image: <see cref="Make" />
+///     makes it anew.
 /// </summary>
 internal sealed class Vp8SegmentPlan
 {
     private const int NoiseShaping = 50;
     private const int FilterStrengthSetting = 60;
 
-    private Vp8SegmentPlan(Vp8Segment[] segments, int count, int uvDcDelta, int uvAcDelta, byte[] probabilities)
-    {
-        Segments = segments;
-        Count = count;
-        UvDcDelta = uvDcDelta;
-        UvAcDelta = uvAcDelta;
-        Probabilities = probabilities;
-    }
+    private readonly Vp8Segment[] _distinct = [new(), new(), new(), new()];
 
     /// <summary>The four segments the header describes; past <see cref="Count" /> they repeat the last.</summary>
-    public Vp8Segment[] Segments { get; }
+    public Vp8Segment[] Segments { get; } = new Vp8Segment[Vp8Analysis.Segments];
 
     /// <summary>How many distinct segments there are; one means the frame is written without segmentation.</summary>
-    public int Count { get; }
+    public int Count { get; private set; }
 
-    public int UvDcDelta { get; }
+    public int UvDcDelta { get; private set; }
 
-    public int UvAcDelta { get; }
+    public int UvAcDelta { get; private set; }
 
     /// <summary>The three probabilities of the segment tree, from how many macroblocks each segment has.</summary>
-    public byte[] Probabilities { get; }
+    public byte[] Probabilities { get; } = new byte[3];
 
     /// <summary>Whether each macroblock's segment is written: there is more than one, used.</summary>
     public bool UpdateMap => Count > 1 && (Probabilities[0] != 255 || Probabilities[1] != 255 || Probabilities[2] != 255);
 
     /// <param name="quality">0 to 100.</param>
     /// <param name="analysis">The analysis; its segment map is renumbered when segments merge.</param>
-    public static Vp8SegmentPlan Build(int quality, Vp8Analysis analysis)
+    public void Make(int quality, Vp8Analysis analysis)
     {
         var amplitude = 0.9 * NoiseShaping / 100.0 / 128.0;
         var compression = QualityToCompression(quality / 100.0);
@@ -96,22 +90,25 @@ internal sealed class Vp8SegmentPlan
             sizes[segmentOf[i]]++;
         }
 
-        var segments = new Vp8Segment[Vp8Analysis.Segments];
         for (var s = 0; s < Vp8Analysis.Segments; s++)
         {
-            var source = Math.Min(s, count - 1);
-            segments[s] = s < count
-                ? new Vp8Segment(quantizers[s], 0, 0, 0, uvDc, uvAc) { FilterStrength = strengths[s] }
-                : segments[source];
+            if (s < count)
+            {
+                _distinct[s].Set(quantizers[s], 0, 0, 0, uvDc, uvAc, strengths[s]);
+                Segments[s] = _distinct[s];
+            }
+            else
+            {
+                Segments[s] = _distinct[count - 1];
+            }
         }
 
-        byte[] probabilities =
-        [
-            Probability(sizes[0] + sizes[1], sizes[2] + sizes[3]),
-            Probability(sizes[0], sizes[1]),
-            Probability(sizes[2], sizes[3]),
-        ];
-        return new Vp8SegmentPlan(segments, count, uvDc, uvAc, probabilities);
+        Count = count;
+        UvDcDelta = uvDc;
+        UvAcDelta = uvAc;
+        Probabilities[0] = Probability(sizes[0] + sizes[1], sizes[2] + sizes[3]);
+        Probabilities[1] = Probability(sizes[0], sizes[1]);
+        Probabilities[2] = Probability(sizes[2], sizes[3]);
     }
 
     /// <summary>

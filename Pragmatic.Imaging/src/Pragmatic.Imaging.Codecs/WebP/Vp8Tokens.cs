@@ -6,23 +6,17 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     The coefficient tokens of a frame (RFC 6386, section 13), held until the frame's probabilities are
 ///     known: each block is recorded as its levels, and counted node by node of the token tree; once every
 ///     macroblock is decided the probabilities that code these counts in fewest bits are chosen, and the
-///     blocks are written with them. libwebp's token buffer does the same.
+///     blocks are written with them. libwebp's token buffer does the same. An encoder reuses its token store
+///     frame after frame: <see cref="Begin" /> empties it, and <see cref="Release" /> gives the storage back.
 /// </summary>
-internal sealed class Vp8Tokens : IDisposable
+internal sealed class Vp8Tokens
 {
     private const int ProbabilityCount = Vp8Tables.NumTypes * Vp8Tables.NumBands * Vp8Tables.NumContexts * Vp8Tables.NumProbabilities;
 
-    private readonly int[] _ones = ArrayPool<int>.Shared.Rent(ProbabilityCount);
-    private readonly int[] _totals = ArrayPool<int>.Shared.Rent(ProbabilityCount);
-    private short[] _store;
+    private readonly int[] _ones = new int[ProbabilityCount];
+    private readonly int[] _totals = new int[ProbabilityCount];
+    private short[] _store = [];
     private int _length;
-
-    public Vp8Tokens(int expectedBlocks)
-    {
-        _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks, 1024));
-        _ones.AsSpan(0, ProbabilityCount).Clear();
-        _totals.AsSpan(0, ProbabilityCount).Clear();
-    }
 
     /// <summary>The probabilities the frame codes its tokens with: [type, band, context, node].</summary>
     public byte[] Probabilities { get; } = Vp8Tables.DefaultCoefficientProbabilities.ToArray();
@@ -30,11 +24,24 @@ internal sealed class Vp8Tokens : IDisposable
     public static int Offset(int type, int band, int context) =>
         ((type * Vp8Tables.NumBands + band) * Vp8Tables.NumContexts + context) * Vp8Tables.NumProbabilities;
 
-    public void Dispose()
+    /// <summary>Starts a frame: no tokens, no counts, the default probabilities, room for about <paramref name="expectedBlocks" />.</summary>
+    public void Begin(int expectedBlocks)
     {
-        ArrayPool<short>.Shared.Return(_store);
-        ArrayPool<int>.Shared.Return(_ones);
-        ArrayPool<int>.Shared.Return(_totals);
+        Release();
+        _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks, 1024));
+        _length = 0;
+        _ones.AsSpan().Clear();
+        _totals.AsSpan().Clear();
+        Vp8Tables.DefaultCoefficientProbabilities.CopyTo(Probabilities);
+    }
+
+    /// <summary>Gives the token storage back to the pool.</summary>
+    public void Release()
+    {
+        if (_store.Length > 0)
+            ArrayPool<short>.Shared.Return(_store);
+        _store = [];
+        _length = 0;
     }
 
     /// <summary>

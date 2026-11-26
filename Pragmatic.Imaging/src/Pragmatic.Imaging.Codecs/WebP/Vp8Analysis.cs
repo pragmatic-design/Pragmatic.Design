@@ -11,71 +11,58 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     simplest predictions from the source, the segments are a k-means of those values, and each segment's
 ///     distance from the mean decides how much finer or coarser its quantizer is than the frame's.
 /// </summary>
-internal sealed class Vp8Analysis : IDisposable
+internal sealed class Vp8Analysis
 {
     public const int Segments = 4;
     private const int MaxAlpha = 255;
     private const int MaxCoefficientBin = 31;
     private const int S = Vp8Prediction.Stride;
 
-    private Vp8Analysis(byte[] segmentOfMacroblock, int count, int[] alpha, int[] beta, int uvAlpha)
-    {
-        SegmentOfMacroblock = segmentOfMacroblock;
-        Count = count;
-        Alpha = alpha;
-        Beta = beta;
-        UvAlpha = uvAlpha;
-    }
+    // Work buffers laid out as Vp8Borders lays them: each prediction with its neighbours, and the source.
+    private readonly byte[] _y = new byte[S * Vp8Borders.LumaRows];
+    private readonly byte[] _sourceY = new byte[S * Vp8Borders.LumaRows];
+    private readonly byte[] _u = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _sourceU = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _v = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _sourceV = new byte[S * Vp8Borders.ChromaRows];
+    private readonly int[] _alphas = new int[MaxAlpha + 1];
+    private byte[]? _segmentOfMacroblock;
 
     /// <summary>The segment of each macroblock, raster order, in an array from the pool that may be longer.</summary>
-    public byte[] SegmentOfMacroblock { get; }
+    public byte[] SegmentOfMacroblock => _segmentOfMacroblock ?? throw new InvalidOperationException("No picture has been analysed.");
 
     /// <summary>How many macroblocks there are.</summary>
-    public int Count { get; }
-
-    public void Dispose() => ArrayPool<byte>.Shared.Return(SegmentOfMacroblock);
+    public int Count { get; private set; }
 
     /// <summary>Each segment's susceptibility against the mean, -127 to 127: the higher, the coarser it may be quantized.</summary>
-    public int[] Alpha { get; }
+    public int[] Alpha { get; } = new int[Segments];
 
     /// <summary>Each segment's susceptibility against the least, 0 to 255: the lower, the less it is filtered.</summary>
-    public int[] Beta { get; }
+    public int[] Beta { get; } = new int[Segments];
 
     /// <summary>The mean susceptibility of the chroma, around 60: how coarsely chroma may be quantized.</summary>
-    public int UvAlpha { get; }
+    public int UvAlpha { get; private set; }
 
-    public static Vp8Analysis Run(Vp8Picture picture)
+    /// <summary>Gives the segment map back to the pool; the analysis is reused for the next picture.</summary>
+    public void Release()
     {
-        var count = picture.MacroblocksWide * picture.MacroblocksHigh;
-        var pool = ArrayPool<byte>.Shared;
-        var mbAlpha = pool.Rent(count);
-        byte[][] work =
-        [
-            pool.Rent(S * Vp8Borders.LumaRows), pool.Rent(S * Vp8Borders.LumaRows),
-            pool.Rent(S * Vp8Borders.ChromaRows), pool.Rent(S * Vp8Borders.ChromaRows),
-            pool.Rent(S * Vp8Borders.ChromaRows), pool.Rent(S * Vp8Borders.ChromaRows),
-        ];
-        try
-        {
-            return Run(picture, count, mbAlpha, work[0], work[1], work[2], work[3], work[4], work[5]);
-        }
-        catch
-        {
-            pool.Return(mbAlpha);
-            throw;
-        }
-        finally
-        {
-            foreach (var buffer in work)
-                pool.Return(buffer);
-        }
+        if (_segmentOfMacroblock is null)
+            return;
+        ArrayPool<byte>.Shared.Return(_segmentOfMacroblock);
+        _segmentOfMacroblock = null;
     }
 
-    /// <summary>The analysis proper, over work buffers each laid out as <see cref="Vp8Borders" /> lays them.</summary>
-    private static Vp8Analysis Run(Vp8Picture picture, int count, byte[] mbAlpha,
-        byte[] y, byte[] source, byte[] u, byte[] sourceU, byte[] v, byte[] sourceV)
+    /// <summary>Analyses <paramref name="picture" />, in place of whatever was analysed before.</summary>
+    public void Run(Vp8Picture picture)
     {
-        var alphas = new int[MaxAlpha + 1];
+        Release();
+        var count = picture.MacroblocksWide * picture.MacroblocksHigh;
+        var mbAlpha = ArrayPool<byte>.Shared.Rent(count);
+        _segmentOfMacroblock = mbAlpha;
+        Count = count;
+        var alphas = _alphas.AsSpan();
+        alphas.Clear();
+        byte[] y = _y, source = _sourceY, u = _u, sourceU = _sourceU, v = _v, sourceV = _sourceV;
         long uvSum = 0;
         for (var mbY = 0; mbY < picture.MacroblocksHigh; mbY++)
         {
@@ -111,8 +98,8 @@ internal sealed class Vp8Analysis : IDisposable
             }
         }
 
-        var (alpha, beta) = AssignSegments(alphas, mbAlpha.AsSpan(0, count));
-        return new Vp8Analysis(mbAlpha, count, alpha, beta, (int)(uvSum / count));
+        AssignSegments(alphas, mbAlpha.AsSpan(0, count), Alpha, Beta);
+        UvAlpha = (int)(uvSum / count);
     }
 
     /// <summary>
@@ -210,7 +197,7 @@ internal sealed class Vp8Analysis : IDisposable
     }
 
     /// <summary>A k-means of the macroblocks' values into the segments (libwebp's <c>AssignSegments</c>).</summary>
-    private static (int[] Alpha, int[] Beta) AssignSegments(int[] alphas, Span<byte> mbAlpha)
+    private static void AssignSegments(ReadOnlySpan<int> alphas, Span<byte> mbAlpha, Span<int> alpha, Span<int> beta)
     {
         int min = 0, max;
         while (min <= MaxAlpha && alphas[min] == 0)
@@ -276,14 +263,10 @@ internal sealed class Vp8Analysis : IDisposable
 
         if (highest == lowest)
             highest = lowest + 1;
-        var alpha = new int[Segments];
-        var beta = new int[Segments];
         for (var n = 0; n < Segments; n++)
         {
             alpha[n] = Math.Clamp(255 * (centers[n] - average) / (highest - lowest), -127, 127);
             beta[n] = Math.Clamp(255 * (centers[n] - lowest) / (highest - lowest), 0, 255);
         }
-
-        return (alpha, beta);
     }
 }

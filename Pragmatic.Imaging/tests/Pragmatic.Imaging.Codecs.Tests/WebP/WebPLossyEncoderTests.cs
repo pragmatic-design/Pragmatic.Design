@@ -68,6 +68,24 @@ public sealed class WebPLossyEncoderTests
         Assert.Equal(WebPEncoder.EncodeLossy(image, 75), WebPEncoder.EncodeLossy(image, 75));
     }
 
+    [Fact]
+    public void EncodeLossy_AfterAWiderImageAtAnotherQuality_WritesWhatAFreshEncoderWrites()
+    {
+        // The encoder keeps its working state from one image to the next on a thread: nothing of the image
+        // before may reach the one after. A thread that never encoded starts with nothing.
+        using var target = Image(SyntheticPhoto.Rgba(600, 400), 600, 400);
+        using var before = Image(SyntheticPhoto.Rgba(904, 312), 904, 312);
+        byte[]? fresh = null;
+        var thread = new Thread(() => fresh = WebPEncoder.EncodeLossy(target, 50));
+        thread.Start();
+        thread.Join();
+
+        WebPEncoder.EncodeLossy(before, 0);
+        var after = WebPEncoder.EncodeLossy(target, 50);
+
+        Assert.Equal(fresh, after);
+    }
+
     [Theory]
     [InlineData(-1)]
     [InlineData(101)]
@@ -76,6 +94,13 @@ public sealed class WebPLossyEncoderTests
         using var image = new PixelBuffer(8, 8);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => WebPEncoder.EncodeLossy(image, quality));
+    }
+
+    private static PixelBuffer Image(byte[] rgba, int width, int height)
+    {
+        var image = new PixelBuffer(width, height);
+        rgba.CopyTo(image.Pixels);
+        return image;
     }
 
     private static (byte[] Libwebp, byte[] Managed) RoundTrip(byte[] rgba, int width, int height, int quality)

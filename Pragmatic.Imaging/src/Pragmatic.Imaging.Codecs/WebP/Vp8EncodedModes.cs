@@ -5,17 +5,32 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 /// <summary>
 ///     Each macroblock's segment and intra modes, kept until the first partition is written after the tokens'
 ///     probabilities are known, and written there as the decoder's <see cref="Vp8MacroblockModes" /> reads them.
-///     The storage comes from the shared array pool; dispose it to give it back.
+///     The storage comes from the shared array pool for each frame (<see cref="Begin" />), and
+///     <see cref="Release" /> gives it back.
 /// </summary>
-internal sealed class Vp8EncodedModes(int macroblocks) : IDisposable
+internal sealed class Vp8EncodedModes
 {
     private const int Size = 19; // segment, kind, 16 luma modes, chroma mode
     private const int Luma16 = 0xFF;
 
-    private readonly byte[] _modes = ArrayPool<byte>.Shared.Rent(macroblocks * Size);
-    private readonly int _macroblocks = macroblocks;
+    private byte[] _modes = [];
+    private int _macroblocks;
 
-    public void Dispose() => ArrayPool<byte>.Shared.Return(_modes);
+    /// <summary>Starts a frame of <paramref name="macroblocks" /> macroblocks.</summary>
+    public void Begin(int macroblocks)
+    {
+        Release();
+        _modes = ArrayPool<byte>.Shared.Rent(macroblocks * Size);
+        _macroblocks = macroblocks;
+    }
+
+    public void Release()
+    {
+        if (_modes.Length > 0)
+            ArrayPool<byte>.Shared.Return(_modes);
+        _modes = [];
+        _macroblocks = 0;
+    }
 
     public void Store(int index, int segment, Vp8MacroblockDecision decision)
     {
@@ -39,7 +54,8 @@ internal sealed class Vp8EncodedModes(int macroblocks) : IDisposable
     /// <summary>Writes every macroblock's modes, raster order, with the segment tree when the map is written.</summary>
     public void Write(Vp8BoolEncoder output, int macroblocksWide, Vp8SegmentPlan plan)
     {
-        var aboveModes = new byte[macroblocksWide * 4];
+        // At most 1,024 macroblocks across (16,383 pixels): 4 KB.
+        Span<byte> aboveModes = stackalloc byte[macroblocksWide * 4];
         Span<byte> leftModes = stackalloc byte[4];
         var updateMap = plan.UpdateMap;
         var segmentProbabilities = plan.Probabilities;
@@ -57,7 +73,7 @@ internal sealed class Vp8EncodedModes(int macroblocks) : IDisposable
                 output.PutBit(segment & 1, segment >= 2 ? segmentProbabilities[2] : segmentProbabilities[1]);
             }
 
-            var above = aboveModes.AsSpan(mbX * 4, 4);
+            var above = aboveModes.Slice(mbX * 4, 4);
             if (entry[1] == Luma16)
             {
                 var mode = entry[2];

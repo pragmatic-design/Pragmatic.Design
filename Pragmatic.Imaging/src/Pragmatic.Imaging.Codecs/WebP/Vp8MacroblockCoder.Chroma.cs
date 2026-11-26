@@ -15,7 +15,7 @@ internal sealed partial class Vp8MacroblockCoder
     private const int RightWeight = 8;
 
     // Per macroblock column and to the left, for U then V: the two errors that reach the next blocks.
-    private readonly sbyte[] _aboveError;
+    private sbyte[] _aboveError = [];
     private readonly sbyte[] _leftError = new sbyte[4];
     private readonly int[] _candidateError = new int[6];
     private readonly int[] _bestError = new int[6];

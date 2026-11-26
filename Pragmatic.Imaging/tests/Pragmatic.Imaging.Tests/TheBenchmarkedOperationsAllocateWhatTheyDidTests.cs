@@ -138,9 +138,12 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     [NativeRequiredFact]
     public void EncodeWebPLosslessNative_OneCall_AllocatesTheEncodedImage() => Expect(1498816, () => _webp.EncodeWebPLossless_Native());
 
-    // The file and the segments' tables; the planes, work buffers, tokens, modes and costs are pooled.
+    // The file (19,224 B in a Release build): the encoder keeps its working state on the thread, and takes
+    // the planes, tokens and partitions from the pool. In this Debug build each read of the quantizer step
+    // tables (a ReadOnlySpan<short>) allocates 72 B more, twelve reads an encode, where optimized code
+    // allocates nothing for them.
     [Fact]
-    public void EncodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(33680, () => _webp.EncodeWebPLossy_Managed());
+    public void EncodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(20088, () => _webp.EncodeWebPLossy_Managed());
 
     [Fact]
     public void EncodeWebPLossyLibWebP_OneCall_AllocatesTheEncodedImage() => Expect(19504, () => _webp.EncodeWebPLossy_LibWebP());

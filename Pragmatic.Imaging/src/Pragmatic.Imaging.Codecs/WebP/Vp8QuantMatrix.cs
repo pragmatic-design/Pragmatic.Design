@@ -34,7 +34,10 @@ internal sealed class Vp8QuantMatrix
     /// <param name="dcStep">The DC step, as the decoder will multiply by it.</param>
     /// <param name="acStep">The AC step.</param>
     /// <param name="kind">0 luma, 1 Y2, 2 chroma.</param>
-    public Vp8QuantMatrix(int dcStep, int acStep, int kind)
+    public Vp8QuantMatrix(int dcStep, int acStep, int kind) => Set(dcStep, acStep, kind);
+
+    /// <summary>Makes this the matrix of the given steps, whatever it was: an encoder reuses its matrices image after image.</summary>
+    public void Set(int dcStep, int acStep, int kind)
     {
         for (var j = 0; j < 16; j++)
         {
@@ -54,13 +57,13 @@ internal sealed class Vp8QuantMatrix
     }
 
     /// <summary>The DC step.</summary>
-    public int DcStep { get; }
+    public int DcStep { get; private set; }
 
     /// <summary>The AC step.</summary>
-    public int AcStep { get; }
+    public int AcStep { get; private set; }
 
     /// <summary>The mean of the 16 steps, which the rate-distortion weights are derived from.</summary>
-    public int AverageStep { get; }
+    public int AverageStep { get; private set; }
 
     /// <summary>
     ///     Quantizes a DC coefficient in place, to what the decoder will rebuild, and returns half the error
