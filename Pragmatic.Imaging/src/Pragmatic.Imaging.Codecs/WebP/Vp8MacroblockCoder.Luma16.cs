@@ -109,8 +109,8 @@ internal sealed partial class Vp8MacroblockCoder
             for (var x = 0; x < 4; x++)
             {
                 var levels = _levels.AsSpan((y * 4 + x) * 16, 16);
-                rate += _costs.Residual(0, 1, above[x] + left[y], levels);
-                var flag = levels[1..].ContainsAnyExcept((short)0) ? (byte)1 : (byte)0;
+                rate += _costs.Residual(0, 1, above[x] + left[y], levels, out var coded);
+                var flag = coded ? (byte)1 : (byte)0;
                 above[x] = left[y] = flag;
             }
         }

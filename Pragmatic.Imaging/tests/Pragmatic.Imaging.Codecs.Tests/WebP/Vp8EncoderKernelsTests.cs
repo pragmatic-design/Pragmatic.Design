@@ -231,7 +231,8 @@ public sealed class Vp8EncoderKernelsTests
                     levels[n] = (short)(random.Next(2) == 0 ? random.Next(-3, 4) : random.Next(-2047, 2048));
             }
 
-            Assert.Equal(TokenCost(probabilities, type, first, ctx, levels), costs.Residual(type, first, ctx, levels));
+            Assert.Equal(TokenCost(probabilities, type, first, ctx, levels), costs.Residual(type, first, ctx, levels, out var coded));
+            Assert.Equal(levels.AsSpan(first).ContainsAnyExcept((short)0), coded);
         }
     }
 

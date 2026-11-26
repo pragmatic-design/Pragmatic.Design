@@ -146,8 +146,14 @@ internal sealed class Vp8Costs : IDisposable
     ///     The cost of one block's levels (scan order) of <paramref name="type" />, from position
     ///     <paramref name="first" />, in context <paramref name="ctx0" /> (libwebp's <c>GetResidualCost</c>).
     /// </summary>
+    public int Residual(int type, int first, int ctx0, ReadOnlySpan<short> levels) => Residual(type, first, ctx0, levels, out _);
+
+    /// <summary>
+    ///     The same, and whether any level from <paramref name="first" /> on is non-zero: the context the block
+    ///     gives its neighbours, found on the way rather than by scanning the levels again.
+    /// </summary>
     [SkipLocalsInit]
-    public int Residual(int type, int first, int ctx0, ReadOnlySpan<short> levels)
+    public int Residual(int type, int first, int ctx0, ReadOnlySpan<short> levels, out bool coded)
     {
         if (levels.Length < 16)
             throw new ArgumentException("A block has 16 levels.");
@@ -157,6 +163,7 @@ internal sealed class Vp8Costs : IDisposable
         var zeros = Vector128.Equals(Vector128.LoadUnsafe(ref values), zero).ExtractMostSignificantBits() |
                     (Vector128.Equals(Vector128.LoadUnsafe(ref values, 8), zero).ExtractMostSignificantBits() << 8);
         var nonZero = ~zeros & (0xFFFFu << first) & 0xFFFFu;
+        coded = nonZero != 0;
         var start = (type * 16 + first) * Vp8Tables.NumContexts + ctx0;
         if (nonZero == 0)
             return _endCosts[start];
