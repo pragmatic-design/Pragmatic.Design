@@ -3,16 +3,14 @@ using System.Buffers;
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
-///     Rebuilds each macroblock of a key frame from its prediction and residue, in work buffers laid out
-///     like libwebp's: the row above and column to the left of the block hold its neighbours as they were
-///     reconstructed, before the loop filter, and outside the frame the row above is 127 and the column to
-///     the left 129 (RFC 6386, section 12.2). The result goes to the frame's planes, which the loop filter
+///     Rebuilds each macroblock of a key frame from its prediction and residue, in work buffers whose
+///     borders <see cref="Vp8Borders" /> fills. The result goes to the frame's planes, which the loop filter
 ///     then works on in place.
 /// </summary>
 internal sealed class Vp8Reconstructor : IDisposable
 {
     private const int S = Vp8Prediction.Stride;
-    private const int Origin = S + 8;
+    private const int Origin = Vp8Borders.Origin;
 
     private readonly Vp8Frame _frame;
     private readonly byte[] _y = ArrayPool<byte>.Shared.Rent(S * 17);
@@ -61,9 +59,9 @@ internal sealed class Vp8Reconstructor : IDisposable
 
     public void Reconstruct(int mbX, int mbY, Vp8MacroblockModes modes, ReadOnlySpan<short> coefficients, int nonZero)
     {
-        PrepareLuma(mbX, mbY);
-        PrepareChroma(_u, _topU, mbX, mbY);
-        PrepareChroma(_v, _topV, mbX, mbY);
+        Vp8Borders.PrepareLuma(_y, _topY, mbX, mbY, _frame.MacroblocksWide);
+        Vp8Borders.PrepareChroma(_u, _topU, mbX, mbY);
+        Vp8Borders.PrepareChroma(_v, _topV, mbX, mbY);
 
         if (modes.IsSubblocks)
         {
@@ -102,66 +100,6 @@ internal sealed class Vp8Reconstructor : IDisposable
             if ((nonZero & (1 << block)) != 0)
                 Vp8InverseTransform.AddInverseDct(coefficients.Slice(block * 16, 16), buffer, Origin + (i >> 1) * 4 * S + (i & 1) * 4, S);
         }
-    }
-
-    private void PrepareLuma(int mbX, int mbY)
-    {
-        var y = _y;
-        var lastColumn = mbX == _frame.MacroblocksWide - 1;
-
-        // The column to the left, and the corner above it.
-        if (mbX == 0)
-        {
-            for (var j = 0; j < 16; j++)
-                y[Origin + j * S - 1] = 129;
-            y[Origin - S - 1] = mbY > 0 ? (byte)129 : (byte)127;
-        }
-        else
-        {
-            for (var j = 0; j < 16; j++)
-                y[Origin + j * S - 1] = y[Origin + j * S + 15];
-            y[Origin - S - 1] = mbY > 0 ? _topY[mbX * 16 - 1] : (byte)127;
-        }
-
-        // The row above, and the four pixels to its right.
-        if (mbY == 0)
-        {
-            y.AsSpan(Origin - S, 20).Fill(127);
-        }
-        else
-        {
-            _topY.AsSpan(mbX * 16, 16).CopyTo(y.AsSpan(Origin - S, 16));
-            if (lastColumn)
-                y.AsSpan(Origin - S + 16, 4).Fill(_topY[mbX * 16 + 15]);
-            else
-                _topY.AsSpan(mbX * 16 + 16, 4).CopyTo(y.AsSpan(Origin - S + 16, 4));
-        }
-
-        // Subblocks on the right column take their top-right pixels from the macroblock above and to the
-        // right, whichever row of subblocks they are in.
-        for (var row = 3; row < 15; row += 4)
-            y.AsSpan(Origin - S + 16, 4).CopyTo(y.AsSpan(Origin + row * S + 16, 4));
-    }
-
-    private static void PrepareChroma(byte[] buffer, byte[] top, int mbX, int mbY)
-    {
-        if (mbX == 0)
-        {
-            for (var j = 0; j < 8; j++)
-                buffer[Origin + j * S - 1] = 129;
-            buffer[Origin - S - 1] = mbY > 0 ? (byte)129 : (byte)127;
-        }
-        else
-        {
-            for (var j = 0; j < 8; j++)
-                buffer[Origin + j * S - 1] = buffer[Origin + j * S + 7];
-            buffer[Origin - S - 1] = mbY > 0 ? top[mbX * 8 - 1] : (byte)127;
-        }
-
-        if (mbY == 0)
-            buffer.AsSpan(Origin - S, 8).Fill(127);
-        else
-            top.AsSpan(mbX * 8, 8).CopyTo(buffer.AsSpan(Origin - S, 8));
     }
 
     private static void Store(byte[] buffer, int size, byte[] plane, int stride, int x, int y, byte[] nextTop)

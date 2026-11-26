@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -9,6 +13,79 @@ internal static class Vp8InverseTransform
 {
     /// <summary>Adds the inverse DCT of <paramref name="input" /> (16 coefficients, raster order) to a 4 x 4 block.</summary>
     public static void AddInverseDct(ReadOnlySpan<short> input, Span<byte> block, int offset, int stride)
+    {
+        if (Vp8Transpose.IsAccelerated)
+            AddInverseDctVector(input, block, offset, stride);
+        else
+            AddInverseDctScalar(input, block, offset, stride);
+    }
+
+    /// <summary>
+    ///     The same arithmetic four lanes at a time: the first pass combines the coefficient rows as loaded,
+    ///     and the block is transposed between the passes and before it is added.
+    /// </summary>
+    internal static void AddInverseDctVector(ReadOnlySpan<short> input, Span<byte> block, int offset, int stride)
+    {
+        if (input.Length < 16 || block.Length < offset + 3 * stride + 4)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var coefficients = ref MemoryMarshal.GetReference(input);
+        var low = Vector128.LoadUnsafe(ref coefficients);
+        var high = Vector128.LoadUnsafe(ref coefficients, 8);
+        var i0 = Vector128.WidenLower(low);
+        var i1 = Vector128.WidenUpper(low);
+        var i2 = Vector128.WidenLower(high);
+        var i3 = Vector128.WidenUpper(high);
+
+        // Vertical pass, each lane one column.
+        var a = i0 + i2;
+        var b = i0 - i2;
+        var c = Mul2(i1) - Mul1(i3);
+        var d = Mul1(i1) + Mul2(i3);
+        var p0 = a + d;
+        var p1 = b + c;
+        var p2 = b - c;
+        var p3 = a - d;
+
+        // Horizontal pass, each lane one row.
+        Vp8Transpose.Apply(ref p0, ref p1, ref p2, ref p3);
+        var dc = p0 + Vector128.Create(4);
+        a = dc + p2;
+        b = dc - p2;
+        c = Mul2(p1) - Mul1(p3);
+        d = Mul1(p1) + Mul2(p3);
+        var e0 = Vector128.ShiftRightArithmetic(a + d, 3);
+        var e1 = Vector128.ShiftRightArithmetic(b + c, 3);
+        var e2 = Vector128.ShiftRightArithmetic(b - c, 3);
+        var e3 = Vector128.ShiftRightArithmetic(a - d, 3);
+        Vp8Transpose.Apply(ref e0, ref e1, ref e2, ref e3);
+
+        ref var pixels = ref Unsafe.Add(ref MemoryMarshal.GetReference(block), offset);
+        var row0 = Add(ref pixels, e0);
+        var row1 = Add(ref Unsafe.Add(ref pixels, stride), e1);
+        var row2 = Add(ref Unsafe.Add(ref pixels, 2 * stride), e2);
+        var row3 = Add(ref Unsafe.Add(ref pixels, 3 * stride), e3);
+        var bytes = Vector128.Narrow(Vector128.Narrow(row0, row1), Vector128.Narrow(row2, row3)).AsUInt32();
+        Unsafe.WriteUnaligned(ref pixels, bytes.GetElement(0));
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, stride), bytes.GetElement(1));
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, 2 * stride), bytes.GetElement(2));
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, 3 * stride), bytes.GetElement(3));
+    }
+
+    /// <summary>A row of four pixels plus four residues, clamped to a byte, still in 32-bit lanes.</summary>
+    private static Vector128<int> Add(ref byte row, Vector128<int> residue)
+    {
+        var pixels = Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref row)).AsByte();
+        var sum = Vector128.WidenLower(Vector128.WidenLower(pixels)).AsInt32() + residue;
+        return Vector128.Min(Vector128.Max(sum, Vector128<int>.Zero), Vector128.Create(255));
+    }
+
+    private static Vector128<int> Mul1(Vector128<int> a) => Vector128.ShiftRightArithmetic(a * 20091, 16) + a;
+
+    private static Vector128<int> Mul2(Vector128<int> a) => Vector128.ShiftRightArithmetic(a * 35468, 16);
+
+    [SkipLocalsInit]
+    internal static void AddInverseDctScalar(ReadOnlySpan<short> input, Span<byte> block, int offset, int stride)
     {
         Span<int> temp = stackalloc int[16];
         for (var i = 0; i < 4; i++)
@@ -39,6 +116,7 @@ internal static class Vp8InverseTransform
     }
 
     /// <summary>The inverse Walsh-Hadamard transform of the Y2 block, written to the DC of each of the 16 luma blocks.</summary>
+    [SkipLocalsInit]
     public static void Walsh(ReadOnlySpan<short> input, Span<short> coefficients)
     {
         Span<int> temp = stackalloc int[16];

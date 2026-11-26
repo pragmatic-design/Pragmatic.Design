@@ -45,6 +45,29 @@ internal static class ImageEncoding
         }
     }
 
+    /// <summary>The WebP file of <paramref name="image" />, lossless or, at <paramref name="quality" />, lossy.</summary>
+    public static byte[] EncodeWebP(PixelBuffer image, WebPEncoding encoding, byte quality) => encoding switch
+    {
+        WebPEncoding.Lossless => WebPEncoder.EncodeLossless(image),
+        WebPEncoding.Lossy => WebPEncoder.EncodeLossy(image, quality),
+        _ => throw new ArgumentOutOfRangeException(nameof(encoding), encoding, "Not a WebP encoding."),
+    };
+
+    public static void EncodeWebP(PixelBuffer image, WebPEncoding encoding, byte quality, Stream output)
+    {
+        switch (encoding)
+        {
+            case WebPEncoding.Lossless:
+                WebPEncoder.EncodeLossless(image, output);
+                return;
+            case WebPEncoding.Lossy:
+                WebPEncoder.EncodeLossy(image, output, quality);
+                return;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(encoding), encoding, "Not a WebP encoding.");
+        }
+    }
+
     public static byte[] Encode(PixelBuffer image, ImageFormat format, byte quality)
     {
         // The WebP encoder knows its size once it has written: one array, without a stream growing.

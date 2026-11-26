@@ -23,6 +23,24 @@ internal static partial class Vp8Tables
 
     public static ReadOnlySpan<byte> Category6 => [254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0];
 
+    /// <summary>
+    ///     The category of a level of 11 or more, 0 for category 3 to 3 for category 6, with its extra bits'
+    ///     probabilities, how many there are, and the first level it codes.
+    /// </summary>
+    public static ReadOnlySpan<byte> LargeCategory(int level, out int category, out int bits, out int first)
+    {
+        category = level < 3 + (8 << 1) ? 0 : level < 3 + (8 << 2) ? 1 : level < 3 + (8 << 3) ? 2 : 3;
+        first = 3 + (8 << category);
+        bits = category == 3 ? 11 : category + 3;
+        return category switch
+        {
+            0 => Category3,
+            1 => Category4,
+            2 => Category5,
+            _ => Category6,
+        };
+    }
+
     /// <summary>The tree of the 4 x 4 intra modes in key frames (RFC 6386, section 11.2), in RFC numbering.</summary>
     public static ReadOnlySpan<sbyte> BModeTree =>
     [

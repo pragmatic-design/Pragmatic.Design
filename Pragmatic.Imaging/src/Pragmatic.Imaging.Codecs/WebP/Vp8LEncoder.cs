@@ -20,14 +20,17 @@ internal static class Vp8LEncoder
     /// <summary>The distance code of the pixel to the left, (1, 0) in the format's table of neighbours.</summary>
     private const int LeftDistanceSymbol = 1;
 
-    /// <summary>Writes the <c>VP8L</c> payload of <paramref name="image" /> to <paramref name="writer" />.</summary>
-    public static void Encode(PixelBuffer image, Vp8LBitWriter writer)
+    /// <summary>
+    ///     Writes the <c>VP8L</c> payload of <paramref name="image" /> to <paramref name="writer" />; without
+    ///     <paramref name="header" />, the stream an <c>ALPH</c> chunk holds, whose dimensions are the frame's.
+    /// </summary>
+    public static void Encode(PixelBuffer image, Vp8LBitWriter writer, bool header = true)
     {
         Span<uint> palette = stackalloc uint[Vp8LPalette.MaxColours];
         var colours = Vp8LPalette.Collect(image.Pixels, palette);
         if (colours == 0)
         {
-            EncodePredicted(image, writer);
+            EncodePredicted(image, writer, header);
             return;
         }
 
@@ -35,15 +38,15 @@ internal static class Vp8LEncoder
         // costs little there: the shorter is kept. A large one always gains from the table.
         if (image.Width * image.Height >= SmallImagePixels)
         {
-            EncodeIndexed(image, palette[..colours], writer);
+            EncodeIndexed(image, palette[..colours], writer, header);
             return;
         }
 
         using var indexed = new Vp8LBitWriter(image.ByteLength / 2);
-        EncodeIndexed(image, palette[..colours], indexed);
+        EncodeIndexed(image, palette[..colours], indexed, header);
         indexed.Flush();
         using var predicted = new Vp8LBitWriter(image.ByteLength / 2);
-        EncodePredicted(image, predicted);
+        EncodePredicted(image, predicted, header);
         predicted.Flush();
         writer.WriteBytes(indexed.Written.Length <= predicted.Written.Length ? indexed.Written : predicted.Written);
     }
@@ -55,7 +58,7 @@ internal static class Vp8LEncoder
     ///     At most 256 colours: the colour-indexing transform alone, its table delta-coded, and the indices
     ///     packed and prefix-coded with runs.
     /// </summary>
-    private static void EncodeIndexed(PixelBuffer image, ReadOnlySpan<uint> palette, Vp8LBitWriter writer)
+    private static void EncodeIndexed(PixelBuffer image, ReadOnlySpan<uint> palette, Vp8LBitWriter writer, bool header)
     {
         var width = image.Width;
         var height = image.Height;
@@ -67,7 +70,8 @@ internal static class Vp8LEncoder
             var opaque = true;
             foreach (var colour in palette)
                 opaque &= colour >> 24 == 0xFF;
-            WriteHeader(writer, width, height, opaque);
+            if (header)
+                WriteHeader(writer, width, height, opaque);
 
             writer.Write(1, 1);
             writer.Write(3, 2);
@@ -102,7 +106,7 @@ internal static class Vp8LEncoder
     }
 
     /// <summary>More than 256 colours: subtract green and the predictor, then the residues prefix-coded with runs.</summary>
-    private static void EncodePredicted(PixelBuffer image, Vp8LBitWriter writer)
+    private static void EncodePredicted(PixelBuffer image, Vp8LBitWriter writer, bool header)
     {
         var width = image.Width;
         var height = image.Height;
@@ -112,7 +116,8 @@ internal static class Vp8LEncoder
         {
             var pixels = argb.AsSpan(0, count);
             var opaque = ToResidues(image.Pixels, pixels, width, height);
-            WriteHeader(writer, width, height, opaque);
+            if (header)
+                WriteHeader(writer, width, height, opaque);
 
             // Subtract green (type 2), then the predictor (type 0) with one block for the whole image
             // at the largest size, 512, all of mode 2: the pixel above.

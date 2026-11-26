@@ -1,0 +1,195 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
+namespace Pragmatic.Imaging.Codecs.WebP;
+
+/// <summary>
+///     The quantization of one kind of block (luma, Y2 or chroma) in one segment: a step for the DC and one
+///     for every AC coefficient, each divided by as a fixed-point reciprocal with a rounding bias, the
+///     encoder's choice of rounding toward zero that the format leaves free. Luma AC is sharpened a little
+///     toward the higher frequencies, as libwebp sharpens it.
+/// </summary>
+internal sealed class Vp8QuantMatrix
+{
+    public const int MaxLevel = 2047;
+    private const int FixBits = 17;
+
+    // The rounding biases out of 256, DC then AC, for luma, Y2 and chroma; and the sharpening per raster
+    // position out of 2048 of the step. Both are libwebp's (quant_enc.c).
+    private static ReadOnlySpan<byte> Biases => [96, 110, 96, 108, 110, 115];
+
+    private static ReadOnlySpan<byte> Sharpening => [0, 30, 60, 90, 30, 60, 90, 90, 60, 90, 90, 90, 90, 90, 90, 90];
+
+    // Per scan position: the step, its reciprocal, the bias, the largest magnitude that quantizes to zero,
+    // and the sharpening, five ints each, so the loop reads them in order.
+    private readonly int[] _table = new int[16 * 5];
+
+    // The same five, each as 16 values in raster order, for the vectorised path.
+    private readonly int[] _raster = new int[5 * 16];
+
+    /// <param name="dcStep">The DC step, as the decoder will multiply by it.</param>
+    /// <param name="acStep">The AC step.</param>
+    /// <param name="kind">0 luma, 1 Y2, 2 chroma.</param>
+    public Vp8QuantMatrix(int dcStep, int acStep, int kind)
+    {
+        var zigzag = Vp8Tables.Zigzag;
+        for (var n = 0; n < 16; n++)
+        {
+            var step = n == 0 ? dcStep : acStep;
+            var reciprocal = (1 << FixBits) / step;
+            var bias = Biases[kind * 2 + (n == 0 ? 0 : 1)] << (FixBits - 8);
+            var entry = _table.AsSpan(n * 5, 5);
+            entry[0] = step;
+            entry[1] = reciprocal;
+            entry[2] = bias;
+            entry[3] = ((1 << FixBits) - 1 - bias) / reciprocal;
+            entry[4] = kind == 0 ? (Sharpening[zigzag[n]] * step) >> 11 : 0;
+            for (var k = 0; k < 5; k++)
+                _raster[k * 16 + zigzag[n]] = entry[k];
+        }
+
+        DcStep = dcStep;
+        AcStep = acStep;
+        AverageStep = (dcStep + 15 * acStep + 8) >> 4;
+    }
+
+    /// <summary>The DC step.</summary>
+    public int DcStep { get; }
+
+    /// <summary>The AC step.</summary>
+    public int AcStep { get; }
+
+    /// <summary>The mean of the 16 steps, which the rate-distortion weights are derived from.</summary>
+    public int AverageStep { get; }
+
+    /// <summary>
+    ///     Quantizes a DC coefficient in place, to what the decoder will rebuild, and returns half the error
+    ///     made, signed: what the chroma DC error diffusion passes on to the next blocks.
+    /// </summary>
+    public int QuantizeDc(ref short value)
+    {
+        int v = value;
+        var negative = v < 0;
+        if (negative)
+            v = -v;
+        if (v > _table[3])
+        {
+            var quantized = (int)(((uint)v * (uint)_table[1] + (uint)_table[2]) >> FixBits) * _table[0];
+            var error = v - quantized;
+            value = (short)(negative ? -quantized : quantized);
+            return (negative ? -error : error) >> 1;
+        }
+
+        value = 0;
+        return (negative ? -v : v) >> 1;
+    }
+
+    /// <summary>
+    ///     Quantizes the 16 coefficients of <paramref name="coefficients" /> (raster order) from position
+    ///     <paramref name="first" /> of the scan on, writing the levels to <paramref name="levels" /> in scan
+    ///     order and replacing each coefficient by what the decoder will rebuild from its level. Returns whether
+    ///     any level is not zero.
+    /// </summary>
+    public bool Quantize(Span<short> coefficients, Span<short> levels, int first = 0) =>
+        Vector128.IsHardwareAccelerated ? QuantizeVector(coefficients, levels, first) : QuantizeScalar(coefficients, levels, first);
+
+    /// <summary>
+    ///     The same, a row of four coefficients at a time in raster order; the levels are then moved into scan
+    ///     order by two shuffles of eight.
+    /// </summary>
+    internal bool QuantizeVector(Span<short> coefficients, Span<short> levels, int first = 0)
+    {
+        if (coefficients.Length < 16 || levels.Length < 16)
+            throw new ArgumentException("A block has 16 coefficients.");
+
+        ref var input = ref MemoryMarshal.GetReference(coefficients);
+        ref var table = ref MemoryMarshal.GetArrayDataReference(_raster);
+        var low = Vector128.LoadUnsafe(ref input);
+        var high = Vector128.LoadUnsafe(ref input, 8);
+        var v0 = Vector128.WidenLower(low);
+        var v1 = Vector128.WidenUpper(low);
+        var v2 = Vector128.WidenLower(high);
+        var v3 = Vector128.WidenUpper(high);
+
+        // With a Y2 block, position 0 is the DC it carries: left as it is, and not a level.
+        var keepDc = first > 0 ? Vector128.Create(-1, 0, 0, 0) : Vector128<int>.Zero;
+        var (l0, d0) = Row(v0, ref table, 0);
+        var (l1, d1) = Row(v1, ref table, 4);
+        var (l2, d2) = Row(v2, ref table, 8);
+        var (l3, d3) = Row(v3, ref table, 12);
+        l0 = Vector128.AndNot(l0, keepDc);
+        d0 = Vector128.ConditionalSelect(keepDc, v0, d0);
+
+        Vector128.Narrow(d0, d1).StoreUnsafe(ref input);
+        Vector128.Narrow(d2, d3).StoreUnsafe(ref input, 8);
+
+        // Scan order: 0 1 4 8 5 2 3 6 | 9 12 13 10 7 11 14 15, an index of 8 or more taking nothing.
+        var rasterLow = Vector128.Narrow(l0, l1);
+        var rasterHigh = Vector128.Narrow(l2, l3);
+        var scanLow = Vector128.Shuffle(rasterLow, Vector128.Create((short)0, 1, 4, 8, 5, 2, 3, 6)) |
+                      Vector128.Shuffle(rasterHigh, Vector128.Create((short)8, 8, 8, 0, 8, 8, 8, 8));
+        var scanHigh = Vector128.Shuffle(rasterHigh, Vector128.Create((short)1, 4, 5, 2, 8, 3, 6, 7)) |
+                       Vector128.Shuffle(rasterLow, Vector128.Create((short)8, 8, 8, 8, 7, 8, 8, 8));
+        ref var output = ref MemoryMarshal.GetReference(levels);
+        scanLow.StoreUnsafe(ref output);
+        scanHigh.StoreUnsafe(ref output, 8);
+        return (scanLow | scanHigh) != Vector128<short>.Zero;
+    }
+
+    /// <summary>One row of four: the signed levels, and what the decoder rebuilds from them.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<int> Levels, Vector128<int> Rebuilt) Row(Vector128<int> value, ref int table, int at)
+    {
+        var step = Vector128.LoadUnsafe(ref table, (nuint)at);
+        var reciprocal = Vector128.LoadUnsafe(ref table, (nuint)(16 + at));
+        var bias = Vector128.LoadUnsafe(ref table, (nuint)(32 + at));
+        var threshold = Vector128.LoadUnsafe(ref table, (nuint)(48 + at));
+        var sharpen = Vector128.LoadUnsafe(ref table, (nuint)(64 + at));
+        var negative = Vector128.LessThan(value, Vector128<int>.Zero);
+        var magnitude = Vector128.Abs(value) + sharpen;
+        var level = Vector128.ShiftRightLogical(magnitude * reciprocal + bias, FixBits);
+        level = Vector128.Min(level & Vector128.GreaterThan(magnitude, threshold), Vector128.Create(MaxLevel));
+        level = (level ^ negative) - negative;
+        return (level, level * step);
+    }
+
+    internal bool QuantizeScalar(Span<short> coefficients, Span<short> levels, int first = 0)
+    {
+        if (coefficients.Length < 16 || levels.Length < 16)
+            throw new ArgumentException("A block has 16 coefficients.");
+
+        var zigzag = Vp8Tables.Zigzag;
+        ref var input = ref MemoryMarshal.GetReference(coefficients);
+        ref var output = ref MemoryMarshal.GetReference(levels);
+        ref var entry = ref MemoryMarshal.GetArrayDataReference(_table);
+        var nonZero = 0;
+        for (var n = 0; n < first; n++)
+            Unsafe.Add(ref output, n) = 0;
+        for (var n = first; n < 16; n++)
+        {
+            ref var coefficient = ref Unsafe.Add(ref input, zigzag[n]);
+            ref var e = ref Unsafe.Add(ref entry, n * 5);
+            int value = coefficient;
+            var magnitude = (value < 0 ? -value : value) + Unsafe.Add(ref e, 4);
+            if (magnitude > Unsafe.Add(ref e, 3))
+            {
+                var level = (int)(((uint)magnitude * (uint)Unsafe.Add(ref e, 1) + (uint)Unsafe.Add(ref e, 2)) >> FixBits);
+                if (level > MaxLevel)
+                    level = MaxLevel;
+                if (value < 0)
+                    level = -level;
+                coefficient = (short)(level * e);
+                Unsafe.Add(ref output, n) = (short)level;
+                nonZero |= level;
+            }
+            else
+            {
+                coefficient = 0;
+                Unsafe.Add(ref output, n) = 0;
+            }
+        }
+
+        return nonZero != 0;
+    }
+}
