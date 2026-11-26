@@ -39,6 +39,10 @@ internal sealed class Vp8Costs : IDisposable
     private readonly ushort[] _endCosts = ArrayPool<ushort>.Shared.Rent(Positions);
     private readonly ushort[] _notEndCosts = ArrayPool<ushort>.Shared.Rent(Positions);
 
+    // The probabilities the tables were computed from; none yet, so the first update computes.
+    private readonly byte[] _probabilities = new byte[Vp8Tables.DefaultCoefficientProbabilities.Length];
+    private bool _computed;
+
     public void Dispose()
     {
         ArrayPool<ushort>.Shared.Return(_levelCosts);
@@ -72,8 +76,18 @@ internal sealed class Vp8Costs : IDisposable
         _ => Bit(1, 142) + Bit(1, 114) + Bit(1, 183),
     };
 
-    /// <summary>Recomputes the level costs from the coefficient probabilities [type, band, context, node].</summary>
-    public void Update(byte[] probabilities) => Compute(probabilities, _levelCosts, _endCosts, _notEndCosts);
+    /// <summary>
+    ///     Recomputes the level costs from the coefficient probabilities [type, band, context, node], unless
+    ///     they are the ones the tables already hold, as libwebp skips a refresh that changes nothing.
+    /// </summary>
+    public void Update(byte[] probabilities)
+    {
+        if (_computed && probabilities.AsSpan().SequenceEqual(_probabilities))
+            return;
+        Compute(probabilities, _levelCosts, _endCosts, _notEndCosts);
+        probabilities.CopyTo(_probabilities, 0);
+        _computed = true;
+    }
 
     /// <summary>
     ///     The level costs under the default coefficient probabilities, which every frame starts from: computed
@@ -84,6 +98,8 @@ internal sealed class Vp8Costs : IDisposable
         DefaultLevelCosts.CopyTo(_levelCosts, 0);
         DefaultEndCosts.CopyTo(_endCosts, 0);
         DefaultNotEndCosts.CopyTo(_notEndCosts, 0);
+        Vp8Tables.DefaultCoefficientProbabilities.CopyTo(_probabilities);
+        _computed = true;
     }
 
     private static void Compute(ReadOnlySpan<byte> probabilities, Span<ushort> levelCosts, Span<ushort> endCosts, Span<ushort> notEndCosts)
@@ -93,6 +109,20 @@ internal sealed class Vp8Costs : IDisposable
         {
             for (var n = 0; n < 16; n++)
             {
+                // The probabilities are per band, and eight positions share band 6: a position whose band an
+                // earlier one has takes that one's tables, as libwebp maps its positions to its band tables.
+                var earlier = bands[..n].IndexOf(bands[n]);
+                if (earlier >= 0)
+                {
+                    const int c = Vp8Tables.NumContexts;
+                    var from = (type * 16 + earlier) * c;
+                    var to = (type * 16 + n) * c;
+                    endCosts.Slice(from, c).CopyTo(endCosts.Slice(to, c));
+                    notEndCosts.Slice(from, c).CopyTo(notEndCosts.Slice(to, c));
+                    levelCosts.Slice(from * Levels, c * Levels).CopyTo(levelCosts.Slice(to * Levels, c * Levels));
+                    continue;
+                }
+
                 for (var ctx = 0; ctx < Vp8Tables.NumContexts; ctx++)
                 {
                     var p = Vp8Tokens.Offset(type, bands[n], ctx);
