@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -53,8 +54,7 @@ internal sealed partial class Vp8MacroblockCoder
             Vp8Prediction.Subblocks(_y, offset, predictions);
             for (var mode = 0; mode < 10; mode++)
             {
-                Vp8Prediction.Put(_y, offset, predictions.Slice(mode * 4, 4));
-                var nonZero = Reconstruct4(segment, offset, levels);
+                var nonZero = Reconstruct4(segment, offset, levels, predictions.Slice(mode * 4, 4));
                 long distortion = Vp8Distortion.SumOfSquares4(_sourceY, _candidate, offset);
                 long header = Vp8Costs.SubblockMode(top, leftMode, mode);
                 long rate = mode > 0 && Vp8Distortion.NonZeroAc(levels) <= 3 ? FlatnessPenalty : 0;
@@ -101,13 +101,26 @@ internal sealed partial class Vp8MacroblockCoder
     }
 
     /// <summary>
-    ///     Transforms and quantizes one 4 x 4 block against the prediction in the luma work buffer, into
-    ///     <paramref name="levels" />, and writes its reconstruction to the candidate buffer.
+    ///     Transforms and quantizes one 4 x 4 block against <paramref name="prediction" /> (its four row words),
+    ///     into <paramref name="levels" />, and writes its reconstruction to the candidate buffer. With SSE2 the
+    ///     prediction goes from registers to the transform and to the reconstruction, never through a buffer.
     /// </summary>
     [SkipLocalsInit]
-    private bool Reconstruct4(Vp8Segment segment, int offset, Span<short> levels)
+    private bool Reconstruct4(Vp8Segment segment, int offset, Span<short> levels, ReadOnlySpan<uint> prediction)
     {
         Span<short> coefficients = stackalloc short[16];
+        if (Sse2.IsSupported)
+        {
+            Vp8ForwardTransform.DctSse2(_sourceY, offset, prediction, coefficients);
+            var any = segment.Y1.Quantize(coefficients, levels);
+            if (any)
+                Vp8InverseTransform.AddInverseDctSse2(coefficients, prediction, _candidate, offset, S);
+            else
+                Vp8Prediction.Put(_candidate, offset, prediction);
+            return any;
+        }
+
+        Vp8Prediction.Put(_y, offset, prediction);
         Vp8ForwardTransform.Dct(_sourceY, _y, offset, coefficients);
         var nonZero = segment.Y1.Quantize(coefficients, levels);
         CopyBlock(_y, _candidate, offset, 4);

@@ -67,6 +67,56 @@ public sealed class Vp8EncoderKernelsTests
     }
 
     [Fact]
+    public void Transforms_WithThePredictionAsRowWords_AreTheTransformsOfThePredictionInABuffer()
+    {
+        if (!System.Runtime.Intrinsics.X86.Sse2.IsSupported)
+            return;
+        var random = new Random(853);
+        var source = new byte[S * 17];
+        var prediction = new byte[S * 17];
+        var rows = new uint[4];
+        for (var trial = 0; trial < 2000; trial++)
+        {
+            random.NextBytes(source);
+            random.NextBytes(prediction);
+            var offset = Vp8Borders.Origin + (trial & 3) * 4 + ((trial >> 2) & 3) * 4 * S;
+            for (var r = 0; r < 4; r++)
+                rows[r] = BitConverter.ToUInt32(prediction, offset + r * S);
+
+            var fromBuffer = new short[16];
+            var fromRows = new short[16];
+            Vp8ForwardTransform.DctSse2(source, prediction, offset, fromBuffer);
+            Vp8ForwardTransform.DctSse2(source, offset, rows, fromRows);
+            Assert.Equal(fromBuffer, fromRows);
+
+            // Past the 16-bit bound too, where both hand over to 32 bits.
+            var range = (trial % 3) switch { 0 => 2049, 1 => 200, _ => 8000 };
+            var coefficients = new short[16];
+            for (var i = 0; i < 16; i++)
+                coefficients[i] = (short)random.Next(-range, range);
+            // The row-word form must write the whole block from the rows: its block starts as noise.
+            var inPlace = (byte[])prediction.Clone();
+            var written = new byte[S * 17];
+            random.NextBytes(written);
+            CopyOutsideBlock(prediction, written, offset);
+            Vp8InverseTransform.AddInverseDctSse2(coefficients, inPlace, offset, S);
+            Vp8InverseTransform.AddInverseDctSse2(coefficients, rows, written, offset, S);
+            Assert.Equal(inPlace, written);
+        }
+    }
+
+    /// <summary>Everything but the 4 x 4 block at <paramref name="offset" />, which is left as it is.</summary>
+    private static void CopyOutsideBlock(byte[] from, byte[] to, int offset)
+    {
+        var block = new byte[16];
+        for (var r = 0; r < 4; r++)
+            Array.Copy(to, offset + r * S, block, r * 4, 4);
+        from.CopyTo(to, 0);
+        for (var r = 0; r < 4; r++)
+            Array.Copy(block, r * 4, to, offset + r * S, 4);
+    }
+
+    [Fact]
     public void Subblocks_OfRandomNeighbours_AreEachModesSubblockPrediction()
     {
         var random = new Random(853);

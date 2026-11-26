@@ -48,6 +48,32 @@ internal static class Vp8ForwardTransform
         var src23 = Sse2.UnpackLow(Row(ref src, 2 * s), Row(ref src, 3 * s));
         var pred01 = Sse2.UnpackLow(Row(ref pred, 0), Row(ref pred, s));
         var pred23 = Sse2.UnpackLow(Row(ref pred, 2 * s), Row(ref pred, 3 * s));
+        TransformSse2(src01, src23, pred01, pred23, output);
+    }
+
+    /// <summary>
+    ///     The same, the prediction given as its four row words (as <see cref="Vp8Prediction.Subblocks" /> gives
+    ///     them) rather than read back from a buffer it was first written to.
+    /// </summary>
+    internal static void DctSse2(ReadOnlySpan<byte> source, int offset, ReadOnlySpan<uint> prediction, Span<short> output)
+    {
+        const int s = Vp8Prediction.Stride;
+        if (source.Length < offset + 3 * s + 4 || prediction.Length < 4 || output.Length < 16)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var src = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), offset);
+        ref var rows = ref MemoryMarshal.GetReference(prediction);
+        var src01 = Sse2.UnpackLow(Row(ref src, 0), Row(ref src, s));
+        var src23 = Sse2.UnpackLow(Row(ref src, 2 * s), Row(ref src, 3 * s));
+        var pred01 = Sse2.UnpackLow(Word(rows), Word(Unsafe.Add(ref rows, 1)));
+        var pred23 = Sse2.UnpackLow(Word(Unsafe.Add(ref rows, 2)), Word(Unsafe.Add(ref rows, 3)));
+        TransformSse2(src01, src23, pred01, pred23, output);
+    }
+
+    /// <summary>The transform of the source rows less the prediction rows, each pair interleaved two pixels at a time.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void TransformSse2(Vector128<short> src01, Vector128<short> src23, Vector128<short> pred01, Vector128<short> pred23, Span<short> output)
+    {
         var zero = Vector128<byte>.Zero;
         var row01 = Sse2.UnpackLow(src01.AsByte(), zero).AsInt16() - Sse2.UnpackLow(pred01.AsByte(), zero).AsInt16();
         var row23 = Sse2.UnpackLow(src23.AsByte(), zero).AsInt16() - Sse2.UnpackLow(pred23.AsByte(), zero).AsInt16();
@@ -95,6 +121,9 @@ internal static class Vp8ForwardTransform
     /// <summary>A row's four bytes, in the low lanes.</summary>
     private static Vector128<short> Row(ref byte block, int at) =>
         Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref block, at))).AsInt16();
+
+    /// <summary>A row word's four bytes, in the low lanes.</summary>
+    private static Vector128<short> Word(uint row) => Vector128.CreateScalar(row).AsInt16();
 
     /// <summary>
     ///     The same arithmetic four lanes at a time: the block is loaded column by column, so the first pass

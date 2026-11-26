@@ -49,15 +49,54 @@ internal static class Vp8InverseTransform
             return;
         }
 
+        ref var pixels = ref Unsafe.Add(ref MemoryMarshal.GetReference(block), offset);
+        var rows01 = Sse2.UnpackLow(PixelRow(ref pixels, 0), PixelRow(ref pixels, stride)).AsByte();
+        var rows23 = Sse2.UnpackLow(PixelRow(ref pixels, 2 * stride), PixelRow(ref pixels, 3 * stride)).AsByte();
+        AddAndStore(in01, in23, rows01, rows23, ref pixels, stride);
+    }
+
+    /// <summary>
+    ///     The same, the prediction given as its four row words (as <see cref="Vp8Prediction.Subblocks" /> gives
+    ///     them): the block is written with prediction plus residue, without the prediction being first written
+    ///     there and read back.
+    /// </summary>
+    internal static void AddInverseDctSse2(ReadOnlySpan<short> input, ReadOnlySpan<uint> prediction, Span<byte> block, int offset, int stride)
+    {
+        if (input.Length < 16 || prediction.Length < 4 || block.Length < offset + 3 * stride + 4)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var coefficients = ref MemoryMarshal.GetReference(input);
+        var in01 = Vector128.LoadUnsafe(ref coefficients);
+        var in23 = Vector128.LoadUnsafe(ref coefficients, 8);
+        ref var pixels = ref Unsafe.Add(ref MemoryMarshal.GetReference(block), offset);
+        ref var rows = ref MemoryMarshal.GetReference(prediction);
+        var bound = Vector128.Create((short)Sse2Bound);
+        if (!Vector128.LessThanOrEqualAll((in01 + bound).AsUInt16(), Vector128.Create((ushort)(2 * Sse2Bound))) ||
+            !Vector128.LessThanOrEqualAll((in23 + bound).AsUInt16(), Vector128.Create((ushort)(2 * Sse2Bound))))
+        {
+            Unsafe.WriteUnaligned(ref pixels, rows);
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, stride), Unsafe.Add(ref rows, 1));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, 2 * stride), Unsafe.Add(ref rows, 2));
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref pixels, 3 * stride), Unsafe.Add(ref rows, 3));
+            AddInverseDctVector(input, block, offset, stride);
+            return;
+        }
+
+        var rows01 = Sse2.UnpackLow(Vector128.CreateScalar(rows).AsInt32(), Vector128.CreateScalar(Unsafe.Add(ref rows, 1)).AsInt32()).AsByte();
+        var rows23 = Sse2.UnpackLow(Vector128.CreateScalar(Unsafe.Add(ref rows, 2)).AsInt32(), Vector128.CreateScalar(Unsafe.Add(ref rows, 3)).AsInt32()).AsByte();
+        AddAndStore(in01, in23, rows01, rows23, ref pixels, stride);
+    }
+
+    /// <summary>The two passes over coefficients within the bound, added to the prediction rows (two to a vector) and stored.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddAndStore(Vector128<short> in01, Vector128<short> in23, Vector128<byte> rows01, Vector128<byte> rows23, ref byte pixels, int stride)
+    {
         var (v01, v23) = Pass(in01, in23, Vector128<short>.Zero);
         var (t01, t23) = Transpose(v01, v23);
         var (h01, h23) = Pass(t01, t23, Vector128.Create((short)4, 4, 4, 4, 0, 0, 0, 0));
         var (residue01, residue23) = Transpose(Sse2.ShiftRightArithmetic(h01, 3), Sse2.ShiftRightArithmetic(h23, 3));
 
-        ref var pixels = ref Unsafe.Add(ref MemoryMarshal.GetReference(block), offset);
         var zero = Vector128<byte>.Zero;
-        var rows01 = Sse2.UnpackLow(PixelRow(ref pixels, 0), PixelRow(ref pixels, stride)).AsByte();
-        var rows23 = Sse2.UnpackLow(PixelRow(ref pixels, 2 * stride), PixelRow(ref pixels, 3 * stride)).AsByte();
         var sum01 = Sse2.UnpackLow(rows01, zero).AsInt16() + residue01;
         var sum23 = Sse2.UnpackLow(rows23, zero).AsInt16() + residue23;
         var bytes = Sse2.PackUnsignedSaturate(sum01, sum23).AsUInt32();
