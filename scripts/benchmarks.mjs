@@ -186,6 +186,14 @@ export const ONE_OFF_BYTES = {
   'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Resize_Native': 18_876,
   'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Thumbnail_Managed': 18_876,
   'Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Thumbnail_Native': 18_876,
+  // The WebP rows (#853) are as slow, and the native lossless decode, 40 B in every other measurement,
+  // read 1,411 B in one runner run (Benchmarks run 45725729703) with its code unchanged.
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossless_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossless_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossy_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossy_Native': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossless_Managed': 18_876,
+  'Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossless_Native': 18_876,
 };
 
 /**
