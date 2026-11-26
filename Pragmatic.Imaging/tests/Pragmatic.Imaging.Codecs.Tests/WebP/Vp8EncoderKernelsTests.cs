@@ -236,6 +236,44 @@ public sealed class Vp8EncoderKernelsTests
         }
     }
 
+    [Fact]
+    public void HistogramAlpha_OfRandomHistograms_IsTheReachAgainstThePeakOfTheirSum()
+    {
+        var random = new Random(853);
+        var histogram = new int[4 * 32];
+        for (var trial = 0; trial < 20000; trial++)
+        {
+            // Empty, only the first bin, a single count, and sparse spreads of every reach.
+            var reach = trial % 4 == 0 ? 0 : random.Next(1, 33);
+            var density = random.Next(1, 8);
+            for (var i = 0; i < histogram.Length; i++)
+                histogram[i] = i % 32 < reach && random.Next(density) == 0 ? random.Next(0, 40) : 0;
+            if (trial % 97 == 0)
+            {
+                Array.Clear(histogram);
+                histogram[random.Next(4) * 32 + random.Next(32)] = 1;
+            }
+
+            Assert.Equal(ReachAgainstPeak(histogram), Vp8Analysis.HistogramAlpha(histogram));
+        }
+    }
+
+    /// <summary>libwebp's <c>GetAlpha</c> over the sum of the four histograms, a bin at a time.</summary>
+    private static int ReachAgainstPeak(int[] histogram)
+    {
+        int max = 0, lastNonZero = 1;
+        for (var k = 0; k < 32; k++)
+        {
+            var count = histogram[k] + histogram[32 + k] + histogram[64 + k] + histogram[96 + k];
+            if (count <= 0)
+                continue;
+            max = Math.Max(max, count);
+            lastNonZero = k;
+        }
+
+        return max > 1 ? 2 * 255 * lastNonZero / max : 0;
+    }
+
     private static int Squares(byte[] a, byte[] b, int offset, int size)
     {
         var sum = 0;

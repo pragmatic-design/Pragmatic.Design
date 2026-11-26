@@ -1,5 +1,6 @@
 // Follows libwebp (BSD-3-Clause, Copyright (c) 2010 Google Inc.): see THIRD-PARTY-NOTICES.md.
 using System.Buffers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -186,20 +187,28 @@ internal sealed class Vp8Analysis
     }
 
     /// <summary>How far out the histogram reaches against how tall its peak is (libwebp's <c>GetAlpha</c>).</summary>
-    private static int HistogramAlpha(ReadOnlySpan<int> histogram)
+    internal static int HistogramAlpha(ReadOnlySpan<int> histogram)
     {
-        int max = 0, lastNonZero = 1;
         const int b = MaxCoefficientBin + 1;
-        for (var k = 0; k <= MaxCoefficientBin; k++)
+        if (histogram.Length < 4 * b || b % Vector128<int>.Count != 0)
+            throw new ArgumentException("The histograms have 32 bins each.");
+
+        // The four histograms summed bin by bin, a vector of bins at a time; the tallest bin and the last one
+        // that is not empty from the sums.
+        ref var counts = ref MemoryMarshal.GetReference(histogram);
+        var max = Vector128<int>.Zero;
+        var nonEmpty = 0u;
+        for (var k = 0; k < b; k += Vector128<int>.Count)
         {
-            var count = histogram[k] + histogram[b + k] + histogram[2 * b + k] + histogram[3 * b + k];
-            if (count <= 0)
-                continue;
-            max = Math.Max(max, count);
-            lastNonZero = k;
+            var sum = Vector128.LoadUnsafe(ref counts, (nuint)k) + Vector128.LoadUnsafe(ref counts, (nuint)(b + k)) +
+                      Vector128.LoadUnsafe(ref counts, (nuint)(2 * b + k)) + Vector128.LoadUnsafe(ref counts, (nuint)(3 * b + k));
+            max = Vector128.Max(max, sum);
+            nonEmpty |= Vector128.GreaterThan(sum, Vector128<int>.Zero).ExtractMostSignificantBits() << k;
         }
 
-        return max > 1 ? 2 * MaxAlpha * lastNonZero / max : 0;
+        var tallest = Math.Max(Math.Max(max.GetElement(0), max.GetElement(1)), Math.Max(max.GetElement(2), max.GetElement(3)));
+        var lastNonZero = nonEmpty == 0 ? 1 : 31 - BitOperations.LeadingZeroCount(nonEmpty);
+        return tallest > 1 ? 2 * MaxAlpha * lastNonZero / tallest : 0;
     }
 
     /// <summary>A k-means of the macroblocks' values into the segments (libwebp's <c>AssignSegments</c>).</summary>
