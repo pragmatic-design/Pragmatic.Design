@@ -33,7 +33,7 @@ internal sealed class Vp8EncodedFrame : IDisposable
     {
         var count = picture.MacroblocksWide * picture.MacroblocksHigh;
         var first = new Vp8BoolEncoder(count + 1024);
-        var partition = new Vp8BoolEncoder(count * 16);
+        var partition = new Vp8BoolEncoder(count * 4);
         try
         {
             first.PutBitUniform(0); // colour space

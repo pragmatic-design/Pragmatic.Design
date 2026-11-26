@@ -39,7 +39,7 @@ internal static class Vp8Encoder
         var wide = picture.MacroblocksWide;
         var high = picture.MacroblocksHigh;
         var count = wide * high;
-        var analysis = Vp8Analysis.Run(picture);
+        using var analysis = Vp8Analysis.Run(picture);
         var plan = Vp8SegmentPlan.Build(quality, analysis);
 
         using var tokens = new Vp8Tokens(count * 25);

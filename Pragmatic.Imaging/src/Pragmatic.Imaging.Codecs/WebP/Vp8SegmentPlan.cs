@@ -88,7 +88,7 @@ internal sealed class Vp8SegmentPlan
             map[s] = count++;
         }
 
-        var segmentOf = analysis.SegmentOfMacroblock;
+        var segmentOf = analysis.SegmentOfMacroblock.AsSpan(0, analysis.Count);
         Span<int> sizes = stackalloc int[Vp8Analysis.Segments];
         for (var i = 0; i < segmentOf.Length; i++)
         {

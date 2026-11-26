@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -6,23 +8,29 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     simplest predictions from the source, the segments are a k-means of those values, and each segment's
 ///     distance from the mean decides how much finer or coarser its quantizer is than the frame's.
 /// </summary>
-internal sealed class Vp8Analysis
+internal sealed class Vp8Analysis : IDisposable
 {
     public const int Segments = 4;
     private const int MaxAlpha = 255;
     private const int MaxCoefficientBin = 31;
     private const int S = Vp8Prediction.Stride;
 
-    private Vp8Analysis(byte[] segmentOfMacroblock, int[] alpha, int[] beta, int uvAlpha)
+    private Vp8Analysis(byte[] segmentOfMacroblock, int count, int[] alpha, int[] beta, int uvAlpha)
     {
         SegmentOfMacroblock = segmentOfMacroblock;
+        Count = count;
         Alpha = alpha;
         Beta = beta;
         UvAlpha = uvAlpha;
     }
 
-    /// <summary>The segment of each macroblock, raster order.</summary>
+    /// <summary>The segment of each macroblock, raster order, in an array from the pool that may be longer.</summary>
     public byte[] SegmentOfMacroblock { get; }
+
+    /// <summary>How many macroblocks there are.</summary>
+    public int Count { get; }
+
+    public void Dispose() => ArrayPool<byte>.Shared.Return(SegmentOfMacroblock);
 
     /// <summary>Each segment's susceptibility against the mean, -127 to 127: the higher, the coarser it may be quantized.</summary>
     public int[] Alpha { get; }
@@ -36,15 +44,36 @@ internal sealed class Vp8Analysis
     public static Vp8Analysis Run(Vp8Picture picture)
     {
         var count = picture.MacroblocksWide * picture.MacroblocksHigh;
+        var pool = ArrayPool<byte>.Shared;
+        var mbAlpha = pool.Rent(count);
+        byte[][] work =
+        [
+            pool.Rent(S * Vp8Borders.LumaRows), pool.Rent(S * Vp8Borders.LumaRows),
+            pool.Rent(S * Vp8Borders.ChromaRows), pool.Rent(S * Vp8Borders.ChromaRows),
+            pool.Rent(S * Vp8Borders.ChromaRows), pool.Rent(S * Vp8Borders.ChromaRows),
+        ];
+        try
+        {
+            return Run(picture, count, mbAlpha, work[0], work[1], work[2], work[3], work[4], work[5]);
+        }
+        catch
+        {
+            pool.Return(mbAlpha);
+            throw;
+        }
+        finally
+        {
+            foreach (var buffer in work)
+                pool.Return(buffer);
+        }
+    }
+
+    /// <summary>The analysis proper, over work buffers each laid out as <see cref="Vp8Borders" /> lays them.</summary>
+    private static Vp8Analysis Run(Vp8Picture picture, int count, byte[] mbAlpha,
+        byte[] y, byte[] source, byte[] u, byte[] sourceU, byte[] v, byte[] sourceV)
+    {
         var alphas = new int[MaxAlpha + 1];
-        var mbAlpha = new byte[count];
         long uvSum = 0;
-        var y = new byte[S * Vp8Borders.LumaRows];
-        var u = new byte[S * Vp8Borders.ChromaRows];
-        var v = new byte[S * Vp8Borders.ChromaRows];
-        var source = new byte[S * Vp8Borders.LumaRows];
-        var sourceU = new byte[S * Vp8Borders.ChromaRows];
-        var sourceV = new byte[S * Vp8Borders.ChromaRows];
         for (var mbY = 0; mbY < picture.MacroblocksHigh; mbY++)
         {
             for (var mbX = 0; mbX < picture.MacroblocksWide; mbX++)
@@ -79,9 +108,8 @@ internal sealed class Vp8Analysis
             }
         }
 
-        // Each macroblock's value becomes its segment, in place.
-        var (alpha, beta) = AssignSegments(alphas, mbAlpha, mbAlpha);
-        return new Vp8Analysis(mbAlpha, alpha, beta, (int)(uvSum / count));
+        var (alpha, beta) = AssignSegments(alphas, mbAlpha.AsSpan(0, count));
+        return new Vp8Analysis(mbAlpha, count, alpha, beta, (int)(uvSum / count));
     }
 
     /// <summary>
@@ -156,7 +184,7 @@ internal sealed class Vp8Analysis
     }
 
     /// <summary>A k-means of the macroblocks' values into the segments (libwebp's <c>AssignSegments</c>).</summary>
-    private static (int[] Alpha, int[] Beta) AssignSegments(int[] alphas, byte[] mbAlpha, byte[] segments)
+    private static (int[] Alpha, int[] Beta) AssignSegments(int[] alphas, Span<byte> mbAlpha)
     {
         int min = 0, max;
         while (min <= MaxAlpha && alphas[min] == 0)
@@ -209,8 +237,9 @@ internal sealed class Vp8Analysis
                 break;
         }
 
+        // Each macroblock's value becomes its segment, in place.
         for (var i = 0; i < mbAlpha.Length; i++)
-            segments[i] = (byte)map[mbAlpha[i]];
+            mbAlpha[i] = (byte)map[mbAlpha[i]];
 
         int lowest = centers[0], highest = centers[0];
         foreach (var c in centers)

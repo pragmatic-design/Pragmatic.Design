@@ -19,7 +19,7 @@ internal sealed class Vp8Tokens : IDisposable
 
     public Vp8Tokens(int expectedBlocks)
     {
-        _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks * 4, 1024));
+        _store = ArrayPool<short>.Shared.Rent(Math.Max(expectedBlocks, 1024));
         _ones.AsSpan(0, ProbabilityCount).Clear();
         _totals.AsSpan(0, ProbabilityCount).Clear();
     }

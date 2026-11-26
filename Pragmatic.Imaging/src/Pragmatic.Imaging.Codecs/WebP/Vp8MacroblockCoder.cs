@@ -21,23 +21,23 @@ internal sealed partial class Vp8MacroblockCoder : IDisposable
     private readonly int _maxSubblockHeaderBits;
 
     // The source of the macroblock, and its neighbours and reconstruction, laid out as Vp8Borders lays them.
-    private readonly byte[] _sourceY = new byte[S * Vp8Borders.LumaRows];
-    private readonly byte[] _sourceU = new byte[S * Vp8Borders.ChromaRows];
-    private readonly byte[] _sourceV = new byte[S * Vp8Borders.ChromaRows];
-    private readonly byte[] _y = new byte[S * Vp8Borders.LumaRows];
-    private readonly byte[] _u = new byte[S * Vp8Borders.ChromaRows];
-    private readonly byte[] _v = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _sourceY = Rent(S * Vp8Borders.LumaRows);
+    private readonly byte[] _sourceU = Rent(S * Vp8Borders.ChromaRows);
+    private readonly byte[] _sourceV = Rent(S * Vp8Borders.ChromaRows);
+    private readonly byte[] _y = Rent(S * Vp8Borders.LumaRows);
+    private readonly byte[] _u = Rent(S * Vp8Borders.ChromaRows);
+    private readonly byte[] _v = Rent(S * Vp8Borders.ChromaRows);
 
     // Scratch for the candidates: their predictions and reconstructions.
-    private readonly byte[] _prediction = new byte[S * Vp8Borders.LumaRows];
-    private byte[] _candidate = new byte[S * Vp8Borders.LumaRows];
-    private byte[] _best = new byte[S * Vp8Borders.LumaRows];
-    private readonly byte[] _predictionU = new byte[S * Vp8Borders.ChromaRows];
-    private readonly byte[] _predictionV = new byte[S * Vp8Borders.ChromaRows];
-    private byte[] _candidateU = new byte[S * Vp8Borders.ChromaRows];
-    private byte[] _candidateV = new byte[S * Vp8Borders.ChromaRows];
-    private byte[] _bestU = new byte[S * Vp8Borders.ChromaRows];
-    private byte[] _bestV = new byte[S * Vp8Borders.ChromaRows];
+    private readonly byte[] _prediction = Rent(S * Vp8Borders.LumaRows);
+    private byte[] _candidate = Rent(S * Vp8Borders.LumaRows);
+    private byte[] _best = Rent(S * Vp8Borders.LumaRows);
+    private readonly byte[] _predictionU = Rent(S * Vp8Borders.ChromaRows);
+    private readonly byte[] _predictionV = Rent(S * Vp8Borders.ChromaRows);
+    private byte[] _candidateU = Rent(S * Vp8Borders.ChromaRows);
+    private byte[] _candidateV = Rent(S * Vp8Borders.ChromaRows);
+    private byte[] _bestU = Rent(S * Vp8Borders.ChromaRows);
+    private byte[] _bestV = Rent(S * Vp8Borders.ChromaRows);
 
     private readonly short[] _coefficients = new short[16 * 16];
     private readonly short[] _levels = new short[16 * 16];
@@ -86,13 +86,16 @@ internal sealed partial class Vp8MacroblockCoder : IDisposable
     public void Dispose()
     {
         var pool = ArrayPool<byte>.Shared;
-        pool.Return(_topY);
-        pool.Return(_topU);
-        pool.Return(_topV);
-        pool.Return(_nextTopY);
-        pool.Return(_nextTopU);
-        pool.Return(_nextTopV);
+        foreach (var buffer in (byte[][])[
+                     _topY, _topU, _topV, _nextTopY, _nextTopU, _nextTopV,
+                     _sourceY, _sourceU, _sourceV, _y, _u, _v,
+                     _prediction, _candidate, _best, _predictionU, _predictionV, _candidateU, _candidateV, _bestU, _bestV,
+                 ])
+            pool.Return(buffer);
     }
+
+    /// <summary>A work buffer from the pool. Whatever it held is overwritten before it is read.</summary>
+    private static byte[] Rent(int length) => ArrayPool<byte>.Shared.Rent(length);
 
     /// <summary>Called before the first macroblock of a row.</summary>
     public void StartRow()

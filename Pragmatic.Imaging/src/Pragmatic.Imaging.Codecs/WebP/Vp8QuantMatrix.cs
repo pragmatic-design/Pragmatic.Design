@@ -21,32 +21,31 @@ internal sealed class Vp8QuantMatrix
 
     private static ReadOnlySpan<byte> Sharpening => [0, 30, 60, 90, 30, 60, 90, 90, 60, 90, 90, 90, 90, 90, 90, 90];
 
-    // Per scan position: the step, its reciprocal, the bias, the largest magnitude that quantizes to zero,
-    // and the sharpening, five ints each, so the loop reads them in order.
-    private readonly int[] _table = new int[16 * 5];
+    // Sixteen values each, in raster order: the step, its reciprocal, the bias, the largest magnitude that
+    // quantizes to zero, and the sharpening.
+    private const int Step = 0;
+    private const int Reciprocal = 16;
+    private const int Bias = 32;
+    private const int Threshold = 48;
+    private const int Sharpen = 64;
 
-    // The same five, each as 16 values in raster order, for the vectorised path.
-    private readonly int[] _raster = new int[5 * 16];
+    private readonly int[] _table = new int[5 * 16];
 
     /// <param name="dcStep">The DC step, as the decoder will multiply by it.</param>
     /// <param name="acStep">The AC step.</param>
     /// <param name="kind">0 luma, 1 Y2, 2 chroma.</param>
     public Vp8QuantMatrix(int dcStep, int acStep, int kind)
     {
-        var zigzag = Vp8Tables.Zigzag;
-        for (var n = 0; n < 16; n++)
+        for (var j = 0; j < 16; j++)
         {
-            var step = n == 0 ? dcStep : acStep;
+            var step = j == 0 ? dcStep : acStep;
             var reciprocal = (1 << FixBits) / step;
-            var bias = Biases[kind * 2 + (n == 0 ? 0 : 1)] << (FixBits - 8);
-            var entry = _table.AsSpan(n * 5, 5);
-            entry[0] = step;
-            entry[1] = reciprocal;
-            entry[2] = bias;
-            entry[3] = ((1 << FixBits) - 1 - bias) / reciprocal;
-            entry[4] = kind == 0 ? (Sharpening[zigzag[n]] * step) >> 11 : 0;
-            for (var k = 0; k < 5; k++)
-                _raster[k * 16 + zigzag[n]] = entry[k];
+            var bias = Biases[kind * 2 + (j == 0 ? 0 : 1)] << (FixBits - 8);
+            _table[Step + j] = step;
+            _table[Reciprocal + j] = reciprocal;
+            _table[Bias + j] = bias;
+            _table[Threshold + j] = ((1 << FixBits) - 1 - bias) / reciprocal;
+            _table[Sharpen + j] = kind == 0 ? (Sharpening[j] * step) >> 11 : 0;
         }
 
         DcStep = dcStep;
@@ -73,9 +72,9 @@ internal sealed class Vp8QuantMatrix
         var negative = v < 0;
         if (negative)
             v = -v;
-        if (v > _table[3])
+        if (v > _table[Threshold])
         {
-            var quantized = (int)(((uint)v * (uint)_table[1] + (uint)_table[2]) >> FixBits) * _table[0];
+            var quantized = (int)(((uint)v * (uint)_table[Reciprocal] + (uint)_table[Bias]) >> FixBits) * _table[Step];
             var error = v - quantized;
             value = (short)(negative ? -quantized : quantized);
             return (negative ? -error : error) >> 1;
@@ -104,7 +103,7 @@ internal sealed class Vp8QuantMatrix
             throw new ArgumentException("A block has 16 coefficients.");
 
         ref var input = ref MemoryMarshal.GetReference(coefficients);
-        ref var table = ref MemoryMarshal.GetArrayDataReference(_raster);
+        ref var table = ref MemoryMarshal.GetArrayDataReference(_table);
         var low = Vector128.LoadUnsafe(ref input);
         var high = Vector128.LoadUnsafe(ref input, 8);
         var v0 = Vector128.WidenLower(low);
@@ -141,11 +140,11 @@ internal sealed class Vp8QuantMatrix
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static (Vector128<int> Levels, Vector128<int> Rebuilt) Row(Vector128<int> value, ref int table, int at)
     {
-        var step = Vector128.LoadUnsafe(ref table, (nuint)at);
-        var reciprocal = Vector128.LoadUnsafe(ref table, (nuint)(16 + at));
-        var bias = Vector128.LoadUnsafe(ref table, (nuint)(32 + at));
-        var threshold = Vector128.LoadUnsafe(ref table, (nuint)(48 + at));
-        var sharpen = Vector128.LoadUnsafe(ref table, (nuint)(64 + at));
+        var step = Vector128.LoadUnsafe(ref table, (nuint)(Step + at));
+        var reciprocal = Vector128.LoadUnsafe(ref table, (nuint)(Reciprocal + at));
+        var bias = Vector128.LoadUnsafe(ref table, (nuint)(Bias + at));
+        var threshold = Vector128.LoadUnsafe(ref table, (nuint)(Threshold + at));
+        var sharpen = Vector128.LoadUnsafe(ref table, (nuint)(Sharpen + at));
         var negative = Vector128.LessThan(value, Vector128<int>.Zero);
         var magnitude = Vector128.Abs(value) + sharpen;
         var level = Vector128.ShiftRightLogical(magnitude * reciprocal + bias, FixBits);
@@ -162,24 +161,24 @@ internal sealed class Vp8QuantMatrix
         var zigzag = Vp8Tables.Zigzag;
         ref var input = ref MemoryMarshal.GetReference(coefficients);
         ref var output = ref MemoryMarshal.GetReference(levels);
-        ref var entry = ref MemoryMarshal.GetArrayDataReference(_table);
+        ref var table = ref MemoryMarshal.GetArrayDataReference(_table);
         var nonZero = 0;
         for (var n = 0; n < first; n++)
             Unsafe.Add(ref output, n) = 0;
         for (var n = first; n < 16; n++)
         {
-            ref var coefficient = ref Unsafe.Add(ref input, zigzag[n]);
-            ref var e = ref Unsafe.Add(ref entry, n * 5);
+            int j = zigzag[n];
+            ref var coefficient = ref Unsafe.Add(ref input, j);
             int value = coefficient;
-            var magnitude = (value < 0 ? -value : value) + Unsafe.Add(ref e, 4);
-            if (magnitude > Unsafe.Add(ref e, 3))
+            var magnitude = (value < 0 ? -value : value) + Unsafe.Add(ref table, Sharpen + j);
+            if (magnitude > Unsafe.Add(ref table, Threshold + j))
             {
-                var level = (int)(((uint)magnitude * (uint)Unsafe.Add(ref e, 1) + (uint)Unsafe.Add(ref e, 2)) >> FixBits);
+                var level = (int)(((uint)magnitude * (uint)Unsafe.Add(ref table, Reciprocal + j) + (uint)Unsafe.Add(ref table, Bias + j)) >> FixBits);
                 if (level > MaxLevel)
                     level = MaxLevel;
                 if (value < 0)
                     level = -level;
-                coefficient = (short)(level * e);
+                coefficient = (short)(level * Unsafe.Add(ref table, Step + j));
                 Unsafe.Add(ref output, n) = (short)level;
                 nonZero |= level;
             }
