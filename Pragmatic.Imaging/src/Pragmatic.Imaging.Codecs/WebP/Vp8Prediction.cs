@@ -1,3 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>
@@ -63,6 +67,12 @@ internal static class Vp8Prediction
 
     private static void TrueMotion(byte[] buffer, int dst, int size)
     {
+        if (size >= 8 && Vector128.IsHardwareAccelerated)
+        {
+            TrueMotionVector(buffer, dst, size);
+            return;
+        }
+
         var topLeft = buffer[dst - Stride - 1];
         for (var y = 0; y < size; y++)
         {
@@ -72,13 +82,42 @@ internal static class Vp8Prediction
         }
     }
 
+    /// <summary>The same for 8 or 16 wide: the row above widened once, each row's offset added and clamped.</summary>
+    private static void TrueMotionVector(byte[] buffer, int dst, int size)
+    {
+        if (dst - Stride - 1 < 0 || buffer.Length < dst + (size - 1) * Stride + 16)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var origin = ref MemoryMarshal.GetArrayDataReference(buffer);
+        var top = Vector128.LoadUnsafe(ref origin, (nuint)(dst - Stride));
+        var topLow = Vector128.WidenLower(top).AsInt16();
+        var topHigh = Vector128.WidenUpper(top).AsInt16();
+        int topLeft = buffer[dst - Stride - 1];
+        for (var y = 0; y < size; y++)
+        {
+            var row = dst + y * Stride;
+            var offset = Vector128.Create((short)(buffer[row - 1] - topLeft));
+            var predicted = Vector128.Narrow(Clamp(topLow + offset), Clamp(topHigh + offset));
+            if (size == 16)
+                predicted.StoreUnsafe(ref origin, (nuint)row);
+            else
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref origin, row), predicted.AsUInt64().ToScalar());
+        }
+    }
+
+    private static Vector128<ushort> Clamp(Vector128<short> value) =>
+        Vector128.Min(Vector128.Max(value, Vector128<short>.Zero), Vector128.Create((short)255)).AsUInt16();
+
     /// <summary>A 4 x 4 luma block predicted by one of the ten subblock modes.</summary>
     public static void Subblock(byte[] b, int dst, int mode)
     {
         const int s = Stride;
-        int Top(int i) => b[dst - s + i];
-        int Left(int i) => b[dst - 1 + i * s];
-        void Set(int x, int y, int value) => b[dst + x + y * s] = (byte)value;
+
+        // The block reads one row above (and eight across it) and one column to its left: checked once, then
+        // read and written through a reference.
+        if (dst - s - 1 < 0 || dst + 3 * s + 4 > b.Length || dst - s + 8 > b.Length)
+            throw new ArgumentOutOfRangeException(nameof(dst), dst, "The block and its neighbours reach past the buffer.");
+        ref var o = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(b), dst);
 
         switch (mode)
         {
@@ -86,16 +125,16 @@ internal static class Vp8Prediction
             {
                 for (var x = 0; x < 4; x++)
                 {
-                    var value = Avg3(Top(x - 1), Top(x), Top(x + 1));
+                    var value = Avg3(Top(ref o, x - 1), Top(ref o, x), Top(ref o, x + 1));
                     for (var y = 0; y < 4; y++)
-                        Set(x, y, value);
+                        Set(ref o, x, y, value);
                 }
 
                 return;
             }
             case Vp8Modes.BHe:
             {
-                int a = Top(-1), bb = Left(0), c = Left(1), d = Left(2), e = Left(3);
+                int a = Top(ref o, -1), bb = Left(ref o, 0), c = Left(ref o, 1), d = Left(ref o, 2), e = Left(ref o, 3);
                 b.AsSpan(dst, 4).Fill((byte)Avg3(a, bb, c));
                 b.AsSpan(dst + s, 4).Fill((byte)Avg3(bb, c, d));
                 b.AsSpan(dst + 2 * s, 4).Fill((byte)Avg3(c, d, e));
@@ -109,94 +148,103 @@ internal static class Vp8Prediction
             {
                 var sum = 4;
                 for (var i = 0; i < 4; i++)
-                    sum += Top(i) + Left(i);
+                    sum += Top(ref o, i) + Left(ref o, i);
                 Fill(b, dst, 4, (byte)(sum >> 3));
                 return;
             }
             case Vp8Modes.BRd:
             {
-                int i = Left(0), j = Left(1), k = Left(2), l = Left(3), x = Top(-1), a = Top(0), bb = Top(1), c = Top(2), d = Top(3);
-                Set(0, 3, Avg3(j, k, l));
-                Set(1, 3, Avg3(i, j, k)); Set(0, 2, Avg3(i, j, k));
-                Set(2, 3, Avg3(x, i, j)); Set(1, 2, Avg3(x, i, j)); Set(0, 1, Avg3(x, i, j));
-                Set(3, 3, Avg3(a, x, i)); Set(2, 2, Avg3(a, x, i)); Set(1, 1, Avg3(a, x, i)); Set(0, 0, Avg3(a, x, i));
-                Set(3, 2, Avg3(bb, a, x)); Set(2, 1, Avg3(bb, a, x)); Set(1, 0, Avg3(bb, a, x));
-                Set(3, 1, Avg3(c, bb, a)); Set(2, 0, Avg3(c, bb, a));
-                Set(3, 0, Avg3(d, c, bb));
+                int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3), x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3);
+                Set(ref o, 0, 3, Avg3(j, k, l));
+                Set(ref o, 1, 3, Avg3(i, j, k)); Set(ref o, 0, 2, Avg3(i, j, k));
+                Set(ref o, 2, 3, Avg3(x, i, j)); Set(ref o, 1, 2, Avg3(x, i, j)); Set(ref o, 0, 1, Avg3(x, i, j));
+                Set(ref o, 3, 3, Avg3(a, x, i)); Set(ref o, 2, 2, Avg3(a, x, i)); Set(ref o, 1, 1, Avg3(a, x, i)); Set(ref o, 0, 0, Avg3(a, x, i));
+                Set(ref o, 3, 2, Avg3(bb, a, x)); Set(ref o, 2, 1, Avg3(bb, a, x)); Set(ref o, 1, 0, Avg3(bb, a, x));
+                Set(ref o, 3, 1, Avg3(c, bb, a)); Set(ref o, 2, 0, Avg3(c, bb, a));
+                Set(ref o, 3, 0, Avg3(d, c, bb));
                 return;
             }
             case Vp8Modes.BLd:
             {
-                int a = Top(0), bb = Top(1), c = Top(2), d = Top(3), e = Top(4), f = Top(5), g = Top(6), h = Top(7);
-                Set(0, 0, Avg3(a, bb, c));
-                Set(1, 0, Avg3(bb, c, d)); Set(0, 1, Avg3(bb, c, d));
-                Set(2, 0, Avg3(c, d, e)); Set(1, 1, Avg3(c, d, e)); Set(0, 2, Avg3(c, d, e));
-                Set(3, 0, Avg3(d, e, f)); Set(2, 1, Avg3(d, e, f)); Set(1, 2, Avg3(d, e, f)); Set(0, 3, Avg3(d, e, f));
-                Set(3, 1, Avg3(e, f, g)); Set(2, 2, Avg3(e, f, g)); Set(1, 3, Avg3(e, f, g));
-                Set(3, 2, Avg3(f, g, h)); Set(2, 3, Avg3(f, g, h));
-                Set(3, 3, Avg3(g, h, h));
+                int a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3), e = Top(ref o, 4), f = Top(ref o, 5), g = Top(ref o, 6), h = Top(ref o, 7);
+                Set(ref o, 0, 0, Avg3(a, bb, c));
+                Set(ref o, 1, 0, Avg3(bb, c, d)); Set(ref o, 0, 1, Avg3(bb, c, d));
+                Set(ref o, 2, 0, Avg3(c, d, e)); Set(ref o, 1, 1, Avg3(c, d, e)); Set(ref o, 0, 2, Avg3(c, d, e));
+                Set(ref o, 3, 0, Avg3(d, e, f)); Set(ref o, 2, 1, Avg3(d, e, f)); Set(ref o, 1, 2, Avg3(d, e, f)); Set(ref o, 0, 3, Avg3(d, e, f));
+                Set(ref o, 3, 1, Avg3(e, f, g)); Set(ref o, 2, 2, Avg3(e, f, g)); Set(ref o, 1, 3, Avg3(e, f, g));
+                Set(ref o, 3, 2, Avg3(f, g, h)); Set(ref o, 2, 3, Avg3(f, g, h));
+                Set(ref o, 3, 3, Avg3(g, h, h));
                 return;
             }
             case Vp8Modes.BVr:
             {
-                int i = Left(0), j = Left(1), k = Left(2), x = Top(-1), a = Top(0), bb = Top(1), c = Top(2), d = Top(3);
-                Set(0, 0, Avg2(x, a)); Set(1, 2, Avg2(x, a));
-                Set(1, 0, Avg2(a, bb)); Set(2, 2, Avg2(a, bb));
-                Set(2, 0, Avg2(bb, c)); Set(3, 2, Avg2(bb, c));
-                Set(3, 0, Avg2(c, d));
-                Set(0, 3, Avg3(k, j, i));
-                Set(0, 2, Avg3(j, i, x));
-                Set(0, 1, Avg3(i, x, a)); Set(1, 3, Avg3(i, x, a));
-                Set(1, 1, Avg3(x, a, bb)); Set(2, 3, Avg3(x, a, bb));
-                Set(2, 1, Avg3(a, bb, c)); Set(3, 3, Avg3(a, bb, c));
-                Set(3, 1, Avg3(bb, c, d));
+                int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3);
+                Set(ref o, 0, 0, Avg2(x, a)); Set(ref o, 1, 2, Avg2(x, a));
+                Set(ref o, 1, 0, Avg2(a, bb)); Set(ref o, 2, 2, Avg2(a, bb));
+                Set(ref o, 2, 0, Avg2(bb, c)); Set(ref o, 3, 2, Avg2(bb, c));
+                Set(ref o, 3, 0, Avg2(c, d));
+                Set(ref o, 0, 3, Avg3(k, j, i));
+                Set(ref o, 0, 2, Avg3(j, i, x));
+                Set(ref o, 0, 1, Avg3(i, x, a)); Set(ref o, 1, 3, Avg3(i, x, a));
+                Set(ref o, 1, 1, Avg3(x, a, bb)); Set(ref o, 2, 3, Avg3(x, a, bb));
+                Set(ref o, 2, 1, Avg3(a, bb, c)); Set(ref o, 3, 3, Avg3(a, bb, c));
+                Set(ref o, 3, 1, Avg3(bb, c, d));
                 return;
             }
             case Vp8Modes.BVl:
             {
-                int a = Top(0), bb = Top(1), c = Top(2), d = Top(3), e = Top(4), f = Top(5), g = Top(6), h = Top(7);
-                Set(0, 0, Avg2(a, bb));
-                Set(1, 0, Avg2(bb, c)); Set(0, 2, Avg2(bb, c));
-                Set(2, 0, Avg2(c, d)); Set(1, 2, Avg2(c, d));
-                Set(3, 0, Avg2(d, e)); Set(2, 2, Avg2(d, e));
-                Set(0, 1, Avg3(a, bb, c));
-                Set(1, 1, Avg3(bb, c, d)); Set(0, 3, Avg3(bb, c, d));
-                Set(2, 1, Avg3(c, d, e)); Set(1, 3, Avg3(c, d, e));
-                Set(3, 1, Avg3(d, e, f)); Set(2, 3, Avg3(d, e, f));
-                Set(3, 2, Avg3(e, f, g));
-                Set(3, 3, Avg3(f, g, h));
+                int a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3), e = Top(ref o, 4), f = Top(ref o, 5), g = Top(ref o, 6), h = Top(ref o, 7);
+                Set(ref o, 0, 0, Avg2(a, bb));
+                Set(ref o, 1, 0, Avg2(bb, c)); Set(ref o, 0, 2, Avg2(bb, c));
+                Set(ref o, 2, 0, Avg2(c, d)); Set(ref o, 1, 2, Avg2(c, d));
+                Set(ref o, 3, 0, Avg2(d, e)); Set(ref o, 2, 2, Avg2(d, e));
+                Set(ref o, 0, 1, Avg3(a, bb, c));
+                Set(ref o, 1, 1, Avg3(bb, c, d)); Set(ref o, 0, 3, Avg3(bb, c, d));
+                Set(ref o, 2, 1, Avg3(c, d, e)); Set(ref o, 1, 3, Avg3(c, d, e));
+                Set(ref o, 3, 1, Avg3(d, e, f)); Set(ref o, 2, 3, Avg3(d, e, f));
+                Set(ref o, 3, 2, Avg3(e, f, g));
+                Set(ref o, 3, 3, Avg3(f, g, h));
                 return;
             }
             case Vp8Modes.BHd:
             {
-                int i = Left(0), j = Left(1), k = Left(2), l = Left(3), x = Top(-1), a = Top(0), bb = Top(1), c = Top(2);
-                Set(0, 0, Avg2(i, x)); Set(2, 1, Avg2(i, x));
-                Set(0, 1, Avg2(j, i)); Set(2, 2, Avg2(j, i));
-                Set(0, 2, Avg2(k, j)); Set(2, 3, Avg2(k, j));
-                Set(0, 3, Avg2(l, k));
-                Set(3, 0, Avg3(a, bb, c));
-                Set(2, 0, Avg3(x, a, bb));
-                Set(1, 0, Avg3(i, x, a)); Set(3, 1, Avg3(i, x, a));
-                Set(1, 1, Avg3(j, i, x)); Set(3, 2, Avg3(j, i, x));
-                Set(1, 2, Avg3(k, j, i)); Set(3, 3, Avg3(k, j, i));
-                Set(1, 3, Avg3(l, k, j));
+                int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3), x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2);
+                Set(ref o, 0, 0, Avg2(i, x)); Set(ref o, 2, 1, Avg2(i, x));
+                Set(ref o, 0, 1, Avg2(j, i)); Set(ref o, 2, 2, Avg2(j, i));
+                Set(ref o, 0, 2, Avg2(k, j)); Set(ref o, 2, 3, Avg2(k, j));
+                Set(ref o, 0, 3, Avg2(l, k));
+                Set(ref o, 3, 0, Avg3(a, bb, c));
+                Set(ref o, 2, 0, Avg3(x, a, bb));
+                Set(ref o, 1, 0, Avg3(i, x, a)); Set(ref o, 3, 1, Avg3(i, x, a));
+                Set(ref o, 1, 1, Avg3(j, i, x)); Set(ref o, 3, 2, Avg3(j, i, x));
+                Set(ref o, 1, 2, Avg3(k, j, i)); Set(ref o, 3, 3, Avg3(k, j, i));
+                Set(ref o, 1, 3, Avg3(l, k, j));
                 return;
             }
             default:
             {
                 // Horizontal-up.
-                int i = Left(0), j = Left(1), k = Left(2), l = Left(3);
-                Set(0, 0, Avg2(i, j));
-                Set(2, 0, Avg2(j, k)); Set(0, 1, Avg2(j, k));
-                Set(2, 1, Avg2(k, l)); Set(0, 2, Avg2(k, l));
-                Set(1, 0, Avg3(i, j, k));
-                Set(3, 0, Avg3(j, k, l)); Set(1, 1, Avg3(j, k, l));
-                Set(3, 1, Avg3(k, l, l)); Set(1, 2, Avg3(k, l, l));
-                Set(3, 2, l); Set(2, 2, l); Set(0, 3, l); Set(1, 3, l); Set(2, 3, l); Set(3, 3, l);
+                int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3);
+                Set(ref o, 0, 0, Avg2(i, j));
+                Set(ref o, 2, 0, Avg2(j, k)); Set(ref o, 0, 1, Avg2(j, k));
+                Set(ref o, 2, 1, Avg2(k, l)); Set(ref o, 0, 2, Avg2(k, l));
+                Set(ref o, 1, 0, Avg3(i, j, k));
+                Set(ref o, 3, 0, Avg3(j, k, l)); Set(ref o, 1, 1, Avg3(j, k, l));
+                Set(ref o, 3, 1, Avg3(k, l, l)); Set(ref o, 1, 2, Avg3(k, l, l));
+                Set(ref o, 3, 2, l); Set(ref o, 2, 2, l); Set(ref o, 0, 3, l); Set(ref o, 1, 3, l); Set(ref o, 2, 3, l); Set(ref o, 3, 3, l);
                 return;
             }
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Top(ref byte o, int i) => Unsafe.Add(ref o, i - Stride);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Left(ref byte o, int i) => Unsafe.Add(ref o, i * Stride - 1);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Set(ref byte o, int x, int y, int value) => Unsafe.Add(ref o, x + y * Stride) = (byte)value;
 
     private static int Avg3(int a, int b, int c) => (a + 2 * b + c + 2) >> 2;
 

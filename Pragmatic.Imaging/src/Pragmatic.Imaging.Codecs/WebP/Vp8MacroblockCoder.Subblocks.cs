@@ -34,6 +34,7 @@ internal sealed partial class Vp8MacroblockCoder
         var aboveModes = _aboveModes.AsSpan(mbX * 4, 4);
         Span<int> modes = stackalloc int[16];
         Span<short> levels = stackalloc short[16];
+        Span<short> bestLevels = stackalloc short[16];
         var headerBits = 0L;
 
         for (var block = 0; block < 16; block++)
@@ -46,33 +47,36 @@ internal sealed partial class Vp8MacroblockCoder
             var bestMode = -1;
             var best = Vp8Score.Worst;
             var bestNonZero = false;
+            var lambda = segment.LambdaI4;
+            var context = above[x] + left[y];
             for (var mode = 0; mode < 10; mode++)
             {
                 Vp8Prediction.Subblock(_y, offset, mode);
                 var nonZero = Reconstruct4(segment, offset, levels);
-                var score = new Vp8Score
-                {
-                    Distortion = Vp8Distortion.SumOfSquares4(_sourceY, _candidate, offset),
-                    Header = Vp8Costs.SubblockMode(top, leftMode, mode),
-                    Rate = mode > 0 && Vp8Distortion.IsFlat(levels, 1, 3) ? FlatnessPenalty : 0,
-                };
+                long distortion = Vp8Distortion.SumOfSquares4(_sourceY, _candidate, offset);
+                long header = Vp8Costs.SubblockMode(top, leftMode, mode);
+                long rate = mode > 0 && Vp8Distortion.NonZeroAc(levels) <= 3 ? FlatnessPenalty : 0;
 
                 // The levels' rate costs most to compute: skip it for a mode already beaten without it.
-                score.Weigh(segment.LambdaI4);
-                if (bestMode >= 0 && score.Value >= best.Value)
+                if (bestMode >= 0 && (rate + header) * lambda + 256 * distortion >= best.Value)
                     continue;
-                score.Rate += _costs.Residual(3, 0, above[x] + left[y], levels);
-                score.Weigh(segment.LambdaI4);
-                if (bestMode >= 0 && score.Value >= best.Value)
+                rate += _costs.Residual(3, 0, context, levels);
+                var value = (rate + header) * lambda + 256 * distortion;
+                if (bestMode >= 0 && value >= best.Value)
                     continue;
 
-                best = score;
+                best = new Vp8Score { Distortion = distortion, Header = header, Rate = rate, Value = value };
                 bestMode = mode;
                 bestNonZero = nonZero;
-                CopyBlock(_candidate, _prediction, offset, 4);
-                levels.CopyTo(_subblockLevels.AsSpan(block * 16, 16));
+
+                // The candidate's buffers become the best's, and the old best's the next candidate's.
+                (_candidate, _prediction) = (_prediction, _candidate);
+                var previous = levels;
+                levels = bestLevels;
+                bestLevels = previous;
             }
 
+            bestLevels.CopyTo(_subblockLevels.AsSpan(block * 16, 16));
             best.Weigh(segment.LambdaMode);
             total.Add(best);
             if (total.Value >= reference)

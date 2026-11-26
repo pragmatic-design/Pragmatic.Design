@@ -1,4 +1,7 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -29,7 +32,7 @@ internal sealed partial class Vp8MacroblockCoder : IDisposable
     private readonly byte[] _v = Rent(S * Vp8Borders.ChromaRows);
 
     // Scratch for the candidates: their predictions and reconstructions.
-    private readonly byte[] _prediction = Rent(S * Vp8Borders.LumaRows);
+    private byte[] _prediction = Rent(S * Vp8Borders.LumaRows);
     private byte[] _candidate = Rent(S * Vp8Borders.LumaRows);
     private byte[] _best = Rent(S * Vp8Borders.LumaRows);
     private readonly byte[] _predictionU = Rent(S * Vp8Borders.ChromaRows);
@@ -201,16 +204,34 @@ internal sealed partial class Vp8MacroblockCoder : IDisposable
             plane.AsSpan((y + j) * stride + x, size).CopyTo(block.AsSpan(Origin + j * S, size));
     }
 
-    private static void CopyBlock(byte[] from, byte[] to, int size)
-    {
-        for (var j = 0; j < size; j++)
-            from.AsSpan(Origin + j * S, size).CopyTo(to.AsSpan(Origin + j * S, size));
-    }
+    private static void CopyBlock(byte[] from, byte[] to, int size) => CopyBlock(from, to, Origin, size);
 
+    /// <summary>Copies a block of 4, 8 or 16 pixels square, a row at a time in one move.</summary>
     private static void CopyBlock(byte[] from, byte[] to, int offset, int size)
     {
+        var end = offset + (size - 1) * S + size;
+        if (from.Length < end || to.Length < end)
+            throw new ArgumentException("The block reaches past its buffer.");
+
+        ref var source = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(from), offset);
+        ref var target = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(to), offset);
         for (var j = 0; j < size; j++)
-            from.AsSpan(offset + j * S, size).CopyTo(to.AsSpan(offset + j * S, size));
+        {
+            ref var a = ref Unsafe.Add(ref source, j * S);
+            ref var b = ref Unsafe.Add(ref target, j * S);
+            switch (size)
+            {
+                case 4:
+                    Unsafe.WriteUnaligned(ref b, Unsafe.ReadUnaligned<uint>(ref a));
+                    break;
+                case 8:
+                    Unsafe.WriteUnaligned(ref b, Unsafe.ReadUnaligned<ulong>(ref a));
+                    break;
+                default:
+                    Unsafe.WriteUnaligned(ref b, Unsafe.ReadUnaligned<Vector128<byte>>(ref a));
+                    break;
+            }
+        }
     }
 
     /// <summary>The offset of 4 x 4 block <paramref name="block" /> (raster order) of a 16 x 16 macroblock.</summary>

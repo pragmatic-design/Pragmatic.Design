@@ -1,4 +1,7 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -134,7 +137,7 @@ internal sealed class Vp8Analysis : IDisposable
 
     private static int Susceptibility(byte[] source, byte[] prediction, int size)
     {
-        Span<int> histogram = stackalloc int[MaxCoefficientBin + 1];
+        Span<int> histogram = stackalloc int[4 * (MaxCoefficientBin + 1)];
         Span<short> coefficients = stackalloc short[16];
         for (var by = 0; by < size; by += 4)
         {
@@ -147,7 +150,7 @@ internal sealed class Vp8Analysis : IDisposable
 
     private static int ChromaSusceptibility(byte[] sourceU, byte[] u, byte[] sourceV, byte[] v)
     {
-        Span<int> histogram = stackalloc int[MaxCoefficientBin + 1];
+        Span<int> histogram = stackalloc int[4 * (MaxCoefficientBin + 1)];
         Span<short> coefficients = stackalloc short[16];
         for (var by = 0; by < 8; by += 4)
         {
@@ -164,19 +167,42 @@ internal sealed class Vp8Analysis : IDisposable
     private static void Collect(byte[] source, byte[] prediction, int offset, Span<short> coefficients, Span<int> histogram)
     {
         Vp8ForwardTransform.Dct(source, prediction, offset, coefficients);
-        foreach (var c in coefficients)
-            histogram[Math.Min(Math.Abs((int)c) >> 3, MaxCoefficientBin)]++;
+        if (coefficients.Length < 16 || histogram.Length < 4 * (MaxCoefficientBin + 1))
+            throw new ArgumentException("A block has 16 coefficients and the histograms 32 bins each.");
+
+        // Each coefficient's bin, |c| / 8 up to the last, sixteen at once; then the counts.
+        ref var values = ref MemoryMarshal.GetReference(coefficients);
+        var last = Vector128.Create((short)MaxCoefficientBin);
+        var low = Vector128.Min(Vector128.ShiftRightArithmetic(Vector128.Abs(Vector128.LoadUnsafe(ref values)), 3), last);
+        var high = Vector128.Min(Vector128.ShiftRightArithmetic(Vector128.Abs(Vector128.LoadUnsafe(ref values, 8)), 3), last);
+
+        // Four histograms side by side, a lane in each in turn, so no increment waits on the one before.
+        ref var counts = ref MemoryMarshal.GetReference(histogram);
+        const int b = MaxCoefficientBin + 1;
+        for (var i = 0; i < 8; i += 4)
+        {
+            Unsafe.Add(ref counts, low.GetElement(i))++;
+            Unsafe.Add(ref counts, b + low.GetElement(i + 1))++;
+            Unsafe.Add(ref counts, 2 * b + low.GetElement(i + 2))++;
+            Unsafe.Add(ref counts, 3 * b + low.GetElement(i + 3))++;
+            Unsafe.Add(ref counts, high.GetElement(i))++;
+            Unsafe.Add(ref counts, b + high.GetElement(i + 1))++;
+            Unsafe.Add(ref counts, 2 * b + high.GetElement(i + 2))++;
+            Unsafe.Add(ref counts, 3 * b + high.GetElement(i + 3))++;
+        }
     }
 
     /// <summary>How far out the histogram reaches against how tall its peak is (libwebp's <c>GetAlpha</c>).</summary>
     private static int HistogramAlpha(ReadOnlySpan<int> histogram)
     {
         int max = 0, lastNonZero = 1;
+        const int b = MaxCoefficientBin + 1;
         for (var k = 0; k <= MaxCoefficientBin; k++)
         {
-            if (histogram[k] <= 0)
+            var count = histogram[k] + histogram[b + k] + histogram[2 * b + k] + histogram[3 * b + k];
+            if (count <= 0)
                 continue;
-            max = Math.Max(max, histogram[k]);
+            max = Math.Max(max, count);
             lastNonZero = k;
         }
 

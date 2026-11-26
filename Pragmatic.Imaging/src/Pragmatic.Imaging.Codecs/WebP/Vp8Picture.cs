@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -70,12 +72,40 @@ internal sealed class Vp8Picture : IDisposable
         {
             var source = rgba.Slice(y * Width * 4, Width * 4);
             var row = Y.AsSpan(y * YStride, Width);
-            for (var x = 0; x < row.Length; x++)
+            var x = Vector128.IsHardwareAccelerated ? ConvertLumaVector(source, row) : 0;
+            for (; x < row.Length; x++)
             {
                 var p = x * 4;
                 row[x] = (byte)((16839 * source[p] + 33059 * source[p + 1] + 6420 * source[p + 2] + (1 << 15) + (16 << 16)) >> 16);
             }
         }
+    }
+
+    /// <summary>Sixteen pixels of a row at a time, four to a vector of 32-bit lanes; returns how many it did.</summary>
+    private static int ConvertLumaVector(ReadOnlySpan<byte> source, Span<byte> row)
+    {
+        ref var pixels = ref MemoryMarshal.GetReference(source);
+        ref var target = ref MemoryMarshal.GetReference(row);
+        var x = 0;
+        for (; x + 16 <= row.Length; x += 16)
+        {
+            var a = Luma(Vector128.LoadUnsafe(ref pixels, (nuint)(x * 4)).AsUInt32());
+            var b = Luma(Vector128.LoadUnsafe(ref pixels, (nuint)(x * 4 + 16)).AsUInt32());
+            var c = Luma(Vector128.LoadUnsafe(ref pixels, (nuint)(x * 4 + 32)).AsUInt32());
+            var d = Luma(Vector128.LoadUnsafe(ref pixels, (nuint)(x * 4 + 48)).AsUInt32());
+            Vector128.Narrow(Vector128.Narrow(a, b), Vector128.Narrow(c, d)).StoreUnsafe(ref target, (nuint)x);
+        }
+
+        return x;
+    }
+
+    private static Vector128<uint> Luma(Vector128<uint> rgba)
+    {
+        var mask = Vector128.Create(0xFFu);
+        var r = rgba & mask;
+        var g = Vector128.ShiftRightLogical(rgba, 8) & mask;
+        var b = Vector128.ShiftRightLogical(rgba, 16) & mask;
+        return Vector128.ShiftRightLogical(r * 16839 + g * 33059 + b * 6420 + Vector128.Create((1u << 15) + (16u << 16)), 16);
     }
 
     private void ConvertChroma(ReadOnlySpan<byte> rgba)

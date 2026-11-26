@@ -20,7 +20,6 @@ internal sealed partial class Vp8MacroblockCoder
             {
                 Distortion = Vp8Distortion.SumOfSquares(_sourceY, _candidate, Origin, 16, 16),
                 Header = Vp8Costs.Luma16Mode(mode),
-                Rate = Luma16Rate(mbX),
             };
             if (flat)
             {
@@ -30,6 +29,11 @@ internal sealed partial class Vp8MacroblockCoder
                     score.Distortion *= 2;
             }
 
+            // The rate only adds: a mode already beaten without it is beaten with it.
+            score.Weigh(segment.LambdaI16);
+            if (mode > 0 && score.Value >= best.Value)
+                continue;
+            score.Rate = Luma16Rate(mbX);
             score.Weigh(segment.LambdaI16);
             if (mode == 0 || score.Value < best.Value)
             {

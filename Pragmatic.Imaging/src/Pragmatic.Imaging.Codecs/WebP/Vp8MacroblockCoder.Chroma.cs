@@ -36,11 +36,15 @@ internal sealed partial class Vp8MacroblockCoder
                 Distortion = Vp8Distortion.SumOfSquares(_sourceU, _candidateU, Origin, 8, 8) +
                              Vp8Distortion.SumOfSquares(_sourceV, _candidateV, Origin, 8, 8),
                 Header = Vp8Costs.ChromaMode(mode),
-                Rate = ChromaRate(mbX),
             };
             if (mode > 0 && Vp8Distortion.IsFlat(_chromaLevels, 8, 2))
                 score.Rate += FlatnessPenalty * 8;
 
+            // The levels' rate only adds: a mode already beaten without it is beaten with it.
+            score.Weigh(segment.LambdaUv);
+            if (mode > 0 && score.Value >= best.Value)
+                continue;
+            score.Rate += ChromaRate(mbX);
             score.Weigh(segment.LambdaUv);
             if (mode == 0 || score.Value < best.Value)
             {
