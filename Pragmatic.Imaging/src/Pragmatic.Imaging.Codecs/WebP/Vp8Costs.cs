@@ -24,6 +24,14 @@ internal sealed class Vp8Costs : IDisposable
     private static readonly ushort[] FixedLevelCosts = BuildFixedLevelCosts();
     private static readonly int[] SubblockModeCosts = BuildSubblockModeCosts();
 
+    // The tables under the default probabilities, filled by the static constructor once Entropy and
+    // FixedLevelCosts, which they are built from, are.
+    private static readonly ushort[] DefaultLevelCosts = new ushort[Positions * Levels];
+    private static readonly ushort[] DefaultEndCosts = new ushort[Positions];
+    private static readonly ushort[] DefaultNotEndCosts = new ushort[Positions];
+
+    static Vp8Costs() => Compute(Vp8Tables.DefaultCoefficientProbabilities, DefaultLevelCosts, DefaultEndCosts, DefaultNotEndCosts);
+
     // [type][position 0..15][context][level 0..67], the band of each position resolved.
     private readonly ushort[] _levelCosts = ArrayPool<ushort>.Shared.Rent(Positions * Levels);
 
@@ -65,7 +73,20 @@ internal sealed class Vp8Costs : IDisposable
     };
 
     /// <summary>Recomputes the level costs from the coefficient probabilities [type, band, context, node].</summary>
-    public void Update(byte[] probabilities)
+    public void Update(byte[] probabilities) => Compute(probabilities, _levelCosts, _endCosts, _notEndCosts);
+
+    /// <summary>
+    ///     The level costs under the default coefficient probabilities, which every frame starts from: computed
+    ///     once, and copied.
+    /// </summary>
+    public void UseDefaults()
+    {
+        DefaultLevelCosts.CopyTo(_levelCosts, 0);
+        DefaultEndCosts.CopyTo(_endCosts, 0);
+        DefaultNotEndCosts.CopyTo(_notEndCosts, 0);
+    }
+
+    private static void Compute(ReadOnlySpan<byte> probabilities, Span<ushort> levelCosts, Span<ushort> endCosts, Span<ushort> notEndCosts)
     {
         var bands = Vp8Tables.Bands;
         for (var type = 0; type < Vp8Tables.NumTypes; type++)
@@ -76,14 +97,14 @@ internal sealed class Vp8Costs : IDisposable
                 {
                     var p = Vp8Tokens.Offset(type, bands[n], ctx);
                     var position = (type * 16 + n) * Vp8Tables.NumContexts + ctx;
-                    _endCosts[position] = (ushort)Bit(0, probabilities[p]);
-                    _notEndCosts[position] = (ushort)Bit(1, probabilities[p]);
-                    var table = _levelCosts.AsSpan(position * Levels, Levels);
+                    endCosts[position] = (ushort)Bit(0, probabilities[p]);
+                    notEndCosts[position] = (ushort)Bit(1, probabilities[p]);
+                    var table = levelCosts.Slice(position * Levels, Levels);
                     var notEnd = ctx > 0 ? Bit(1, probabilities[p]) : 0;
                     table[0] = (ushort)(Bit(0, probabilities[p + 1]) + notEnd);
                     var nonZero = Bit(1, probabilities[p + 1]) + notEnd;
                     for (var v = 1; v < Levels; v++)
-                        table[v] = (ushort)(nonZero + VariableCost(v, probabilities.AsSpan(p, Vp8Tables.NumProbabilities)) + FixedLevelCosts[v]);
+                        table[v] = (ushort)(nonZero + VariableCost(v, probabilities.Slice(p, Vp8Tables.NumProbabilities)) + FixedLevelCosts[v]);
                 }
             }
         }

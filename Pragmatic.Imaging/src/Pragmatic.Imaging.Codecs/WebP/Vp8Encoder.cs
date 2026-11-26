@@ -58,7 +58,7 @@ internal static class Vp8Encoder
         var modes = workspace.Modes;
         modes.Begin(count);
         var costs = workspace.Costs;
-        costs.Update(tokens.Probabilities);
+        costs.UseDefaults();
         var coder = workspace.Coder;
         coder.Begin(picture, maxHeaderBits, quality <= ErrorDiffusionQuality);
         var decision = workspace.Decision;
