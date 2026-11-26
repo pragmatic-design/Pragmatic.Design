@@ -75,8 +75,8 @@ internal sealed partial class Vp8MacroblockCoder
             var source = plane == 0 ? _sourceU : _sourceV;
             var prediction = plane == 0 ? _predictionU : _predictionV;
             var reconstruction = plane == 0 ? _candidateU : _candidateV;
-            for (var block = 0; block < 4; block++)
-                Vp8ForwardTransform.Dct(source, prediction, ChromaBlock(block), coefficients.Slice(block * 16, 16));
+            for (var block = 0; block < 4; block += 2)
+                Vp8ForwardTransform.Dct2(source, prediction, ChromaBlock(block), coefficients.Slice(block * 16, 32));
             if (_diffuseErrors)
                 DiffuseErrors(mbX, plane, segment.Uv, coefficients);
 

@@ -70,8 +70,8 @@ internal sealed partial class Vp8MacroblockCoder
     private int Reconstruct16(Vp8Segment segment, byte[] prediction, byte[] reconstruction)
     {
         var coefficients = _coefficients.AsSpan();
-        for (var n = 0; n < 16; n++)
-            Vp8ForwardTransform.Dct(_sourceY, prediction, LumaBlock(n), coefficients.Slice(n * 16, 16));
+        for (var n = 0; n < 16; n += 2)
+            Vp8ForwardTransform.Dct2(_sourceY, prediction, LumaBlock(n), coefficients.Slice(n * 16, 32));
 
         Span<short> y2 = stackalloc short[16];
         Vp8ForwardTransform.Walsh(coefficients, y2);

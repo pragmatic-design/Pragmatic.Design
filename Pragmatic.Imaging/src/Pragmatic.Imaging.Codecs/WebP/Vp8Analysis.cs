@@ -132,10 +132,10 @@ internal sealed class Vp8Analysis
     private static int Susceptibility(byte[] source, byte[] prediction, int size)
     {
         Span<int> histogram = stackalloc int[4 * (MaxCoefficientBin + 1)];
-        Span<short> coefficients = stackalloc short[16];
+        Span<short> coefficients = stackalloc short[32];
         for (var by = 0; by < size; by += 4)
         {
-            for (var bx = 0; bx < size; bx += 4)
+            for (var bx = 0; bx < size; bx += 8)
                 Collect(source, prediction, Vp8Borders.Origin + by * S + bx, coefficients, histogram);
         }
 
@@ -145,44 +145,45 @@ internal sealed class Vp8Analysis
     private static int ChromaSusceptibility(byte[] sourceU, byte[] u, byte[] sourceV, byte[] v)
     {
         Span<int> histogram = stackalloc int[4 * (MaxCoefficientBin + 1)];
-        Span<short> coefficients = stackalloc short[16];
+        Span<short> coefficients = stackalloc short[32];
         for (var by = 0; by < 8; by += 4)
         {
-            for (var bx = 0; bx < 8; bx += 4)
-            {
-                Collect(sourceU, u, Vp8Borders.Origin + by * S + bx, coefficients, histogram);
-                Collect(sourceV, v, Vp8Borders.Origin + by * S + bx, coefficients, histogram);
-            }
+            Collect(sourceU, u, Vp8Borders.Origin + by * S, coefficients, histogram);
+            Collect(sourceV, v, Vp8Borders.Origin + by * S, coefficients, histogram);
         }
 
         return HistogramAlpha(histogram);
     }
 
+    /// <summary>Counts the coefficients of the two side-by-side blocks at <paramref name="offset" /> into the histograms.</summary>
     private static void Collect(byte[] source, byte[] prediction, int offset, Span<short> coefficients, Span<int> histogram)
     {
-        Vp8ForwardTransform.Dct(source, prediction, offset, coefficients);
-        if (coefficients.Length < 16 || histogram.Length < 4 * (MaxCoefficientBin + 1))
-            throw new ArgumentException("A block has 16 coefficients and the histograms 32 bins each.");
+        Vp8ForwardTransform.Dct2(source, prediction, offset, coefficients);
+        if (coefficients.Length < 32 || histogram.Length < 4 * (MaxCoefficientBin + 1))
+            throw new ArgumentException("Two blocks have 32 coefficients and the histograms 32 bins each.");
 
         // Each coefficient's bin, |c| / 8 up to the last, sixteen at once; then the counts.
         ref var values = ref MemoryMarshal.GetReference(coefficients);
         var last = Vector128.Create((short)MaxCoefficientBin);
-        var low = Vector128.Min(Vector128.ShiftRightArithmetic(Vector128.Abs(Vector128.LoadUnsafe(ref values)), 3), last);
-        var high = Vector128.Min(Vector128.ShiftRightArithmetic(Vector128.Abs(Vector128.LoadUnsafe(ref values, 8)), 3), last);
-
-        // Four histograms side by side, a lane in each in turn, so no increment waits on the one before.
         ref var counts = ref MemoryMarshal.GetReference(histogram);
         const int b = MaxCoefficientBin + 1;
-        for (var i = 0; i < 8; i += 4)
+        for (var block = 0; block < 32; block += 16)
         {
-            Unsafe.Add(ref counts, low.GetElement(i))++;
-            Unsafe.Add(ref counts, b + low.GetElement(i + 1))++;
-            Unsafe.Add(ref counts, 2 * b + low.GetElement(i + 2))++;
-            Unsafe.Add(ref counts, 3 * b + low.GetElement(i + 3))++;
-            Unsafe.Add(ref counts, high.GetElement(i))++;
-            Unsafe.Add(ref counts, b + high.GetElement(i + 1))++;
-            Unsafe.Add(ref counts, 2 * b + high.GetElement(i + 2))++;
-            Unsafe.Add(ref counts, 3 * b + high.GetElement(i + 3))++;
+            var low = Vector128.Min(Vector128.ShiftRightArithmetic(Vector128.Abs(Vector128.LoadUnsafe(ref values, (nuint)block)), 3), last);
+            var high = Vector128.Min(Vector128.ShiftRightArithmetic(Vector128.Abs(Vector128.LoadUnsafe(ref values, (nuint)(block + 8))), 3), last);
+
+            // Four histograms side by side, a lane in each in turn, so no increment waits on the one before.
+            for (var i = 0; i < 8; i += 4)
+            {
+                Unsafe.Add(ref counts, low.GetElement(i))++;
+                Unsafe.Add(ref counts, b + low.GetElement(i + 1))++;
+                Unsafe.Add(ref counts, 2 * b + low.GetElement(i + 2))++;
+                Unsafe.Add(ref counts, 3 * b + low.GetElement(i + 3))++;
+                Unsafe.Add(ref counts, high.GetElement(i))++;
+                Unsafe.Add(ref counts, b + high.GetElement(i + 1))++;
+                Unsafe.Add(ref counts, 2 * b + high.GetElement(i + 2))++;
+                Unsafe.Add(ref counts, 3 * b + high.GetElement(i + 3))++;
+            }
         }
     }
 

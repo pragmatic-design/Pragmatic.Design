@@ -30,6 +30,43 @@ internal static class Vp8ForwardTransform
     }
 
     /// <summary>
+    ///     The DCTs of two side-by-side blocks at <paramref name="offset" />, into 32 coefficients: the left
+    ///     block's 16, then the right one's (libwebp's <c>FTransform2</c>).
+    /// </summary>
+    public static void Dct2(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prediction, int offset, Span<short> output)
+    {
+        if (!Sse2.IsSupported)
+        {
+            Dct(source, prediction, offset, output[..16]);
+            Dct(source, prediction, offset + 4, output[16..32]);
+            return;
+        }
+
+        const int s = Vp8Prediction.Stride;
+        var end = offset + 3 * s + 8;
+        if (source.Length < end || prediction.Length < end || output.Length < 32)
+            throw new ArgumentException("The blocks reach past their buffers.");
+
+        // Rows of eight pixels, interleaved two at a time: the low half of each vector is the left block as
+        // the one-block form lays it out, the high half the right block.
+        ref var src = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), offset);
+        ref var pred = ref Unsafe.Add(ref MemoryMarshal.GetReference(prediction), offset);
+        var src01 = Sse2.UnpackLow(Wide(ref src, 0), Wide(ref src, s));
+        var src23 = Sse2.UnpackLow(Wide(ref src, 2 * s), Wide(ref src, 3 * s));
+        var pred01 = Sse2.UnpackLow(Wide(ref pred, 0), Wide(ref pred, s));
+        var pred23 = Sse2.UnpackLow(Wide(ref pred, 2 * s), Wide(ref pred, 3 * s));
+        TransformSse2(src01, src23, pred01, pred23, output);
+        TransformSse2(High(src01), High(src23), High(pred01), High(pred23), output[16..]);
+    }
+
+    /// <summary>A row's eight bytes, in the low lanes.</summary>
+    private static Vector128<short> Wide(ref byte block, int at) =>
+        Vector128.CreateScalar(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref block, at))).AsInt16();
+
+    /// <summary>The high half of <paramref name="value" />, moved to the low half.</summary>
+    private static Vector128<short> High(Vector128<short> value) => Sse2.UnpackHigh(value.AsInt64(), value.AsInt64()).AsInt16();
+
+    /// <summary>
     ///     The same arithmetic in 16-bit lanes, as libwebp's <c>FTransform_SSE2</c> does it: each product pair
     ///     of a pass (<c>a2 * 2217 + a3 * 5352</c> and the like) is one multiply-add into 32 bits, packed back
     ///     straight after. The block's differences are 9-bit and no intermediate leaves 16 bits.

@@ -39,6 +39,27 @@ public sealed class Vp8EncoderKernelsTests
     }
 
     [Fact]
+    public void Dct2_IsEachBlocksDctOnItsOwn()
+    {
+        var random = new Random(853);
+        var source = new byte[S * 17];
+        var prediction = new byte[S * 17];
+        for (var trial = 0; trial < 2000; trial++)
+        {
+            random.NextBytes(source);
+            random.NextBytes(prediction);
+            var offset = Vp8Borders.Origin + (trial & 1) * 8 + ((trial >> 1) & 3) * 4 * S;
+            var expected = new short[32];
+            Vp8ForwardTransform.DctScalar(source, prediction, offset, expected.AsSpan(0, 16));
+            Vp8ForwardTransform.DctScalar(source, prediction, offset + 4, expected.AsSpan(16, 16));
+
+            var pair = new short[32];
+            Vp8ForwardTransform.Dct2(source, prediction, offset, pair);
+            Assert.Equal(expected, pair);
+        }
+    }
+
+    [Fact]
     public void AddInverseDct_VectorAndScalar_GiveTheSamePixels()
     {
         var random = new Random(853);
