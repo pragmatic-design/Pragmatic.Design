@@ -23,11 +23,11 @@ internal static class Vp8Encoder
     /// </summary>
     public static Vp8EncodedFrame Encode(Vp8EncoderWorkspace workspace, ReadOnlySpan<byte> rgba, int width, int height, int quality)
     {
-        workspace.Picture.Load(rgba, width, height);
+        workspace.Picture.Begin(width, height);
         var maxHeaderBits = SubblockHeaderBits;
         while (true)
         {
-            Encode(workspace, quality, maxHeaderBits);
+            Encode(workspace, rgba, quality, maxHeaderBits);
             var frame = workspace.Frame;
             if (frame.FirstPartitionLength <= MaxFirstPartition || maxHeaderBits == 0)
                 return frame;
@@ -38,14 +38,18 @@ internal static class Vp8Encoder
         }
     }
 
-    private static void Encode(Vp8EncoderWorkspace workspace, int quality, int maxHeaderBits)
+    /// <summary>
+    ///     One attempt at the frame. The picture is converted to YUV a macroblock row at a time, twice: once for
+    ///     the analysis and once for the coding, so no more than a row of it is ever held.
+    /// </summary>
+    private static void Encode(Vp8EncoderWorkspace workspace, ReadOnlySpan<byte> rgba, int quality, int maxHeaderBits)
     {
         var picture = workspace.Picture;
         var wide = picture.MacroblocksWide;
         var high = picture.MacroblocksHigh;
         var count = wide * high;
         var analysis = workspace.Analysis;
-        analysis.Run(picture);
+        analysis.Run(picture, rgba);
         var plan = workspace.Plan;
         plan.Make(quality, analysis);
 
@@ -64,6 +68,7 @@ internal static class Vp8Encoder
         var untilRefresh = refresh;
         for (var mbY = 0; mbY < high; mbY++)
         {
+            picture.ConvertRow(rgba, mbY);
             coder.StartRow();
             for (var mbX = 0; mbX < wide; mbX++)
             {

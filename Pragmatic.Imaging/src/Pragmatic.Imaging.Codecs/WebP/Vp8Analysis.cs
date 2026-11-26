@@ -52,8 +52,11 @@ internal sealed class Vp8Analysis
         _segmentOfMacroblock = null;
     }
 
-    /// <summary>Analyses <paramref name="picture" />, in place of whatever was analysed before.</summary>
-    public void Run(Vp8Picture picture)
+    /// <summary>
+    ///     Analyses <paramref name="rgba" />, in place of whatever was analysed before, converting it a macroblock
+    ///     row at a time into the bands of <paramref name="picture" />.
+    /// </summary>
+    public void Run(Vp8Picture picture, ReadOnlySpan<byte> rgba)
     {
         Release();
         var count = picture.MacroblocksWide * picture.MacroblocksHigh;
@@ -66,6 +69,7 @@ internal sealed class Vp8Analysis
         long uvSum = 0;
         for (var mbY = 0; mbY < picture.MacroblocksHigh; mbY++)
         {
+            picture.ConvertRow(rgba, mbY);
             for (var mbX = 0; mbX < picture.MacroblocksWide; mbX++)
             {
                 Load(picture.Y, picture.YStride, mbX, mbY, 16, y, source);
@@ -105,11 +109,12 @@ internal sealed class Vp8Analysis
     /// <summary>
     ///     Copies the macroblock's source into <paramref name="source" /> and its neighbours, from the source
     ///     too, around it in <paramref name="context" />: the analysis pretends the reconstruction is perfect.
+    ///     <paramref name="plane" /> is the band of the macroblock's row, as <see cref="Vp8Picture" /> holds it.
     /// </summary>
     private static void Load(byte[] plane, int stride, int mbX, int mbY, int size, byte[] context, byte[] source)
     {
         var x0 = mbX * size;
-        var y0 = mbY * size;
+        const int y0 = Vp8Picture.FirstRow;
         for (var j = 0; j < size; j++)
             plane.AsSpan((y0 + j) * stride + x0, size).CopyTo(source.AsSpan(Vp8Borders.Origin + j * S, size));
 

@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
@@ -12,6 +13,11 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 /// </summary>
 internal sealed class Vp8Picture
 {
+    /// <summary>The band row of a macroblock row's first line; row 0 is the last line of the row above.</summary>
+    public const int FirstRow = 1;
+
+    private const int LumaBandRows = FirstRow + 16;
+    private const int ChromaBandRows = FirstRow + 8;
     private const int GammaFix = 12;
     private const int GammaTableFix = 7;
     private const int GammaTableSize = 1 << (GammaFix - GammaTableFix);
@@ -19,8 +25,11 @@ internal sealed class Vp8Picture
     private static readonly ushort[] GammaToLinear = BuildGammaToLinear();
     private static readonly int[] LinearToGammaTable = BuildLinearToGamma();
 
-    /// <summary>Converts <paramref name="rgba" /> into planes from the pool, in place of the picture before.</summary>
-    public void Load(ReadOnlySpan<byte> rgba, int width, int height)
+    // LinearToGamma of every sum of four linear values, 0 to 4 x 4095: the interpolation done once, 32 KB.
+    private static readonly ushort[] LinearSumToGamma = BuildLinearSumToGamma();
+
+    /// <summary>Starts a picture of <paramref name="width" /> by <paramref name="height" />: bands from the pool, nothing converted yet.</summary>
+    public void Begin(int width, int height)
     {
         Release();
         Width = width;
@@ -30,16 +39,9 @@ internal sealed class Vp8Picture
         YStride = MacroblocksWide * 16;
         UvStride = MacroblocksWide * 8;
         var pool = ArrayPool<byte>.Shared;
-        Y = pool.Rent(YStride * MacroblocksHigh * 16);
-        U = pool.Rent(UvStride * MacroblocksHigh * 8);
-        V = pool.Rent(UvStride * MacroblocksHigh * 8);
-        ConvertLuma(rgba);
-        ConvertChroma(rgba);
-        Pad(Y, YStride, width, height, MacroblocksHigh * 16);
-        var uvWidth = (width + 1) >> 1;
-        var uvHeight = (height + 1) >> 1;
-        Pad(U, UvStride, uvWidth, uvHeight, MacroblocksHigh * 8);
-        Pad(V, UvStride, uvWidth, uvHeight, MacroblocksHigh * 8);
+        Y = pool.Rent(YStride * LumaBandRows);
+        U = pool.Rent(UvStride * ChromaBandRows);
+        V = pool.Rent(UvStride * ChromaBandRows);
     }
 
     public int Width { get; private set; }
@@ -50,17 +52,20 @@ internal sealed class Vp8Picture
 
     public int MacroblocksHigh { get; private set; }
 
+    /// <summary>The luma of one macroblock row, from <see cref="FirstRow" />, after the last line of the row above.</summary>
     public byte[] Y { get; private set; } = [];
 
+    /// <summary>The U of one macroblock row, laid out as <see cref="Y" />.</summary>
     public byte[] U { get; private set; } = [];
 
+    /// <summary>The V of one macroblock row, laid out as <see cref="Y" />.</summary>
     public byte[] V { get; private set; } = [];
 
     public int YStride { get; private set; }
 
     public int UvStride { get; private set; }
 
-    /// <summary>Gives the planes back to the pool.</summary>
+    /// <summary>Gives the bands back to the pool.</summary>
     public void Release()
     {
         var pool = ArrayPool<byte>.Shared;
@@ -73,18 +78,64 @@ internal sealed class Vp8Picture
         Y = U = V = [];
     }
 
-    private void ConvertLuma(ReadOnlySpan<byte> rgba)
+    /// <summary>
+    ///     Converts macroblock row <paramref name="mbY" /> of <paramref name="rgba" /> into the bands, padded to
+    ///     whole macroblocks; the last line of the row converted before becomes the line above. Rows are
+    ///     converted in order from 0, or from 0 again.
+    /// </summary>
+    public void ConvertRow(ReadOnlySpan<byte> rgba, int mbY)
     {
-        for (var y = 0; y < Height; y++)
+        if (mbY > 0)
         {
-            var source = rgba.Slice(y * Width * 4, Width * 4);
-            var row = Y.AsSpan(y * YStride, Width);
-            var x = Vector128.IsHardwareAccelerated ? ConvertLumaVector(source, row) : 0;
-            for (; x < row.Length; x++)
+            Y.AsSpan((LumaBandRows - 1) * YStride, YStride).CopyTo(Y.AsSpan(0, YStride));
+            U.AsSpan((ChromaBandRows - 1) * UvStride, UvStride).CopyTo(U.AsSpan(0, UvStride));
+            V.AsSpan((ChromaBandRows - 1) * UvStride, UvStride).CopyTo(V.AsSpan(0, UvStride));
+        }
+
+        var width = Width;
+        for (var j = 0; j < 16; j++)
+        {
+            var y = mbY * 16 + j;
+            var row = Y.AsSpan((FirstRow + j) * YStride, YStride);
+            if (y >= Height)
             {
-                var p = x * 4;
-                row[x] = (byte)((16839 * source[p] + 33059 * source[p + 1] + 6420 * source[p + 2] + (1 << 15) + (16 << 16)) >> 16);
+                // Below the picture: the last row again, already in this band.
+                Y.AsSpan((FirstRow + Height - 1 - mbY * 16) * YStride, YStride).CopyTo(row);
+                continue;
             }
+
+            ConvertLuma(rgba.Slice(y * width * 4, width * 4), row[..width]);
+            row[width..].Fill(row[width - 1]);
+        }
+
+        var uvWidth = (width + 1) >> 1;
+        var uvHeight = (Height + 1) >> 1;
+        for (var j = 0; j < 8; j++)
+        {
+            var cy = mbY * 8 + j;
+            var u = U.AsSpan((FirstRow + j) * UvStride, UvStride);
+            var v = V.AsSpan((FirstRow + j) * UvStride, UvStride);
+            if (cy >= uvHeight)
+            {
+                var last = (FirstRow + uvHeight - 1 - mbY * 8) * UvStride;
+                U.AsSpan(last, UvStride).CopyTo(u);
+                V.AsSpan(last, UvStride).CopyTo(v);
+                continue;
+            }
+
+            ConvertChroma(rgba, 2 * cy, u, v);
+            u[uvWidth..].Fill(u[uvWidth - 1]);
+            v[uvWidth..].Fill(v[uvWidth - 1]);
+        }
+    }
+
+    private static void ConvertLuma(ReadOnlySpan<byte> source, Span<byte> row)
+    {
+        var x = Vector128.IsHardwareAccelerated ? ConvertLumaVector(source, row) : 0;
+        for (; x < row.Length; x++)
+        {
+            var p = x * 4;
+            row[x] = (byte)((16839 * source[p] + 33059 * source[p + 1] + 6420 * source[p + 2] + (1 << 15) + (16 << 16)) >> 16);
         }
     }
 
@@ -115,53 +166,65 @@ internal sealed class Vp8Picture
         return Vector128.ShiftRightLogical(r * 16839 + g * 33059 + b * 6420 + Vector128.Create((1u << 15) + (16u << 16)), 16);
     }
 
-    private void ConvertChroma(ReadOnlySpan<byte> rgba)
+    /// <summary>The chroma of image rows <paramref name="y" /> and the one below (or itself, at the bottom), into <paramref name="u" /> and <paramref name="v" />.</summary>
+    private void ConvertChroma(ReadOnlySpan<byte> rgba, int y, Span<byte> u, Span<byte> v)
     {
-        var stride = Width * 4;
-        for (var y = 0; y < Height; y += 2)
-        {
-            var top = y * stride;
-            var bottom = y + 1 < Height ? top + stride : top;
-            var u = U.AsSpan((y >> 1) * UvStride);
-            var v = V.AsSpan((y >> 1) * UvStride);
-            for (var x = 0; x < Width; x += 2)
-            {
-                var right = x + 1 < Width ? 4 : 0;
-                var a = top + x * 4;
-                var b = bottom + x * 4;
-                var alpha = rgba[a + 3] + rgba[a + right + 3] + rgba[b + 3] + rgba[b + right + 3];
-                int r, g, bl;
-                if (alpha is 0 or 4 * 255)
-                {
-                    r = Average(rgba, a, b, right, 0);
-                    g = Average(rgba, a, b, right, 1);
-                    bl = Average(rgba, a, b, right, 2);
-                }
-                else
-                {
-                    r = WeightedAverage(rgba, a, b, right, 0, alpha);
-                    g = WeightedAverage(rgba, a, b, right, 1, alpha);
-                    bl = WeightedAverage(rgba, a, b, right, 2, alpha);
-                }
+        var width = Width;
+        var stride = width * 4;
+        var top = y * stride;
+        var bottom = y + 1 < Height ? top + stride : top;
+        var uvWidth = (width + 1) >> 1;
+        if (rgba.Length < Math.Max(top, bottom) + stride || u.Length < uvWidth || v.Length < uvWidth)
+            throw new ArgumentException("The rows reach past their buffers.");
 
-                const int rounding = (1 << 15) << 2;
-                u[x >> 1] = ClipUv(-9719 * r - 19081 * g + 28800 * bl + rounding);
-                v[x >> 1] = ClipUv(28800 * r - 24116 * g - 4684 * bl + rounding);
+        ref var pixels = ref MemoryMarshal.GetReference(rgba);
+        ref var uRow = ref MemoryMarshal.GetReference(u);
+        ref var vRow = ref MemoryMarshal.GetReference(v);
+        for (var i = 0; i < uvWidth; i++)
+        {
+            // The block's four pixels; at an odd width the last column's right pixel is its left one again.
+            var right = 2 * i + 1 < width ? 4 : 0;
+            ref var a = ref Unsafe.Add(ref pixels, top + i * 8);
+            ref var b = ref Unsafe.Add(ref pixels, bottom + i * 8);
+            ref var ar = ref Unsafe.Add(ref a, right);
+            ref var br = ref Unsafe.Add(ref b, right);
+            var alpha = Unsafe.Add(ref a, 3) + Unsafe.Add(ref ar, 3) + Unsafe.Add(ref b, 3) + Unsafe.Add(ref br, 3);
+            int r, g, bl;
+            if (alpha is 0 or 4 * 255)
+            {
+                r = Average(ref a, ref ar, ref b, ref br, 0);
+                g = Average(ref a, ref ar, ref b, ref br, 1);
+                bl = Average(ref a, ref ar, ref b, ref br, 2);
             }
+            else
+            {
+                r = WeightedAverage(ref a, ref ar, ref b, ref br, 0, alpha);
+                g = WeightedAverage(ref a, ref ar, ref b, ref br, 1, alpha);
+                bl = WeightedAverage(ref a, ref ar, ref b, ref br, 2, alpha);
+            }
+
+            const int rounding = (1 << 15) << 2;
+            Unsafe.Add(ref uRow, i) = ClipUv(-9719 * r - 19081 * g + 28800 * bl + rounding);
+            Unsafe.Add(ref vRow, i) = ClipUv(28800 * r - 24116 * g - 4684 * bl + rounding);
         }
     }
 
     /// <summary>Four times the gamma-compressed mean of a channel over the 2 x 2 block.</summary>
-    private static int Average(ReadOnlySpan<byte> rgba, int a, int b, int right, int channel) =>
-        LinearToGamma(GammaToLinear[rgba[a + channel]] + GammaToLinear[rgba[a + right + channel]] +
-                      GammaToLinear[rgba[b + channel]] + GammaToLinear[rgba[b + right + channel]]);
+    private static int Average(ref byte a, ref byte ar, ref byte b, ref byte br, int channel)
+    {
+        ref var linear = ref MemoryMarshal.GetArrayDataReference(GammaToLinear);
+        var sum = Unsafe.Add(ref linear, Unsafe.Add(ref a, channel)) + Unsafe.Add(ref linear, Unsafe.Add(ref ar, channel)) +
+                  Unsafe.Add(ref linear, Unsafe.Add(ref b, channel)) + Unsafe.Add(ref linear, Unsafe.Add(ref br, channel));
+        return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(LinearSumToGamma), sum);
+    }
 
     /// <summary>The same, each pixel weighted by its alpha, so a transparent pixel's colour does not bleed in.</summary>
-    private static int WeightedAverage(ReadOnlySpan<byte> rgba, int a, int b, int right, int channel, int alpha)
+    private static int WeightedAverage(ref byte a, ref byte ar, ref byte b, ref byte br, int channel, int alpha)
     {
-        var sum = rgba[a + 3] * GammaToLinear[rgba[a + channel]] + rgba[a + right + 3] * GammaToLinear[rgba[a + right + channel]] +
-                  rgba[b + 3] * GammaToLinear[rgba[b + channel]] + rgba[b + right + 3] * GammaToLinear[rgba[b + right + channel]];
-        return LinearToGamma((int)(4L * sum / alpha));
+        var linear = GammaToLinear;
+        var sum = Unsafe.Add(ref a, 3) * linear[Unsafe.Add(ref a, channel)] + Unsafe.Add(ref ar, 3) * linear[Unsafe.Add(ref ar, channel)] +
+                  Unsafe.Add(ref b, 3) * linear[Unsafe.Add(ref b, channel)] + Unsafe.Add(ref br, 3) * linear[Unsafe.Add(ref br, channel)];
+        return LinearSumToGamma[(int)(4L * sum / alpha)];
     }
 
     /// <summary>A sum of four linear values back to four times its gamma-compressed mean, interpolating the table.</summary>
@@ -181,18 +244,6 @@ internal sealed class Vp8Picture
         return (byte)(value < 0 ? 0 : value > 255 ? 255 : value);
     }
 
-    private static void Pad(byte[] plane, int stride, int width, int height, int paddedHeight)
-    {
-        for (var y = 0; y < height; y++)
-        {
-            var row = plane.AsSpan(y * stride, stride);
-            row[width..].Fill(row[width - 1]);
-        }
-
-        for (var y = height; y < paddedHeight; y++)
-            plane.AsSpan((height - 1) * stride, stride).CopyTo(plane.AsSpan(y * stride, stride));
-    }
-
     private static ushort[] BuildGammaToLinear()
     {
         var table = new ushort[256];
@@ -208,6 +259,14 @@ internal sealed class Vp8Picture
         for (var v = 0; v <= GammaTableSize; v++)
             table[v] = (int)(255.0 * Math.Pow(scale * v, 1 / 0.8) + 0.5);
         table[GammaTableSize + 1] = table[GammaTableSize];
+        return table;
+    }
+
+    private static ushort[] BuildLinearSumToGamma()
+    {
+        var table = new ushort[4 * ((1 << GammaFix) - 1) + 1];
+        for (var sum = 0; sum < table.Length; sum++)
+            table[sum] = (ushort)LinearToGamma(sum);
         return table;
     }
 }

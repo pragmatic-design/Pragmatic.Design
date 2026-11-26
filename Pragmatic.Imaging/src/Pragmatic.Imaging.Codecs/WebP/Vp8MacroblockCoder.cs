@@ -212,9 +212,10 @@ internal sealed partial class Vp8MacroblockCoder
         Vp8Borders.PrepareLuma(_y, _topY, mbX, mbY, _picture.MacroblocksWide);
         Vp8Borders.PrepareChroma(_u, _topU, mbX, mbY);
         Vp8Borders.PrepareChroma(_v, _topV, mbX, mbY);
-        CopyIn(_picture.Y, _picture.YStride, mbX * 16, mbY * 16, 16, _sourceY);
-        CopyIn(_picture.U, _picture.UvStride, mbX * 8, mbY * 8, 8, _sourceU);
-        CopyIn(_picture.V, _picture.UvStride, mbX * 8, mbY * 8, 8, _sourceV);
+        // The picture holds this macroblock row only, from its first band row.
+        CopyIn(_picture.Y, _picture.YStride, mbX * 16, Vp8Picture.FirstRow, 16, _sourceY);
+        CopyIn(_picture.U, _picture.UvStride, mbX * 8, Vp8Picture.FirstRow, 8, _sourceU);
+        CopyIn(_picture.V, _picture.UvStride, mbX * 8, Vp8Picture.FirstRow, 8, _sourceV);
     }
 
     private static void CopyIn(byte[] plane, int stride, int x, int y, int size, byte[] block)
