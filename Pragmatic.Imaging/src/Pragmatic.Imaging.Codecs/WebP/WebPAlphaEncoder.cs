@@ -1,3 +1,4 @@
+// Follows libwebp (BSD-3-Clause, Copyright (c) 2010 Google Inc.): see THIRD-PARTY-NOTICES.md.
 namespace Pragmatic.Imaging.Codecs.WebP;
 
 /// <summary>

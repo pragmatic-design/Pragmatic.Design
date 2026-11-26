@@ -11,6 +11,11 @@
     <None Include="build\Pragmatic.Imaging.Codecs.targets" Pack="true" PackagePath="buildTransitive\Pragmatic.Imaging.Codecs.targets" />
   </ItemGroup>
 
+  <!-- The WebP codec follows libwebp, whose BSD licence asks a binary redistribution to carry its notice. -->
+  <ItemGroup>
+    <None Include="THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="THIRD-PARTY-NOTICES.md" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Pragmatic.Imaging.Codecs.Tests" />
     <!-- The stage benchmarks time the decoder's parts one by one. -->
