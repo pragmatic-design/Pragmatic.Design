@@ -2,12 +2,14 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using Pragmatic.Imaging.Benchmarks.Pipelines;
 using Pragmatic.Imaging.Benchmarks.Workload;
+using Pragmatic.Imaging.Codecs;
 
 namespace Pragmatic.Imaging.Benchmarks;
 
 /// <summary>
-///     WebP decode: the managed decoder against the Rust library it replaced (image-webp, through the
-///     native pipeline), on a lossy 4 MP photo and a lossless 2 MP image that libwebp wrote.
+///     WebP: the managed codec against the Rust library it replaced (image-webp, through the native
+///     pipeline). Decode a lossy 4 MP photo and a lossless 2 MP image that libwebp wrote; encode the 2 MP
+///     image lossless, from pixels already in memory.
 /// </summary>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
@@ -16,13 +18,19 @@ public class WebPBenchmarks
 {
     private byte[] _lossy = null!;
     private byte[] _lossless = null!;
+    private PixelBuffer _image = null!;
 
     [GlobalSetup]
     public void Setup()
     {
         _lossy = Fixtures.WebPLossy4Mp;
         _lossless = Fixtures.WebPLossless2Mp;
+        _image = new PixelBuffer(Fixtures.PngWidth, Fixtures.PngHeight);
+        Fixtures.Rgba2Mp.CopyTo(_image.Pixels);
     }
+
+    [GlobalCleanup]
+    public void Cleanup() => _image.Dispose();
 
     [Benchmark(Baseline = true), BenchmarkCategory("Decode WebP lossy 4MP")]
     public int DecodeWebPLossy_Native() => NativePipeline.Decode(_lossy);
@@ -35,4 +43,10 @@ public class WebPBenchmarks
 
     [Benchmark, BenchmarkCategory("Decode WebP lossless 2MP")]
     public int DecodeWebPLossless_Managed() => ManagedPipeline.DecodeWebP(_lossless);
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Encode WebP lossless 2MP")]
+    public unsafe byte[] EncodeWebPLossless_Native() => NativePipeline.EncodeWebP(_image.Pointer, (nuint)_image.ByteLength, Fixtures.PngWidth, Fixtures.PngHeight);
+
+    [Benchmark, BenchmarkCategory("Encode WebP lossless 2MP")]
+    public byte[] EncodeWebPLossless_Managed() => ManagedPipeline.EncodeWebP(_image);
 }

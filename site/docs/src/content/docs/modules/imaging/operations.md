@@ -132,7 +132,7 @@ byte[] jpeg = pipe.Encode(ImageFormat.Jpeg, quality: 85);
 pipe.EncodeTo(output, ImageFormat.WebP);
 ```
 
-`quality` applies to **JPEG only**. WebP encodes lossless, AVIF uses the library default, and lossless/paletted formats ignore it. Supported output formats: PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF.
+`quality` applies to **JPEG only**. WebP is written lossless (lossy WebP is to come as an explicit opt-in, #853), AVIF uses the library default, and lossless/paletted formats ignore it. Supported output formats: PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF.
 
 Encoding **does not** dispose the pipeline: encode multiple times or keep transforming. The async variants `EncodeAsync` / `EncodeToStreamAsync` offload to the thread pool.
 

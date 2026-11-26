@@ -126,6 +126,8 @@
   "Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossless_Native": 40,
   "Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossy_Managed": 2104,
   "Pragmatic.Imaging.Benchmarks.WebPBenchmarks.DecodeWebPLossy_Native": 40,
+  "Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossless_Managed": 1497832,
+  "Pragmatic.Imaging.Benchmarks.WebPBenchmarks.EncodeWebPLossless_Native": 1498816,
   "Pragmatic.Logging.Benchmarks.AllocationComparisonBenchmark.StandardFormatting": 400000,
   "Pragmatic.Logging.Benchmarks.AllocationComparisonBenchmark.ZeroAllocFormatting": 264000,
   "Pragmatic.Logging.Benchmarks.AllocationComparisonBenchmark.ZeroAllocFormattingWithStackBuffer": 120000,

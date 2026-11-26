@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Managed image codecs and transforms (JPEG, PNG, WebP decoding, resampling) and barcode symbologies (QR, Code 128, Code 39, EAN): the low-level layer under Pragmatic.Imaging and Pragmatic.Documents.Pdf. No native library.</Description>
+    <Description>Managed image codecs and transforms (JPEG, PNG, WebP, resampling) and barcode symbologies (QR, Code 128, Code 39, EAN): the low-level layer under Pragmatic.Imaging and Pragmatic.Documents.Pdf. No native library.</Description>
     <PackageTags>imaging;jpeg;png;resize;qr;barcode;codec;managed;aot</PackageTags>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

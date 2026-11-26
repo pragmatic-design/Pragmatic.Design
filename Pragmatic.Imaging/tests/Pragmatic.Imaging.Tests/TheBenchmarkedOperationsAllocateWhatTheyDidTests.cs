@@ -26,17 +26,20 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
 
     private readonly OperationBenchmarks _operations = new();
     private readonly UploadPathBenchmarks _uploads = new();
+    private readonly WebPBenchmarks _webp = new();
 
     public TheBenchmarkedOperationsAllocateWhatTheyDidTests()
     {
         _operations.Setup();
         _uploads.Setup();
+        _webp.Setup();
     }
 
     public void Dispose()
     {
         _operations.Cleanup();
         _uploads.Cleanup();
+        _webp.Cleanup();
     }
 
     [Fact]
@@ -114,6 +117,26 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
 
     [NativeRequiredFact]
     public void ThumbnailNative_OneCall_AllocatesTwoWrappers() => Expect(80, () => _uploads.Thumbnail_Native());
+
+    [Fact]
+    public void DecodeWebPLosslessManaged_OneCall_AllocatesWhatItDid() => Expect(480, () => _webp.DecodeWebPLossless_Managed());
+
+    [NativeRequiredFact]
+    public void DecodeWebPLosslessNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossless_Native());
+
+    // In this Debug build the lossy decode allocates 3,904 B, where the runner's Release build measures
+    // 2,104: the same kind of build difference as the JPEG decode above.
+    [Fact]
+    public void DecodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(3904, () => _webp.DecodeWebPLossy_Managed());
+
+    [NativeRequiredFact]
+    public void DecodeWebPLossyNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossy_Native());
+
+    [Fact]
+    public void EncodeWebPLosslessManaged_OneCall_AllocatesTheEncodedImage() => Expect(1497832, () => _webp.EncodeWebPLossless_Managed());
+
+    [NativeRequiredFact]
+    public void EncodeWebPLosslessNative_OneCall_AllocatesTheEncodedImage() => Expect(1498816, () => _webp.EncodeWebPLossless_Native());
 
     private static void Expect(long bytes, Action call)
     {

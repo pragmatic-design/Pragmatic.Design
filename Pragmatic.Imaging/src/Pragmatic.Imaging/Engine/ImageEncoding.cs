@@ -2,12 +2,13 @@ using System.IO.Compression;
 using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
+using Pragmatic.Imaging.Codecs.WebP;
 
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Writes an image with the engine that handles the format: PNG and JPEG with the managed core,
-///     straight into the output; WebP, AVIF, GIF, BMP and TIFF with the native library.
+///     Writes an image with the engine that handles the format: PNG, JPEG and WebP with the managed core,
+///     straight into the output; AVIF, GIF, BMP and TIFF with the native library.
 /// </summary>
 internal static class ImageEncoding
 {
@@ -31,6 +32,10 @@ internal static class ImageEncoding
             case ImageFormat.Jpeg:
                 JpegEncoder.Write(image, output, quality);
                 return;
+            case ImageFormat.WebP:
+                // Lossless whatever the quality, as it always was; lossy is an explicit opt-in (#853).
+                WebPEncoder.EncodeLossless(image, output);
+                return;
             case ImageFormat.Unknown:
                 throw new ImagingException("Cannot encode to an unknown format.", ImagingError.UnsupportedFormat);
             default:
@@ -42,6 +47,10 @@ internal static class ImageEncoding
 
     public static byte[] Encode(PixelBuffer image, ImageFormat format, byte quality)
     {
+        // The WebP encoder knows its size once it has written: one array, without a stream growing.
+        if (format == ImageFormat.WebP)
+            return WebPEncoder.EncodeLossless(image);
+
         using var output = new MemoryStream();
         Encode(image, format, quality, output);
         return output.ToArray();

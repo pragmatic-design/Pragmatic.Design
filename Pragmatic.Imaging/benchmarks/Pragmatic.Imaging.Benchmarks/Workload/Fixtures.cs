@@ -43,6 +43,9 @@ public static class Fixtures
 
     public static readonly byte[] RgbaSmall = SyntheticPhoto.Rgba(SmallWidth, SmallHeight);
 
+    /// <summary>The 2 MP image as raw RGBA: the input of the WebP encoders.</summary>
+    public static readonly byte[] Rgba2Mp = SyntheticPhoto.Rgba(PngWidth, PngHeight);
+
     private static byte[] Encode(int width, int height, SKEncodedImageFormat format, int quality)
     {
         var rgba = SyntheticPhoto.Rgba(width, height);

@@ -96,13 +96,10 @@ internal static class Vp8Prediction
             case Vp8Modes.BHe:
             {
                 int a = Top(-1), bb = Left(0), c = Left(1), d = Left(2), e = Left(3);
-                int[] rows = [Avg3(a, bb, c), Avg3(bb, c, d), Avg3(c, d, e), Avg3(d, e, e)];
-                for (var y = 0; y < 4; y++)
-                {
-                    for (var x = 0; x < 4; x++)
-                        Set(x, y, rows[y]);
-                }
-
+                b.AsSpan(dst, 4).Fill((byte)Avg3(a, bb, c));
+                b.AsSpan(dst + s, 4).Fill((byte)Avg3(bb, c, d));
+                b.AsSpan(dst + 2 * s, 4).Fill((byte)Avg3(c, d, e));
+                b.AsSpan(dst + 3 * s, 4).Fill((byte)Avg3(d, e, e));
                 return;
             }
             case Vp8Modes.BTm:

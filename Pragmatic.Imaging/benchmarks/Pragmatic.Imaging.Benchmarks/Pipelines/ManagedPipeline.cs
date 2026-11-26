@@ -22,6 +22,9 @@ public static class ManagedPipeline
         return image.Width;
     }
 
+    /// <summary>The lossless WebP encoder alone, from pixels already in a buffer.</summary>
+    public static byte[] EncodeWebP(PixelBuffer image) => WebPEncoder.EncodeLossless(image);
+
     /// <summary>
     ///     Decode at the largest reduction that still covers the thumbnail box (the DCT does the first
     ///     part of the shrink), then the kernel for the rest. The size the thumbnail would have from the
