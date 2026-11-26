@@ -88,6 +88,110 @@ internal static class Vp8InverseTransform
         AddAndStore(in01, in23, rows01, rows23, ref pixels, stride);
     }
 
+    /// <summary>
+    ///     Adds the inverse DCTs of two side-by-side blocks (32 coefficients: the left block's 16, then the right
+    ///     one's) to the 8 x 4 pixels of <paramref name="prediction" /> at <paramref name="offset" />, and writes
+    ///     the sums to the same place in <paramref name="reconstruction" />, which may be the same buffer.
+    /// </summary>
+    public static void AddInverseDct2(ReadOnlySpan<short> input, ReadOnlySpan<byte> prediction, Span<byte> reconstruction, int offset, int stride)
+    {
+        var end = offset + 3 * stride + 8;
+        if (input.Length < 32 || prediction.Length < end || reconstruction.Length < end)
+            throw new ArgumentException("The blocks reach past their buffers.");
+
+        ref var coefficients = ref MemoryMarshal.GetReference(input);
+        var bound = Vector128.Create((short)Sse2Bound);
+        var limit = Vector128.Create((ushort)(2 * Sse2Bound));
+        if (Sse2.IsSupported &&
+            Vector128.LessThanOrEqualAll((Vector128.LoadUnsafe(ref coefficients) + bound).AsUInt16(), limit) &&
+            Vector128.LessThanOrEqualAll((Vector128.LoadUnsafe(ref coefficients, 8) + bound).AsUInt16(), limit) &&
+            Vector128.LessThanOrEqualAll((Vector128.LoadUnsafe(ref coefficients, 16) + bound).AsUInt16(), limit) &&
+            Vector128.LessThanOrEqualAll((Vector128.LoadUnsafe(ref coefficients, 24) + bound).AsUInt16(), limit))
+        {
+            AddInverseDct2Sse2(ref coefficients, ref Unsafe.Add(ref MemoryMarshal.GetReference(prediction), offset),
+                ref Unsafe.Add(ref MemoryMarshal.GetReference(reconstruction), offset), stride);
+            return;
+        }
+
+        // Out of the 16-bit form's range, or no SSE2: the prediction copied, and each block added in place.
+        for (var y = 0; y < 4; y++)
+            prediction.Slice(offset + y * stride, 8).CopyTo(reconstruction.Slice(offset + y * stride, 8));
+        AddInverseDct(input[..16], reconstruction, offset, stride);
+        AddInverseDct(input[16..32], reconstruction, offset + 4, stride);
+    }
+
+    /// <summary>
+    ///     The two blocks at once, as libwebp's <c>ITransform_Two_SSE2</c> does them: each vector holds a row (then,
+    ///     transposed, a column) of both blocks, four lanes each, so every instruction transforms the two.
+    /// </summary>
+    private static void AddInverseDct2Sse2(ref short coefficients, ref byte prediction, ref byte reconstruction, int stride)
+    {
+        // Row r of both blocks: a0r a1r a2r a3r | b0r b1r b2r b3r.
+        var left01 = Vector128.LoadUnsafe(ref coefficients);
+        var left23 = Vector128.LoadUnsafe(ref coefficients, 8);
+        var right01 = Vector128.LoadUnsafe(ref coefficients, 16);
+        var right23 = Vector128.LoadUnsafe(ref coefficients, 24);
+        var in0 = Sse2.UnpackLow(left01.AsInt64(), right01.AsInt64()).AsInt16();
+        var in1 = Sse2.UnpackHigh(left01.AsInt64(), right01.AsInt64()).AsInt16();
+        var in2 = Sse2.UnpackLow(left23.AsInt64(), right23.AsInt64()).AsInt16();
+        var in3 = Sse2.UnpackHigh(left23.AsInt64(), right23.AsInt64()).AsInt16();
+
+        var (t0, t1, t2, t3) = Pass2(in0, in1, in2, in3, Vector128<short>.Zero);
+        (t0, t1, t2, t3) = Transpose2(t0, t1, t2, t3);
+        var (h0, h1, h2, h3) = Pass2(t0, t1, t2, t3, Vector128.Create((short)4));
+        (h0, h1, h2, h3) = Transpose2(
+            Sse2.ShiftRightArithmetic(h0, 3), Sse2.ShiftRightArithmetic(h1, 3),
+            Sse2.ShiftRightArithmetic(h2, 3), Sse2.ShiftRightArithmetic(h3, 3));
+
+        AddRow(ref prediction, ref reconstruction, 0, h0);
+        AddRow(ref prediction, ref reconstruction, stride, h1);
+        AddRow(ref prediction, ref reconstruction, 2 * stride, h2);
+        AddRow(ref prediction, ref reconstruction, 3 * stride, h3);
+    }
+
+    /// <summary>One pass of the 16-bit form over four rows of two blocks, <paramref name="rounding" /> added to the first.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<short>, Vector128<short>, Vector128<short>, Vector128<short>) Pass2(
+        Vector128<short> in0, Vector128<short> in1, Vector128<short> in2, Vector128<short> in3, Vector128<short> rounding)
+    {
+        var k1 = Vector128.Create((short)20091);
+        var k2 = Vector128.Create((short)-30068);
+        var dc = in0 + rounding;
+        var a = dc + in2;
+        var b = dc - in2;
+
+        // c = MUL(in1, K2) - MUL(in3, K1) = MUL(in1, k2) - MUL(in3, k1) + in1 - in3, and d alike.
+        var c = (in1 - in3) + (Sse2.MultiplyHigh(in1, k2) - Sse2.MultiplyHigh(in3, k1));
+        var d = (in1 + in3) + (Sse2.MultiplyHigh(in1, k1) + Sse2.MultiplyHigh(in3, k2));
+        return (a + d, b + c, b - c, a - d);
+    }
+
+    /// <summary>Two 4 x 4 transposes side by side (libwebp's <c>VP8Transpose_2_4x4_16b</c>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector128<short>, Vector128<short>, Vector128<short>, Vector128<short>) Transpose2(
+        Vector128<short> in0, Vector128<short> in1, Vector128<short> in2, Vector128<short> in3)
+    {
+        var x0 = Sse2.UnpackLow(in0, in1).AsInt32();
+        var x1 = Sse2.UnpackLow(in2, in3).AsInt32();
+        var x2 = Sse2.UnpackHigh(in0, in1).AsInt32();
+        var x3 = Sse2.UnpackHigh(in2, in3).AsInt32();
+        var y0 = Sse2.UnpackLow(x0, x1).AsInt64();
+        var y1 = Sse2.UnpackLow(x2, x3).AsInt64();
+        var y2 = Sse2.UnpackHigh(x0, x1).AsInt64();
+        var y3 = Sse2.UnpackHigh(x2, x3).AsInt64();
+        return (Sse2.UnpackLow(y0, y1).AsInt16(), Sse2.UnpackHigh(y0, y1).AsInt16(),
+                Sse2.UnpackLow(y2, y3).AsInt16(), Sse2.UnpackHigh(y2, y3).AsInt16());
+    }
+
+    /// <summary>Eight prediction pixels plus eight residues, saturated to bytes and stored.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void AddRow(ref byte prediction, ref byte reconstruction, int at, Vector128<short> residue)
+    {
+        var pixels = Vector128.CreateScalar(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref prediction, at))).AsByte();
+        var sum = Sse2.UnpackLow(pixels, Vector128<byte>.Zero).AsInt16() + residue;
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref reconstruction, at), Sse2.PackUnsignedSaturate(sum, sum).AsUInt64().ToScalar());
+    }
+
     /// <summary>The two passes over coefficients within the bound, added to the prediction rows (two to a vector) and stored.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void AddAndStore(Vector128<short> in01, Vector128<short> in23, Vector128<byte> rows01, Vector128<byte> rows23, ref byte pixels, int stride)

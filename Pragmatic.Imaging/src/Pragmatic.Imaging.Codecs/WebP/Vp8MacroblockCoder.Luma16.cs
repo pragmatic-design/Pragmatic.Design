@@ -83,12 +83,15 @@ internal sealed partial class Vp8MacroblockCoder
         }
 
         Vp8InverseTransform.Walsh(y2, coefficients);
-        CopyBlock(prediction, reconstruction, 16);
-        for (var n = 0; n < 16; n++)
+
+        // Two side-by-side blocks at a time, written straight from the prediction; a pair with neither AC
+        // levels nor a DC from the Y2 block is the prediction.
+        for (var n = 0; n < 16; n += 2)
         {
-            // A block with neither AC levels nor a DC from the Y2 block adds nothing to its prediction.
-            if ((nonZero & (1 << n)) != 0 || coefficients[n * 16] != 0)
-                Vp8InverseTransform.AddInverseDct(coefficients.Slice(n * 16, 16), reconstruction, LumaBlock(n), S);
+            if ((nonZero & (3 << n)) != 0 || coefficients[n * 16] != 0 || coefficients[n * 16 + 16] != 0)
+                Vp8InverseTransform.AddInverseDct2(coefficients.Slice(n * 16, 32), prediction, reconstruction, LumaBlock(n), S);
+            else
+                CopyPair(prediction, reconstruction, LumaBlock(n));
         }
 
         return nonZero;

@@ -80,12 +80,17 @@ internal sealed partial class Vp8MacroblockCoder
             if (_diffuseErrors)
                 DiffuseErrors(mbX, plane, segment.Uv, coefficients);
 
-            CopyBlock(prediction, reconstruction, 8);
-            for (var block = 0; block < 4; block++)
+            // Two side-by-side blocks at a time, written straight from the prediction; a pair with no level
+            // is the prediction.
+            for (var block = 0; block < 4; block += 2)
             {
-                var block16 = coefficients.Slice(block * 16, 16);
-                if (segment.Uv.Quantize(block16, _chromaLevels.AsSpan((plane * 4 + block) * 16, 16)))
-                    Vp8InverseTransform.AddInverseDct(block16, reconstruction, ChromaBlock(block), S);
+                var levels = _chromaLevels.AsSpan((plane * 4 + block) * 16, 32);
+                var left = segment.Uv.Quantize(coefficients.Slice(block * 16, 16), levels[..16]);
+                var right = segment.Uv.Quantize(coefficients.Slice(block * 16 + 16, 16), levels[16..]);
+                if (left || right)
+                    Vp8InverseTransform.AddInverseDct2(coefficients.Slice(block * 16, 32), prediction, reconstruction, ChromaBlock(block), S);
+                else
+                    CopyPair(prediction, reconstruction, ChromaBlock(block));
             }
         }
     }

@@ -255,6 +255,19 @@ internal sealed partial class Vp8MacroblockCoder
         }
     }
 
+    /// <summary>Copies the 8 x 4 pixels of two side-by-side 4 x 4 blocks.</summary>
+    private static void CopyPair(byte[] from, byte[] to, int offset)
+    {
+        var end = offset + 3 * S + 8;
+        if (from.Length < end || to.Length < end)
+            throw new ArgumentException("The blocks reach past their buffers.");
+
+        ref var source = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(from), offset);
+        ref var target = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(to), offset);
+        for (var j = 0; j < 4; j++)
+            Unsafe.WriteUnaligned(ref Unsafe.Add(ref target, j * S), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref source, j * S)));
+    }
+
     /// <summary>The offset of 4 x 4 block <paramref name="block" /> (raster order) of a 16 x 16 macroblock.</summary>
     private static int LumaBlock(int block) => Origin + (block >> 2) * 4 * S + (block & 3) * 4;
 
