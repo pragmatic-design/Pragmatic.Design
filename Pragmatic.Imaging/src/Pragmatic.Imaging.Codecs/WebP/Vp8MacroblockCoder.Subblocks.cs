@@ -35,6 +35,7 @@ internal sealed partial class Vp8MacroblockCoder
         Span<int> modes = stackalloc int[16];
         Span<short> levels = stackalloc short[16];
         Span<short> bestLevels = stackalloc short[16];
+        Span<uint> predictions = stackalloc uint[40];
         var headerBits = 0L;
 
         for (var block = 0; block < 16; block++)
@@ -49,9 +50,10 @@ internal sealed partial class Vp8MacroblockCoder
             var bestNonZero = false;
             var lambda = segment.LambdaI4;
             var context = above[x] + left[y];
+            Vp8Prediction.Subblocks(_y, offset, predictions);
             for (var mode = 0; mode < 10; mode++)
             {
-                Vp8Prediction.Subblock(_y, offset, mode);
+                Vp8Prediction.Put(_y, offset, predictions.Slice(mode * 4, 4));
                 var nonZero = Reconstruct4(segment, offset, levels);
                 long distortion = Vp8Distortion.SumOfSquares4(_sourceY, _candidate, offset);
                 long header = Vp8Costs.SubblockMode(top, leftMode, mode);

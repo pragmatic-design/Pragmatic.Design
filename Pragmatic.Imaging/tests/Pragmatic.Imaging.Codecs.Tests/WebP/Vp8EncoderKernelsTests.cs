@@ -67,6 +67,27 @@ public sealed class Vp8EncoderKernelsTests
     }
 
     [Fact]
+    public void Subblocks_OfRandomNeighbours_AreEachModesSubblockPrediction()
+    {
+        var random = new Random(853);
+        var single = new byte[S * 17];
+        var rows = new uint[40];
+        for (var trial = 0; trial < 2000; trial++)
+        {
+            random.NextBytes(single);
+            var all = (byte[])single.Clone();
+            var offset = Vp8Borders.Origin + (trial & 3) * 4 + ((trial >> 2) & 3) * 4 * S;
+            Vp8Prediction.Subblocks(all, offset, rows);
+            for (var mode = 0; mode < 10; mode++)
+            {
+                Vp8Prediction.Subblock(single, offset, mode);
+                Vp8Prediction.Put(all, offset, rows.AsSpan(mode * 4, 4));
+                Assert.Equal(single, all);
+            }
+        }
+    }
+
+    [Fact]
     public void TrueMotion4_VectorAndScalar_GiveTheSamePrediction()
     {
         var random = new Random(853);

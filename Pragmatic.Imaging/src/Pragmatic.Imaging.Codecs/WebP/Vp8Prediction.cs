@@ -208,6 +208,97 @@ internal static class Vp8Prediction
         }
     }
 
+    /// <summary>
+    ///     All ten subblock modes of the block at <paramref name="dst" /> at once, each as its four row words
+    ///     (mode <c>m</c>'s rows at <c>4 m</c>) for <see cref="Put" /> to write: the encoder tries every mode
+    ///     on the same neighbours, which are read once and whose averages the modes share are taken once, as
+    ///     libwebp's <c>MakeIntra4Preds</c> does. Each mode's rows are <see cref="Subblock" />'s.
+    /// </summary>
+    public static void Subblocks(byte[] b, int dst, Span<uint> rows)
+    {
+        const int s = Stride;
+        if (dst - s - 1 < 0 || dst + 3 * s + 4 > b.Length || dst - s + 8 > b.Length || rows.Length < 40)
+            throw new ArgumentOutOfRangeException(nameof(dst), dst, "The block and its neighbours reach past the buffer.");
+        ref var o = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(b), dst);
+        ref var r = ref MemoryMarshal.GetReference(rows);
+
+        int x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3);
+        int e = Top(ref o, 4), f = Top(ref o, 5), g = Top(ref o, 6), h = Top(ref o, 7);
+        int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3);
+
+        // The averages more than one mode takes.
+        int xab = Avg3(x, a, bb), abc = Avg3(a, bb, c), bcd = Avg3(bb, c, d), cde = Avg3(c, d, e);
+        int def = Avg3(d, e, f), efg = Avg3(e, f, g), fgh = Avg3(f, g, h);
+        int ixa = Avg3(i, x, a), jix = Avg3(j, i, x), kji = Avg3(k, j, i), lkj = Avg3(l, k, j), kll = Avg3(k, l, l);
+        int xa = Avg2(x, a), ab = Avg2(a, bb), bc = Avg2(bb, c), cd = Avg2(c, d), de = Avg2(d, e);
+        int ix = Avg2(i, x), ji = Avg2(j, i), kj = Avg2(k, j), lk = Avg2(l, k);
+
+        var dc = Splat((a + bb + c + d + i + j + k + l + 4) >> 3);
+        Set(ref r, Vp8Modes.BDc, dc, dc, dc, dc);
+        TrueMotion4Rows(ref o, ref Unsafe.Add(ref r, Vp8Modes.BTm * 4));
+        var ve = Pack(xab, abc, bcd, cde);
+        Set(ref r, Vp8Modes.BVe, ve, ve, ve, ve);
+        Set(ref r, Vp8Modes.BHe, Splat(Avg3(x, i, j)), Splat(Avg3(i, j, k)), Splat(Avg3(j, k, l)), Splat(kll));
+
+        // Down-right: one value per diagonal, bottom-left corner to top-right.
+        int e0 = Avg3(j, k, l), e1 = Avg3(i, j, k);
+        Set(ref r, Vp8Modes.BRd, Pack(ixa, xab, abc, bcd), Pack(jix, ixa, xab, abc), Pack(e1, jix, ixa, xab), Pack(e0, e1, jix, ixa));
+
+        // Down-left: one value per diagonal, top-left corner to bottom-right.
+        var ghh = Avg3(g, h, h);
+        Set(ref r, Vp8Modes.BLd, Pack(abc, bcd, cde, def), Pack(bcd, cde, def, efg), Pack(cde, def, efg, fgh), Pack(def, efg, fgh, ghh));
+
+        Set(ref r, Vp8Modes.BVr, Pack(xa, ab, bc, cd), Pack(ixa, xab, abc, bcd), Pack(jix, xa, ab, bc), Pack(kji, ixa, xab, abc));
+        Set(ref r, Vp8Modes.BVl, Pack(ab, bc, cd, de), Pack(abc, bcd, cde, def), Pack(bc, cd, de, efg), Pack(bcd, cde, def, fgh));
+        Set(ref r, Vp8Modes.BHd, Pack(ix, ixa, xab, abc), Pack(ji, jix, ix, ixa), Pack(kj, kji, ji, jix), Pack(lk, lkj, kj, kji));
+
+        int ij = Avg2(i, j), jk = Avg2(j, k), kl = Avg2(k, l), ijk = e1, jkl = e0;
+        Set(ref r, Vp8Modes.BHu, Pack(ij, ijk, jk, jkl), Pack(jk, jkl, kl, kll), Pack(kl, kll, l, l), Splat(l));
+    }
+
+    /// <summary>Writes one mode's four row words, as <see cref="Subblocks" /> gives them, to the block at <paramref name="dst" />.</summary>
+    public static void Put(byte[] b, int dst, ReadOnlySpan<uint> rows)
+    {
+        if (dst + 3 * Stride + 4 > b.Length || rows.Length < 4)
+            throw new ArgumentOutOfRangeException(nameof(dst), dst, "The block reaches past the buffer.");
+        ref var r = ref MemoryMarshal.GetReference(rows);
+        Store(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(b), dst), r, Unsafe.Add(ref r, 1), Unsafe.Add(ref r, 2), Unsafe.Add(ref r, 3));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Set(ref uint rows, int mode, uint row0, uint row1, uint row2, uint row3)
+    {
+        ref var at = ref Unsafe.Add(ref rows, mode * 4);
+        at = row0;
+        Unsafe.Add(ref at, 1) = row1;
+        Unsafe.Add(ref at, 2) = row2;
+        Unsafe.Add(ref at, 3) = row3;
+    }
+
+    /// <summary>True motion's four row words, as <see cref="TrueMotion4" /> writes them.</summary>
+    private static void TrueMotion4Rows(ref byte o, ref uint rows)
+    {
+        int topLeft = Top(ref o, -1);
+        if (Vector128.IsHardwareAccelerated)
+        {
+            var above = Vector128.WidenLower(Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref o, -Stride))).AsByte()).AsInt16();
+            var top = Vector128.Shuffle(above, Vector128.Create((short)0, 1, 2, 3, 0, 1, 2, 3));
+            short l0 = (short)(Left(ref o, 0) - topLeft), l1 = (short)(Left(ref o, 1) - topLeft);
+            short l2 = (short)(Left(ref o, 2) - topLeft), l3 = (short)(Left(ref o, 3) - topLeft);
+            Vector128.Narrow(
+                Clamp(top + Vector128.Create(l0, l0, l0, l0, l1, l1, l1, l1)),
+                Clamp(top + Vector128.Create(l2, l2, l2, l2, l3, l3, l3, l3))).AsUInt32().StoreUnsafe(ref rows);
+            return;
+        }
+
+        int t0 = Top(ref o, 0), t1 = Top(ref o, 1), t2 = Top(ref o, 2), t3 = Top(ref o, 3);
+        for (var y = 0; y < 4; y++)
+        {
+            var left = Left(ref o, y) - topLeft;
+            Unsafe.Add(ref rows, y) = Pack(Clip(t0 + left), Clip(t1 + left), Clip(t2 + left), Clip(t3 + left));
+        }
+    }
+
     /// <summary>True motion over a 4 x 4 block: the row above plus each row's left neighbour less the corner, clamped.</summary>
     private static void TrueMotion4(ref byte o)
     {
