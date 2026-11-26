@@ -46,6 +46,17 @@ public static class Fixtures
     /// <summary>The 2 MP image as raw RGBA: the input of the WebP encoders.</summary>
     public static readonly byte[] Rgba2Mp = SyntheticPhoto.Rgba(PngWidth, PngHeight);
 
+    /// <summary>The size of <see cref="RgbaPhoto" />.</summary>
+    public const int PhotoWidth = 600;
+    public const int PhotoHeight = 400;
+
+    /// <summary>
+    ///     A photograph as raw RGBA: scikit-image's coffee (CC0, the visual tests' reference, provenance in its
+    ///     references.json), decoded by SkiaSharp. A camera's textures and noise make coefficient levels the
+    ///     synthetic photo does not, and a lossy encoder's mode choice spends its time on them.
+    /// </summary>
+    public static readonly byte[] RgbaPhoto = DecodePhoto(Path.Combine(AppContext.BaseDirectory, "References", "Photographs", "coffee.png"));
+
     private static byte[] Encode(int width, int height, SKEncodedImageFormat format, int quality)
     {
         var rgba = SyntheticPhoto.Rgba(width, height);
@@ -54,6 +65,21 @@ public static class Fixtures
         Marshal.Copy(rgba, 0, bitmap.GetPixels(), rgba.Length);
         using var data = bitmap.Encode(format, quality);
         return data.ToArray();
+    }
+
+    private static byte[] DecodePhoto(string path)
+    {
+        using var decoded = SKBitmap.Decode(path) ?? throw new InvalidOperationException($"SkiaSharp did not decode {path}.");
+        if (decoded.Width != PhotoWidth || decoded.Height != PhotoHeight)
+            throw new InvalidOperationException($"{path} is {decoded.Width} x {decoded.Height}, not {PhotoWidth} x {PhotoHeight}.");
+
+        var info = new SKImageInfo(PhotoWidth, PhotoHeight, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+        using var rgba = new SKBitmap(info);
+        if (!decoded.CopyTo(rgba, SKColorType.Rgba8888))
+            throw new InvalidOperationException($"SkiaSharp did not convert {path} to RGBA.");
+        var pixels = new byte[info.BytesSize];
+        Marshal.Copy(rgba.GetPixels(), pixels, 0, pixels.Length);
+        return pixels;
     }
 
     private static byte[] EncodeWebP(int width, int height, SKWebpEncoderCompression compression, float quality)

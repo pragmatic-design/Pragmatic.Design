@@ -9,7 +9,8 @@ namespace Pragmatic.Imaging.Benchmarks;
 /// <summary>
 ///     WebP: the managed codec against the Rust library it replaced (image-webp, through the native
 ///     pipeline). Decode a lossy 4 MP photo and a lossless 2 MP image that libwebp wrote; encode the 2 MP
-///     image lossless, from pixels already in memory.
+///     image lossless, from pixels already in memory. Lossy encode against libwebp: the 2 MP image, a
+///     photograph and the thumbnail-sized photo.
 /// </summary>
 [MemoryDiagnoser]
 [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
@@ -19,6 +20,8 @@ public class WebPBenchmarks
     private byte[] _lossy = null!;
     private byte[] _lossless = null!;
     private PixelBuffer _image = null!;
+    private PixelBuffer _photo = null!;
+    private PixelBuffer _small = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -27,10 +30,19 @@ public class WebPBenchmarks
         _lossless = Fixtures.WebPLossless2Mp;
         _image = new PixelBuffer(Fixtures.PngWidth, Fixtures.PngHeight);
         Fixtures.Rgba2Mp.CopyTo(_image.Pixels);
+        _photo = new PixelBuffer(Fixtures.PhotoWidth, Fixtures.PhotoHeight);
+        Fixtures.RgbaPhoto.CopyTo(_photo.Pixels);
+        _small = new PixelBuffer(Fixtures.SmallWidth, Fixtures.SmallHeight);
+        Fixtures.RgbaSmall.CopyTo(_small.Pixels);
     }
 
     [GlobalCleanup]
-    public void Cleanup() => _image.Dispose();
+    public void Cleanup()
+    {
+        _image.Dispose();
+        _photo.Dispose();
+        _small.Dispose();
+    }
 
     [Benchmark(Baseline = true), BenchmarkCategory("Decode WebP lossy 4MP")]
     public int DecodeWebPLossy_Native() => NativePipeline.Decode(_lossy);
@@ -57,6 +69,18 @@ public class WebPBenchmarks
 
     [Benchmark, BenchmarkCategory("Encode WebP lossy 2MP")]
     public byte[] EncodeWebPLossy_Managed() => Codecs.WebP.WebPEncoder.EncodeLossy(_image, LossyQuality);
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Encode WebP lossy photo 600x400")]
+    public byte[] EncodeWebPLossyPhoto_LibWebP() => LibWebP.EncodeLossy(_photo, LossyQuality);
+
+    [Benchmark, BenchmarkCategory("Encode WebP lossy photo 600x400")]
+    public byte[] EncodeWebPLossyPhoto_Managed() => Codecs.WebP.WebPEncoder.EncodeLossy(_photo, LossyQuality);
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Encode WebP lossy 400x267")]
+    public byte[] EncodeWebPLossySmall_LibWebP() => LibWebP.EncodeLossy(_small, LossyQuality);
+
+    [Benchmark, BenchmarkCategory("Encode WebP lossy 400x267")]
+    public byte[] EncodeWebPLossySmall_Managed() => Codecs.WebP.WebPEncoder.EncodeLossy(_small, LossyQuality);
 
     /// <summary>libwebp's default quality.</summary>
     private const int LossyQuality = 75;

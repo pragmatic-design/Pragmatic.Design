@@ -148,6 +148,19 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     [Fact]
     public void EncodeWebPLossyLibWebP_OneCall_AllocatesTheEncodedImage() => Expect(19504, () => _webp.EncodeWebPLossy_LibWebP());
 
+    // The same on the photograph and the thumbnail-sized photo: the file, and the 864 B of this Debug build.
+    [Fact]
+    public void EncodeWebPLossyPhotoManaged_OneCall_AllocatesWhatItDid() => Expect(32192, () => _webp.EncodeWebPLossyPhoto_Managed());
+
+    [Fact]
+    public void EncodeWebPLossyPhotoLibWebP_OneCall_AllocatesTheEncodedImage() => Expect(31632, () => _webp.EncodeWebPLossyPhoto_LibWebP());
+
+    [Fact]
+    public void EncodeWebPLossySmallManaged_OneCall_AllocatesWhatItDid() => Expect(2976, () => _webp.EncodeWebPLossySmall_Managed());
+
+    [Fact]
+    public void EncodeWebPLossySmallLibWebP_OneCall_AllocatesTheEncodedImage() => Expect(2448, () => _webp.EncodeWebPLossySmall_LibWebP());
+
     private static void Expect(long bytes, Action call)
     {
         call();
