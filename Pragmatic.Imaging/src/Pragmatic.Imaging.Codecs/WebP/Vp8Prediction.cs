@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -108,7 +109,11 @@ internal static class Vp8Prediction
     private static Vector128<ushort> Clamp(Vector128<short> value) =>
         Vector128.Min(Vector128.Max(value, Vector128<short>.Zero), Vector128.Create((short)255)).AsUInt16();
 
-    /// <summary>A 4 x 4 luma block predicted by one of the ten subblock modes.</summary>
+    /// <summary>
+    ///     A 4 x 4 luma block predicted by one of the ten subblock modes. Each row is assembled in a register
+    ///     and written whole: the transform reads it back a row at a time, and four byte stores would keep that
+    ///     read waiting for all of them to land.
+    /// </summary>
     public static void Subblock(byte[] b, int dst, int mode)
     {
         const int s = Stride;
@@ -123,118 +128,140 @@ internal static class Vp8Prediction
         {
             case Vp8Modes.BVe:
             {
-                for (var x = 0; x < 4; x++)
-                {
-                    var value = Avg3(Top(ref o, x - 1), Top(ref o, x), Top(ref o, x + 1));
-                    for (var y = 0; y < 4; y++)
-                        Set(ref o, x, y, value);
-                }
-
+                var row = Pack(
+                    Avg3(Top(ref o, -1), Top(ref o, 0), Top(ref o, 1)),
+                    Avg3(Top(ref o, 0), Top(ref o, 1), Top(ref o, 2)),
+                    Avg3(Top(ref o, 1), Top(ref o, 2), Top(ref o, 3)),
+                    Avg3(Top(ref o, 2), Top(ref o, 3), Top(ref o, 4)));
+                Store(ref o, row, row, row, row);
                 return;
             }
             case Vp8Modes.BHe:
             {
                 int a = Top(ref o, -1), bb = Left(ref o, 0), c = Left(ref o, 1), d = Left(ref o, 2), e = Left(ref o, 3);
-                b.AsSpan(dst, 4).Fill((byte)Avg3(a, bb, c));
-                b.AsSpan(dst + s, 4).Fill((byte)Avg3(bb, c, d));
-                b.AsSpan(dst + 2 * s, 4).Fill((byte)Avg3(c, d, e));
-                b.AsSpan(dst + 3 * s, 4).Fill((byte)Avg3(d, e, e));
+                Store(ref o, Splat(Avg3(a, bb, c)), Splat(Avg3(bb, c, d)), Splat(Avg3(c, d, e)), Splat(Avg3(d, e, e)));
                 return;
             }
             case Vp8Modes.BTm:
-                TrueMotion(b, dst, 4);
+                TrueMotion4(ref o);
                 return;
             case Vp8Modes.BDc:
             {
                 var sum = 4;
                 for (var i = 0; i < 4; i++)
                     sum += Top(ref o, i) + Left(ref o, i);
-                Fill(b, dst, 4, (byte)(sum >> 3));
+                var row = Splat(sum >> 3);
+                Store(ref o, row, row, row, row);
                 return;
             }
             case Vp8Modes.BRd:
             {
                 int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3), x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3);
-                Set(ref o, 0, 3, Avg3(j, k, l));
-                Set(ref o, 1, 3, Avg3(i, j, k)); Set(ref o, 0, 2, Avg3(i, j, k));
-                Set(ref o, 2, 3, Avg3(x, i, j)); Set(ref o, 1, 2, Avg3(x, i, j)); Set(ref o, 0, 1, Avg3(x, i, j));
-                Set(ref o, 3, 3, Avg3(a, x, i)); Set(ref o, 2, 2, Avg3(a, x, i)); Set(ref o, 1, 1, Avg3(a, x, i)); Set(ref o, 0, 0, Avg3(a, x, i));
-                Set(ref o, 3, 2, Avg3(bb, a, x)); Set(ref o, 2, 1, Avg3(bb, a, x)); Set(ref o, 1, 0, Avg3(bb, a, x));
-                Set(ref o, 3, 1, Avg3(c, bb, a)); Set(ref o, 2, 0, Avg3(c, bb, a));
-                Set(ref o, 3, 0, Avg3(d, c, bb));
+
+                // One value per down-right diagonal, from the bottom-left corner to the top-right one.
+                int e0 = Avg3(j, k, l), e1 = Avg3(i, j, k), e2 = Avg3(x, i, j), e3 = Avg3(a, x, i), e4 = Avg3(bb, a, x), e5 = Avg3(c, bb, a), e6 = Avg3(d, c, bb);
+                Store(ref o, Pack(e3, e4, e5, e6), Pack(e2, e3, e4, e5), Pack(e1, e2, e3, e4), Pack(e0, e1, e2, e3));
                 return;
             }
             case Vp8Modes.BLd:
             {
                 int a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3), e = Top(ref o, 4), f = Top(ref o, 5), g = Top(ref o, 6), h = Top(ref o, 7);
-                Set(ref o, 0, 0, Avg3(a, bb, c));
-                Set(ref o, 1, 0, Avg3(bb, c, d)); Set(ref o, 0, 1, Avg3(bb, c, d));
-                Set(ref o, 2, 0, Avg3(c, d, e)); Set(ref o, 1, 1, Avg3(c, d, e)); Set(ref o, 0, 2, Avg3(c, d, e));
-                Set(ref o, 3, 0, Avg3(d, e, f)); Set(ref o, 2, 1, Avg3(d, e, f)); Set(ref o, 1, 2, Avg3(d, e, f)); Set(ref o, 0, 3, Avg3(d, e, f));
-                Set(ref o, 3, 1, Avg3(e, f, g)); Set(ref o, 2, 2, Avg3(e, f, g)); Set(ref o, 1, 3, Avg3(e, f, g));
-                Set(ref o, 3, 2, Avg3(f, g, h)); Set(ref o, 2, 3, Avg3(f, g, h));
-                Set(ref o, 3, 3, Avg3(g, h, h));
+
+                // One value per down-left diagonal, from the top-left corner to the bottom-right one.
+                int f0 = Avg3(a, bb, c), f1 = Avg3(bb, c, d), f2 = Avg3(c, d, e), f3 = Avg3(d, e, f), f4 = Avg3(e, f, g), f5 = Avg3(f, g, h), f6 = Avg3(g, h, h);
+                Store(ref o, Pack(f0, f1, f2, f3), Pack(f1, f2, f3, f4), Pack(f2, f3, f4, f5), Pack(f3, f4, f5, f6));
                 return;
             }
             case Vp8Modes.BVr:
             {
                 int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3);
-                Set(ref o, 0, 0, Avg2(x, a)); Set(ref o, 1, 2, Avg2(x, a));
-                Set(ref o, 1, 0, Avg2(a, bb)); Set(ref o, 2, 2, Avg2(a, bb));
-                Set(ref o, 2, 0, Avg2(bb, c)); Set(ref o, 3, 2, Avg2(bb, c));
-                Set(ref o, 3, 0, Avg2(c, d));
-                Set(ref o, 0, 3, Avg3(k, j, i));
-                Set(ref o, 0, 2, Avg3(j, i, x));
-                Set(ref o, 0, 1, Avg3(i, x, a)); Set(ref o, 1, 3, Avg3(i, x, a));
-                Set(ref o, 1, 1, Avg3(x, a, bb)); Set(ref o, 2, 3, Avg3(x, a, bb));
-                Set(ref o, 2, 1, Avg3(a, bb, c)); Set(ref o, 3, 3, Avg3(a, bb, c));
-                Set(ref o, 3, 1, Avg3(bb, c, d));
+                int xa = Avg2(x, a), ab = Avg2(a, bb), bc = Avg2(bb, c), cd = Avg2(c, d);
+                int kji = Avg3(k, j, i), jix = Avg3(j, i, x), ixa = Avg3(i, x, a), xab = Avg3(x, a, bb), abc = Avg3(a, bb, c), bcd = Avg3(bb, c, d);
+                Store(ref o, Pack(xa, ab, bc, cd), Pack(ixa, xab, abc, bcd), Pack(jix, xa, ab, bc), Pack(kji, ixa, xab, abc));
                 return;
             }
             case Vp8Modes.BVl:
             {
                 int a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2), d = Top(ref o, 3), e = Top(ref o, 4), f = Top(ref o, 5), g = Top(ref o, 6), h = Top(ref o, 7);
-                Set(ref o, 0, 0, Avg2(a, bb));
-                Set(ref o, 1, 0, Avg2(bb, c)); Set(ref o, 0, 2, Avg2(bb, c));
-                Set(ref o, 2, 0, Avg2(c, d)); Set(ref o, 1, 2, Avg2(c, d));
-                Set(ref o, 3, 0, Avg2(d, e)); Set(ref o, 2, 2, Avg2(d, e));
-                Set(ref o, 0, 1, Avg3(a, bb, c));
-                Set(ref o, 1, 1, Avg3(bb, c, d)); Set(ref o, 0, 3, Avg3(bb, c, d));
-                Set(ref o, 2, 1, Avg3(c, d, e)); Set(ref o, 1, 3, Avg3(c, d, e));
-                Set(ref o, 3, 1, Avg3(d, e, f)); Set(ref o, 2, 3, Avg3(d, e, f));
-                Set(ref o, 3, 2, Avg3(e, f, g));
-                Set(ref o, 3, 3, Avg3(f, g, h));
+                int ab = Avg2(a, bb), bc = Avg2(bb, c), cd = Avg2(c, d), de = Avg2(d, e);
+                int abc = Avg3(a, bb, c), bcd = Avg3(bb, c, d), cde = Avg3(c, d, e), def = Avg3(d, e, f), efg = Avg3(e, f, g), fgh = Avg3(f, g, h);
+                Store(ref o, Pack(ab, bc, cd, de), Pack(abc, bcd, cde, def), Pack(bc, cd, de, efg), Pack(bcd, cde, def, fgh));
                 return;
             }
             case Vp8Modes.BHd:
             {
                 int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3), x = Top(ref o, -1), a = Top(ref o, 0), bb = Top(ref o, 1), c = Top(ref o, 2);
-                Set(ref o, 0, 0, Avg2(i, x)); Set(ref o, 2, 1, Avg2(i, x));
-                Set(ref o, 0, 1, Avg2(j, i)); Set(ref o, 2, 2, Avg2(j, i));
-                Set(ref o, 0, 2, Avg2(k, j)); Set(ref o, 2, 3, Avg2(k, j));
-                Set(ref o, 0, 3, Avg2(l, k));
-                Set(ref o, 3, 0, Avg3(a, bb, c));
-                Set(ref o, 2, 0, Avg3(x, a, bb));
-                Set(ref o, 1, 0, Avg3(i, x, a)); Set(ref o, 3, 1, Avg3(i, x, a));
-                Set(ref o, 1, 1, Avg3(j, i, x)); Set(ref o, 3, 2, Avg3(j, i, x));
-                Set(ref o, 1, 2, Avg3(k, j, i)); Set(ref o, 3, 3, Avg3(k, j, i));
-                Set(ref o, 1, 3, Avg3(l, k, j));
+                int ix = Avg2(i, x), ji = Avg2(j, i), kj = Avg2(k, j), lk = Avg2(l, k);
+                int ixa = Avg3(i, x, a), jix = Avg3(j, i, x), kji = Avg3(k, j, i), lkj = Avg3(l, k, j), xab = Avg3(x, a, bb), abc = Avg3(a, bb, c);
+                Store(ref o, Pack(ix, ixa, xab, abc), Pack(ji, jix, ix, ixa), Pack(kj, kji, ji, jix), Pack(lk, lkj, kj, kji));
                 return;
             }
             default:
             {
                 // Horizontal-up.
                 int i = Left(ref o, 0), j = Left(ref o, 1), k = Left(ref o, 2), l = Left(ref o, 3);
-                Set(ref o, 0, 0, Avg2(i, j));
-                Set(ref o, 2, 0, Avg2(j, k)); Set(ref o, 0, 1, Avg2(j, k));
-                Set(ref o, 2, 1, Avg2(k, l)); Set(ref o, 0, 2, Avg2(k, l));
-                Set(ref o, 1, 0, Avg3(i, j, k));
-                Set(ref o, 3, 0, Avg3(j, k, l)); Set(ref o, 1, 1, Avg3(j, k, l));
-                Set(ref o, 3, 1, Avg3(k, l, l)); Set(ref o, 1, 2, Avg3(k, l, l));
-                Set(ref o, 3, 2, l); Set(ref o, 2, 2, l); Set(ref o, 0, 3, l); Set(ref o, 1, 3, l); Set(ref o, 2, 3, l); Set(ref o, 3, 3, l);
+                int ij = Avg2(i, j), jk = Avg2(j, k), kl = Avg2(k, l);
+                int ijk = Avg3(i, j, k), jkl = Avg3(j, k, l), kll = Avg3(k, l, l);
+                Store(ref o, Pack(ij, ijk, jk, jkl), Pack(jk, jkl, kl, kll), Pack(kl, kll, l, l), Splat(l));
                 return;
             }
         }
+    }
+
+    /// <summary>True motion over a 4 x 4 block: the row above plus each row's left neighbour less the corner, clamped.</summary>
+    private static void TrueMotion4(ref byte o)
+    {
+        if (Vector128.IsHardwareAccelerated)
+            TrueMotion4Vector(ref o);
+        else
+            TrueMotion4Scalar(ref o);
+    }
+
+    /// <summary>The same, two rows to a vector of eight: the row above twice, and each half its own row's offset.</summary>
+    internal static void TrueMotion4Vector(ref byte o)
+    {
+        int topLeft = Top(ref o, -1);
+        var above = Vector128.WidenLower(Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref o, -Stride))).AsByte()).AsInt16();
+        var top = Vector128.Shuffle(above, Vector128.Create((short)0, 1, 2, 3, 0, 1, 2, 3));
+        short l0 = (short)(Left(ref o, 0) - topLeft), l1 = (short)(Left(ref o, 1) - topLeft);
+        short l2 = (short)(Left(ref o, 2) - topLeft), l3 = (short)(Left(ref o, 3) - topLeft);
+        var rows = Vector128.Narrow(
+            Clamp(top + Vector128.Create(l0, l0, l0, l0, l1, l1, l1, l1)),
+            Clamp(top + Vector128.Create(l2, l2, l2, l2, l3, l3, l3, l3))).AsUInt32();
+        Store(ref o, rows.GetElement(0), rows.GetElement(1), rows.GetElement(2), rows.GetElement(3));
+    }
+
+    internal static void TrueMotion4Scalar(ref byte o)
+    {
+        int topLeft = Top(ref o, -1);
+        int t0 = Top(ref o, 0), t1 = Top(ref o, 1), t2 = Top(ref o, 2), t3 = Top(ref o, 3);
+        int l0 = Left(ref o, 0) - topLeft, l1 = Left(ref o, 1) - topLeft, l2 = Left(ref o, 2) - topLeft, l3 = Left(ref o, 3) - topLeft;
+        Store(ref o,
+            Pack(Clip(t0 + l0), Clip(t1 + l0), Clip(t2 + l0), Clip(t3 + l0)),
+            Pack(Clip(t0 + l1), Clip(t1 + l1), Clip(t2 + l1), Clip(t3 + l1)),
+            Pack(Clip(t0 + l2), Clip(t1 + l2), Clip(t2 + l2), Clip(t3 + l2)),
+            Pack(Clip(t0 + l3), Clip(t1 + l3), Clip(t2 + l3), Clip(t3 + l3)));
+    }
+
+    /// <summary>Four pixels, left to right, as the row word they make in memory.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint Pack(int p0, int p1, int p2, int p3)
+    {
+        var word = (uint)(p0 | (p1 << 8) | (p2 << 16) | (p3 << 24));
+        return BitConverter.IsLittleEndian ? word : BinaryPrimitives.ReverseEndianness(word);
+    }
+
+    /// <summary>A row of four of one value.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint Splat(int value) => (uint)value * 0x01010101u;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Store(ref byte o, uint row0, uint row1, uint row2, uint row3)
+    {
+        Unsafe.WriteUnaligned(ref o, row0);
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref o, Stride), row1);
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref o, 2 * Stride), row2);
+        Unsafe.WriteUnaligned(ref Unsafe.Add(ref o, 3 * Stride), row3);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

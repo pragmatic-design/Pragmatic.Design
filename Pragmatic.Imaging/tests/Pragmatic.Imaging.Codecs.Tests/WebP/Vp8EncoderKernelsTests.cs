@@ -54,6 +54,25 @@ public sealed class Vp8EncoderKernelsTests
     }
 
     [Fact]
+    public void TrueMotion4_VectorAndScalar_GiveTheSamePrediction()
+    {
+        var random = new Random(853);
+        var scalar = new byte[S * 17];
+        for (var trial = 0; trial < 2000; trial++)
+        {
+            // Neighbours far apart from the corner, so the clamping at 0 and 255 is reached too.
+            random.NextBytes(scalar);
+            var vector = (byte[])scalar.Clone();
+            var offset = Vp8Borders.Origin + (trial & 3) * 4 + ((trial >> 2) & 3) * 4 * S;
+
+            Vp8Prediction.TrueMotion4Scalar(ref scalar[offset]);
+            Vp8Prediction.TrueMotion4Vector(ref vector[offset]);
+
+            Assert.Equal(scalar, vector);
+        }
+    }
+
+    [Fact]
     public void Quantize_VectorAndScalar_GiveTheSameLevelsAndCoefficients()
     {
         var random = new Random(853);
