@@ -38,6 +38,7 @@ internal sealed partial class Vp8MacroblockCoder
         Span<short> levels = stackalloc short[16];
         Span<short> bestLevels = stackalloc short[16];
         Span<uint> predictions = stackalloc uint[40];
+        Span<short> coefficients = stackalloc short[16];
         var headerBits = 0L;
 
         for (var block = 0; block < 16; block++)
@@ -55,7 +56,7 @@ internal sealed partial class Vp8MacroblockCoder
             Vp8Prediction.Subblocks(_y, offset, predictions);
             for (var mode = 0; mode < 10; mode++)
             {
-                var nonZero = Reconstruct4(segment, offset, levels, predictions.Slice(mode * 4, 4));
+                var nonZero = Reconstruct4(segment, offset, coefficients, levels, predictions.Slice(mode * 4, 4));
                 long distortion = Vp8Distortion.SumOfSquares4(_sourceY, _candidate, offset);
                 long header = Vp8Costs.SubblockMode(top, leftMode, mode);
                 long rate = mode > 0 && Vp8Distortion.NonZeroAc(levels) <= 3 ? FlatnessPenalty : 0;
@@ -106,10 +107,14 @@ internal sealed partial class Vp8MacroblockCoder
     ///     into <paramref name="levels" />, and writes its reconstruction to the candidate buffer. With SSE2 the
     ///     prediction goes from registers to the transform and to the reconstruction, never through a buffer.
     /// </summary>
-    [SkipLocalsInit]
-    private bool Reconstruct4(Vp8Segment segment, int offset, Span<short> levels, ReadOnlySpan<uint> prediction)
+    /// <remarks>
+    ///     Inlined, with its coefficients from the caller, so the spans stay the caller's locals: on Linux a span
+    ///     argument arrives in two registers, which the call spilled as two 8-byte stores and read back as one
+    ///     16-byte load, a load the stores cannot forward to, for each of ten modes of every block.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool Reconstruct4(Vp8Segment segment, int offset, Span<short> coefficients, Span<short> levels, ReadOnlySpan<uint> prediction)
     {
-        Span<short> coefficients = stackalloc short[16];
         if (Sse2.IsSupported)
         {
             Vp8ForwardTransform.DctSse2(_sourceY, offset, prediction, coefficients);
