@@ -46,21 +46,45 @@ internal sealed class Vp8FrameHeader
 
     public int SkipProbability { get; private set; }
 
-    public static Vp8FrameHeader Read(Vp8BoolDecoder reader)
+    /// <summary>
+    ///     Reads a frame's header over whatever this one held: every field starts again from what a new header
+    ///     holds, so the decoder can keep one per thread.
+    /// </summary>
+    public void Read(Vp8BoolDecoder reader)
     {
-        var header = new Vp8FrameHeader();
+        Reset();
         reader.ReadBit(128); // colour space: only 0 is defined, and decoders ignore it
         reader.ReadBit(128); // clamping type: the reconstruction clamps either way
-        header.ReadSegmentation(reader);
-        header.ReadFilter(reader);
-        header.Partitions = 1 << reader.ReadLiteral(2);
-        header.ReadQuantizers(reader);
+        ReadSegmentation(reader);
+        ReadFilter(reader);
+        Partitions = 1 << reader.ReadLiteral(2);
+        ReadQuantizers(reader);
         reader.ReadBit(128); // refresh_entropy_probs: meaningless for a still image
-        header.ReadCoefficientProbabilities(reader);
-        header.UseSkipProbability = reader.ReadBit(128) == 1;
-        if (header.UseSkipProbability)
-            header.SkipProbability = reader.ReadLiteral(8);
-        return header;
+        ReadCoefficientProbabilities(reader);
+        UseSkipProbability = reader.ReadBit(128) == 1;
+        if (UseSkipProbability)
+            SkipProbability = reader.ReadLiteral(8);
+    }
+
+    private void Reset()
+    {
+        UseSegments = false;
+        UpdateSegmentMap = false;
+        AbsoluteSegmentValues = false;
+        Array.Clear(SegmentQuantizer);
+        Array.Clear(SegmentFilterStrength);
+        SegmentProbabilities.AsSpan().Fill(255);
+        SimpleFilter = false;
+        FilterLevel = 0;
+        Sharpness = 0;
+        UseFilterDeltas = false;
+        Array.Clear(ReferenceFilterDelta);
+        Array.Clear(ModeFilterDelta);
+        Partitions = 0;
+        Array.Clear(Quantizers);
+        Vp8Tables.DefaultCoefficientProbabilities.CopyTo(CoefficientProbabilities);
+        UseSkipProbability = false;
+        SkipProbability = 0;
     }
 
     private void ReadSegmentation(Vp8BoolDecoder reader)

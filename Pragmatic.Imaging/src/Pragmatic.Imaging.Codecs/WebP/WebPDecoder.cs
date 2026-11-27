@@ -70,13 +70,24 @@ public static class WebPDecoder
             return;
         }
 
-        using var frame = Vp8Decoder.Decode(image);
-        Vp8YuvConverter.ToRgba(frame, rgba);
+        var workspace = Vp8DecoderWorkspace.Take();
+        var frame = Vp8Decoder.Decode(image, workspace);
+        try
+        {
+            Vp8YuvConverter.ToRgba(frame, rgba);
 
-        // An ALPH chunk counts only when the extended header says the image has alpha: libwebp's reading
-        // (through Skia) and the native library's both leave the image opaque otherwise.
-        if (layout.HasAlpha && layout.Alpha.Length > 0)
-            WebPAlpha.Apply(file.Slice(layout.Alpha.Offset, layout.Alpha.Length), frame.Width, frame.Height, rgba);
+            // An ALPH chunk counts only when the extended header says the image has alpha: libwebp's reading
+            // (through Skia) and the native library's both leave the image opaque otherwise.
+            if (layout.HasAlpha && layout.Alpha.Length > 0)
+                WebPAlpha.Apply(file.Slice(layout.Alpha.Offset, layout.Alpha.Length), frame.Width, frame.Height, rgba);
+        }
+        catch
+        {
+            frame.Dispose();
+            throw;
+        }
+
+        Vp8DecoderWorkspace.Give(workspace);
     }
 
     private static void SwapRedAndBlue(Span<byte> pixels)

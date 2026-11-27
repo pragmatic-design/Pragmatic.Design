@@ -8,6 +8,12 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     <c>VP8L</c> chunk, or the header-less stream an <c>ALPH</c> chunk carries, straight into the
 ///     caller's pixels; every working buffer comes from the shared array pool and goes back to it.
 /// </summary>
+/// <remarks>
+///     A decoder is kept from one decode to the next on the thread that ran it, its reader, lists and code
+///     tables with it, so that a decode allocates nothing on the managed heap: the native decoder allocates
+///     only the image's wrapper. A decode that throws does not give its decoder back, so the next starts from
+///     a new one rather than from state left halfway.
+/// </remarks>
 internal sealed class Vp8LDecoder
 {
     private const byte Signature = 0x2F;
@@ -16,11 +22,20 @@ internal sealed class Vp8LDecoder
     private const int DistanceCodes = 40;
     private const int MaxCacheBits = 11;
 
-    private readonly Vp8LBitReader _reader;
-    private readonly int[] _scratch = ArrayPool<int>.Shared.Rent(2 * Vp8LCodeReader.MaxAlphabet);
-    private readonly List<uint[]> _rented = [];
+    [ThreadStatic]
+    private static Vp8LDecoder? _idle;
 
-    private Vp8LDecoder(Vp8LBitReader reader) => _reader = reader;
+    private readonly Vp8LBitReader _reader = new();
+    private readonly List<uint[]> _rented = [];
+    private readonly List<Vp8LTransform> _transforms = [];
+
+    // One set of codes at a time: a stream reads its entropy image, and so that image's codes, before its own.
+    private readonly Vp8LHuffmanCodes _codes = new();
+    private int[] _scratch = [];
+
+    private Vp8LDecoder()
+    {
+    }
 
     /// <summary>The size and alpha hint of a <c>VP8L</c> chunk's header, from its first five bytes.</summary>
     public static (int Width, int Height, bool HasAlpha) ReadHeader(ReadOnlySpan<byte> chunk)
@@ -38,19 +53,22 @@ internal sealed class Vp8LDecoder
     {
         var (width, height, _) = ReadHeader(chunk);
         fixed (byte* data = chunk)
-            Run(new Vp8LBitReader(data + 5, chunk.Length - 5), width, height, argb);
+            Run(data + 5, chunk.Length - 5, width, height, argb);
     }
 
     /// <summary>Decodes the header-less stream of an <c>ALPH</c> chunk, of a size the frame implies.</summary>
     public static unsafe void DecodeHeaderless(ReadOnlySpan<byte> stream, int width, int height, Span<uint> argb)
     {
         fixed (byte* data = stream)
-            Run(new Vp8LBitReader(data, stream.Length), width, height, argb);
+            Run(data, stream.Length, width, height, argb);
     }
 
-    private static void Run(Vp8LBitReader reader, int width, int height, Span<uint> argb)
+    private static unsafe void Run(byte* data, int length, int width, int height, Span<uint> argb)
     {
-        var decoder = new Vp8LDecoder(reader);
+        var decoder = _idle ?? new Vp8LDecoder();
+        _idle = null;
+        decoder._reader.Reset(data, length);
+        decoder._scratch = ArrayPool<int>.Shared.Rent(2 * Vp8LCodeReader.MaxAlphabet);
         try
         {
             decoder.DecodeImage(width, height, argb[..(width * height)]);
@@ -59,6 +77,8 @@ internal sealed class Vp8LDecoder
         {
             decoder.Release();
         }
+
+        _idle = decoder;
     }
 
     private void Release()
@@ -66,7 +86,10 @@ internal sealed class Vp8LDecoder
         foreach (var array in _rented)
             ArrayPool<uint>.Shared.Return(array);
         _rented.Clear();
+        _transforms.Clear();
+        _codes.Dispose();
         ArrayPool<int>.Shared.Return(_scratch);
+        _scratch = [];
     }
 
     private Span<uint> Rent(int length)
@@ -78,7 +101,7 @@ internal sealed class Vp8LDecoder
 
     private void DecodeImage(int width, int height, Span<uint> output)
     {
-        var transforms = new List<Vp8LTransform>();
+        var transforms = _transforms;
         var seen = 0;
         var codedWidth = width;
         while (_reader.ReadBits(1) == 1)
@@ -172,7 +195,8 @@ internal sealed class Vp8LDecoder
         }
 
         var cacheSize = cacheBits > 0 ? 1 << cacheBits : 0;
-        using var codes = new Vp8LHuffmanCodes(groups * 5);
+        var codes = _codes;
+        codes.Rent(groups * 5);
         var roots = ArrayPool<int>.Shared.Rent(groups * 5);
         try
         {
@@ -192,6 +216,7 @@ internal sealed class Vp8LDecoder
         finally
         {
             ArrayPool<int>.Shared.Return(roots);
+            codes.Dispose();
         }
     }
 }

@@ -8,24 +8,31 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     VP8's boolean entropy decoder (RFC 6386, section 7), over bytes the caller keeps pinned. The value
 ///     holds up to 40 bits ahead of the 8-bit window, loaded four bytes at a time and one at a time near the
 ///     end. Past the end it reads zeros and sets <see cref="IsPastEnd" />, which is how libwebp detects a
-///     truncated partition.
+///     truncated partition. A new decoder reads nothing until <see cref="Reset" /> gives it its bytes, so the
+///     decoder can keep its decoders on the thread.
 /// </summary>
 internal sealed unsafe class Vp8BoolDecoder
 {
-    private readonly byte* _data;
-    private readonly int _length;
+    private byte* _data;
+    private int _length;
     private int _position;
     private ulong _value;
     private uint _range = 255;
     private int _bitCount = -8;
 
-    public Vp8BoolDecoder(byte* data, int length)
+    public bool IsPastEnd { get; private set; }
+
+    /// <summary>Starts over on <paramref name="length" /> bytes at <paramref name="data" />, as a decoder just made on them.</summary>
+    public void Reset(byte* data, int length)
     {
         _data = data;
         _length = length;
+        _position = 0;
+        _value = 0;
+        _range = 255;
+        _bitCount = -8;
+        IsPastEnd = false;
     }
-
-    public bool IsPastEnd { get; private set; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ReadBit(int probability)

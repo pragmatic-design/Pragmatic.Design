@@ -12,17 +12,22 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 /// </summary>
 internal sealed unsafe class Vp8LBitReader
 {
-    private readonly byte* _data;
-    private readonly int _length;
+    private byte* _data;
+    private int _length;
     private int _position;
     private ulong _buffer;
     private int _bits;
     private long _consumed;
 
-    public Vp8LBitReader(byte* data, int length)
+    /// <summary>Starts over on <paramref name="length" /> bytes at <paramref name="data" />, as a reader just made on them.</summary>
+    public void Reset(byte* data, int length)
     {
         _data = data;
         _length = length;
+        _position = 0;
+        _buffer = 0;
+        _bits = 0;
+        _consumed = 0;
     }
 
     /// <summary>Whether more bits were consumed than the stream holds.</summary>

@@ -9,11 +9,10 @@ internal readonly record struct Vp8FilterStrength(int Limit, int Interior, int H
 {
     /// <summary>
     ///     The strengths for each segment, without and with subblock prediction (libwebp's
-    ///     <c>PrecomputeFilterStrengths</c>): <c>[segment * 2 + (subblocks ? 1 : 0)]</c>.
+    ///     <c>PrecomputeFilterStrengths</c>), into <paramref name="strengths" />: <c>[segment * 2 + (subblocks ? 1 : 0)]</c>.
     /// </summary>
-    public static Vp8FilterStrength[] ForSegments(Vp8FrameHeader header)
+    public static void ForSegments(Vp8FrameHeader header, Span<Vp8FilterStrength> strengths)
     {
-        var strengths = new Vp8FilterStrength[Vp8FrameHeader.Segments * 2];
         for (var segment = 0; segment < Vp8FrameHeader.Segments; segment++)
         {
             var baseLevel = header.FilterLevel;
@@ -53,7 +52,5 @@ internal readonly record struct Vp8FilterStrength(int Limit, int Interior, int H
                 strengths[segment * 2 + subblocks] = new Vp8FilterStrength(2 * level + interior, interior, threshold, subblocks == 1);
             }
         }
-
-        return strengths;
     }
 }
