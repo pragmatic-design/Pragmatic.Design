@@ -76,7 +76,7 @@ You passed a low `quality`. `50` is visibly degraded for photos; `75` is accepta
 
 ### WebP or AVIF ignores `quality`
 
-Expected. WebP is written lossless, and lossy WebP is to come as an explicit opt-in (#853); AVIF uses the library default in `image` 0.25. `quality` only affects JPEG. For controllable lossy size, encode JPEG.
+Expected. `Encode(ImageFormat.WebP, quality)` writes lossless whatever the quality; for lossy WebP at a quality, call `EncodeWebP(WebPEncoding.Lossy, quality)`. AVIF uses the library default in `image` 0.25. `quality` in `Encode` only affects JPEG.
 
 ---
 

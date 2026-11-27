@@ -127,7 +127,18 @@ byte[] jpeg = pipe.Encode(ImageFormat.Jpeg, quality: 85);
 pipe.EncodeTo(output, ImageFormat.WebP);
 ```
 
-`quality` applies to **JPEG only**. WebP is written lossless (lossy WebP is to come as an explicit opt-in, #853), AVIF uses the library default, and lossless/paletted formats ignore it. Supported output formats: PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF.
+`quality` applies to **JPEG only**. WebP is written lossless, AVIF uses the library default, and lossless/paletted formats ignore it. Supported output formats: PNG, JPEG, WebP, AVIF, GIF (first frame), BMP, TIFF.
+
+### `EncodeWebP(encoding, quality)` / `EncodeWebPTo(stream, encoding, quality)`
+
+WebP, lossless or lossy by name. `WebPEncoding.Lossless` writes what `Encode(ImageFormat.WebP)` writes; `WebPEncoding.Lossy` writes a VP8 frame at `quality`, 0 to 100 on libwebp's scale (default 75), with an image's alpha kept exactly in an `ALPH` chunk beside it.
+
+```csharp
+byte[] webp = pipe.EncodeWebP(WebPEncoding.Lossy, quality: 80);
+pipe.EncodeWebPTo(output, WebPEncoding.Lossy);
+```
+
+The lossy file matches libwebp's at the effort SkiaSharp runs it (method 3): on the reference photographs, SSIM within 0.001 at 50, 75 and 90 and files within 0.2% of its size. `ImageConverter` and `ImageBatch` take an `ImageFormat`, and so write WebP lossless; for lossy, encode from a pipeline.
 
 Encoding **does not** dispose the pipeline: encode multiple times or keep transforming. The async variants `EncodeAsync` / `EncodeToStreamAsync` offload to the thread pool.
 
@@ -237,7 +248,7 @@ byte[][] custom = await ImageBatch.ProcessAsync(images, data =>
 - Colour-space conversion (sRGB assumed throughout)
 - Animation frames (GIF / APNG / animated WebP: first frame only)
 - EXIF-preserving operations (an encode writes no EXIF; the orientation is applied to the pixels on load, so nothing is lost by it)
-- WebP/AVIF lossy quality control (upstream `image` 0.25 limitation)
+- AVIF quality control (upstream `image` 0.25 limitation)
 - Floating-point / HDR pixel formats
 
 For any of the above, use ImageSharp or a dedicated tool.

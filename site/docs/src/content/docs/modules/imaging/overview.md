@@ -27,7 +27,7 @@ Image processing for .NET: a managed engine for PNG, JPEG and every operation, a
 |---|---|---|
 | PNG, JPEG: header, decode, encode | yes | a JPEG the managed decoder does not handle: CMYK, 12-bit, arithmetic-coded, lossless |
 | WebP: header, decode (lossless, lossy, alpha, an animation's first frame) | yes | |
-| WebP: encode, lossless | yes | |
+| WebP: encode, lossless, and lossy with `EncodeWebP` | yes | |
 | AVIF, GIF, BMP, TIFF: header, decode, encode | | yes, until their managed codecs land (#854, #855) |
 | Resize, thumbnail, crop, rotate, flip, filters | yes, whatever format was loaded | |
 | QR codes, `StripExif` for JPEG and PNG | yes | |
@@ -57,9 +57,21 @@ var jpeg = pipeline
     .Encode(ImageFormat.Jpeg, quality: 85);
 ```
 
-> The `quality` parameter currently applies to **JPEG only**. For WebP and AVIF it is ignored:
+> The `quality` parameter of `Encode` applies to **JPEG only**. For WebP and AVIF it is ignored:
 > WebP encodes lossless and AVIF uses the native library default. PNG is written at zlib's fastest
 > level, which on the benchmark's 2 MP round trip is both smaller and faster than the native encoder was.
+
+### Lossy WebP
+
+Lossy WebP is asked for by name, so a call that names no encoding never changes what it writes:
+
+```csharp
+var webp = pipeline.EncodeWebP(WebPEncoding.Lossy, quality: 75);
+```
+
+`quality` is libwebp's scale, 0 to 100. The file is what libwebp writes at the effort SkiaSharp runs it
+at (method 3): on the reference photographs at 50, 75 and 90, SSIM within 0.001 of libwebp's and files
+within 0.2% of its size. An image with transparent pixels keeps its alpha exactly beside the frame.
 
 ### One-liner helpers
 
@@ -137,7 +149,8 @@ A second package in this module holds the managed engine that replaces the nativ
 piece (#821): JPEG decode (baseline, progressive, scaled 1/2 to 1/8) and encode (optimised or standard
 Huffman tables), PNG decode and encode (every colour type, 1–16 bits, Adam7), WebP decode (lossless
 VP8L, lossy VP8 with its alpha plane, the extended container and an animation's first frame, to the
-pixels libwebp reads) and lossless encode (VP8L, a colour table for 256 colours or fewer), resampling
+pixels libwebp reads), lossless encode (VP8L, a colour table for 256 colours or fewer) and lossy encode
+(VP8 with segments, rate-distortion mode choice and the alpha plane lossless beside it), resampling
 with five
 filters, and the QR, Code 128, Code 39 and EAN symbologies as matrices and bar widths. It is managed
 code only, with AVX2 paths where they pay.

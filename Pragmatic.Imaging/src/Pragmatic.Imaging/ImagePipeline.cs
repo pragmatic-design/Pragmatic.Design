@@ -183,6 +183,28 @@ public sealed partial class ImagePipeline : IDisposable, IAsyncDisposable
         ImageEncoding.Encode(_image, format, quality, output);
     }
 
+    /// <summary>Encode the current image as WebP, lossless or lossy.</summary>
+    /// <param name="encoding">Lossless, as <see cref="Encode" /> with <see cref="ImageFormat.WebP" /> writes, or lossy.</param>
+    /// <param name="quality">For lossy, 0 to 100 on libwebp's scale, where 75 is its default. Ignored for lossless.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality" /> is above 100, or <paramref name="encoding" /> is not one of the values.</exception>
+    public byte[] EncodeWebP(WebPEncoding encoding, byte quality = 75)
+    {
+        ThrowIfDisposed();
+        return ImageEncoding.EncodeWebP(_image, encoding, quality);
+    }
+
+    /// <summary>Encode the current image as WebP, lossless or lossy, and write it to a stream.</summary>
+    /// <param name="output">Where the file is written.</param>
+    /// <param name="encoding">Lossless, as <see cref="EncodeTo" /> with <see cref="ImageFormat.WebP" /> writes, or lossy.</param>
+    /// <param name="quality">For lossy, 0 to 100 on libwebp's scale, where 75 is its default. Ignored for lossless.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality" /> is above 100, or <paramref name="encoding" /> is not one of the values.</exception>
+    public void EncodeWebPTo(Stream output, WebPEncoding encoding, byte quality = 75)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        ThrowIfDisposed();
+        ImageEncoding.EncodeWebP(_image, encoding, quality, output);
+    }
+
     /// <summary>Encode asynchronously.</summary>
     public Task<byte[]> EncodeAsync(ImageFormat format = ImageFormat.Png, byte quality = 90, CancellationToken ct = default)
         => Task.Run(() =>

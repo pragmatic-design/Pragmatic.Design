@@ -24,4 +24,9 @@
     <Compile Include="..\..\tests\Pragmatic.Imaging.Codecs.Tests\Workload\SyntheticPhoto.cs" Link="Workload\SyntheticPhoto.cs" />
   </ItemGroup>
 
+  <!-- The photograph the lossy WebP rows encode: the visual tests' reference, where its provenance is kept. -->
+  <ItemGroup>
+    <None Include="..\..\tests\Pragmatic.Imaging.Tests\References\Photographs\coffee.png" Link="References\Photographs\coffee.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
