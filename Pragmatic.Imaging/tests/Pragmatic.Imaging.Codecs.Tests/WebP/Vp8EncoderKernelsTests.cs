@@ -280,6 +280,27 @@ public sealed class Vp8EncoderKernelsTests
         }
     }
 
+    [Fact]
+    public void SumOfSquaresChroma_IsTheSumOverTheUAndVBlocks()
+    {
+        var random = new Random(853);
+        var sourceU = new byte[S * Vp8Borders.ChromaRows];
+        var reconstructionU = new byte[S * Vp8Borders.ChromaRows];
+        var sourceV = new byte[S * Vp8Borders.ChromaRows];
+        var reconstructionV = new byte[S * Vp8Borders.ChromaRows];
+        for (var trial = 0; trial < 500; trial++)
+        {
+            random.NextBytes(sourceU);
+            random.NextBytes(reconstructionU);
+            random.NextBytes(sourceV);
+            random.NextBytes(reconstructionV);
+
+            Assert.Equal(
+                Squares(sourceU, reconstructionU, Vp8Borders.Origin, 8) + Squares(sourceV, reconstructionV, Vp8Borders.Origin, 8),
+                Vp8Distortion.SumOfSquaresChroma(sourceU, reconstructionU, sourceV, reconstructionV, Vp8Borders.Origin));
+        }
+    }
+
     private static int Squares(byte[] a, byte[] b, int offset, int size)
     {
         var sum = 0;

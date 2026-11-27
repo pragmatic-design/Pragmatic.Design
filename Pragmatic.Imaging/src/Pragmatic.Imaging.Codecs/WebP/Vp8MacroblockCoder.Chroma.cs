@@ -34,8 +34,7 @@ internal sealed partial class Vp8MacroblockCoder
 
             var score = new Vp8Score
             {
-                Distortion = Vp8Distortion.SumOfSquares(_sourceU, _candidateU, Origin, 8, 8) +
-                             Vp8Distortion.SumOfSquares(_sourceV, _candidateV, Origin, 8, 8),
+                Distortion = Vp8Distortion.SumOfSquaresChroma(_sourceU, _candidateU, _sourceV, _candidateV, Origin),
                 Header = Vp8Costs.ChromaMode(mode),
             };
             if (mode > 0 && Vp8Distortion.IsFlat(_chromaLevels, 8, 2))

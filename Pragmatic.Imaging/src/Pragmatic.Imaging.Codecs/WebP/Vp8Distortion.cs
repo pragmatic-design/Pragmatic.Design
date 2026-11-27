@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Pragmatic.Imaging.Codecs.WebP;
 
@@ -55,6 +56,36 @@ internal static class Vp8Distortion
                 var high = Vector128.WidenUpper(pixelsA).AsInt16() - Vector128.WidenUpper(pixelsB).AsInt16();
                 sum += Vector128.WidenLower(high) * Vector128.WidenLower(high) + Vector128.WidenUpper(high) * Vector128.WidenUpper(high);
             }
+        }
+
+        return Vector128.Sum(sum);
+    }
+
+    /// <summary>
+    ///     The sum of squared differences of the 8 x 8 U block and the 8 x 8 V block together: a row of each in
+    ///     one vector, as libwebp's side-by-side chroma is measured in one pass.
+    /// </summary>
+    public static int SumOfSquaresChroma(byte[] sourceU, byte[] reconstructionU, byte[] sourceV, byte[] reconstructionV, int offset)
+    {
+        if (!Sse2.IsSupported)
+            return SumOfSquares(sourceU, reconstructionU, offset, 8, 8) + SumOfSquares(sourceV, reconstructionV, offset, 8, 8);
+
+        var end = offset + 7 * S + 8;
+        if (sourceU.Length < end || reconstructionU.Length < end || sourceV.Length < end || reconstructionV.Length < end)
+            throw new ArgumentException("The blocks reach past their buffers.");
+
+        ref var su = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(sourceU), offset);
+        ref var ru = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(reconstructionU), offset);
+        ref var sv = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(sourceV), offset);
+        ref var rv = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(reconstructionV), offset);
+        var sum = Vector128<int>.Zero;
+        for (var y = 0; y < 8 * S; y += S)
+        {
+            var a = Vector128.Create(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref su, y)), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sv, y))).AsByte();
+            var b = Vector128.Create(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref ru, y)), Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref rv, y))).AsByte();
+            var low = Vector128.WidenLower(a).AsInt16() - Vector128.WidenLower(b).AsInt16();
+            var high = Vector128.WidenUpper(a).AsInt16() - Vector128.WidenUpper(b).AsInt16();
+            sum += Sse2.MultiplyAddAdjacent(low, low) + Sse2.MultiplyAddAdjacent(high, high);
         }
 
         return Vector128.Sum(sum);
