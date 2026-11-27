@@ -24,15 +24,27 @@ internal sealed class Vp8LHuffmanCodes : IDisposable
     private const int LengthBits = 5;
     private const int LengthMask = (1 << LengthBits) - 1;
 
-    private int[] _entries;
+    private int[] _entries = [];
     private int _used;
 
-    public Vp8LHuffmanCodes(int expectedCodes) => _entries = ArrayPool<int>.Shared.Rent(Math.Max(1, expectedCodes) * RootSize * 2);
+    /// <summary>Starts an empty set of codes, with a block from the pool sized for <paramref name="expectedCodes" />.</summary>
+    public void Rent(int expectedCodes)
+    {
+        _entries = ArrayPool<int>.Shared.Rent(Math.Max(1, expectedCodes) * RootSize * 2);
+        _used = 0;
+    }
 
     /// <summary>The block every code's table lives in; a code is its root offset in it.</summary>
     public int[] Entries => _entries;
 
-    public void Dispose() => ArrayPool<int>.Shared.Return(_entries);
+    /// <summary>Gives the block back; a second call, or one before <see cref="Rent" />, does nothing.</summary>
+    public void Dispose()
+    {
+        if (_entries.Length == 0)
+            return;
+        ArrayPool<int>.Shared.Return(_entries);
+        _entries = [];
+    }
 
     /// <summary>The symbol at the reader's position, its bits consumed.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

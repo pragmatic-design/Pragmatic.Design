@@ -7,23 +7,28 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 ///     borders <see cref="Vp8Borders" /> fills. The result goes to the frame's planes, which the loop filter
 ///     then works on in place.
 /// </summary>
+/// <remarks>
+///     The decoder keeps one per thread: the macroblock work buffers stay with it, and the rows along the
+///     top, which depend on the frame's width, are rented by <see cref="Rent" /> and given back on dispose.
+/// </remarks>
 internal sealed class Vp8Reconstructor : IDisposable
 {
     private const int S = Vp8Prediction.Stride;
     private const int Origin = Vp8Borders.Origin;
 
-    private readonly Vp8Frame _frame;
-    private readonly byte[] _y = ArrayPool<byte>.Shared.Rent(S * 17);
-    private readonly byte[] _u = ArrayPool<byte>.Shared.Rent(S * 9);
-    private readonly byte[] _v = ArrayPool<byte>.Shared.Rent(S * 9);
-    private byte[] _topY;
-    private byte[] _topU;
-    private byte[] _topV;
-    private byte[] _nextTopY;
-    private byte[] _nextTopU;
-    private byte[] _nextTopV;
+    private readonly byte[] _y = new byte[S * 17];
+    private readonly byte[] _u = new byte[S * 9];
+    private readonly byte[] _v = new byte[S * 9];
+    private Vp8Frame _frame = null!;
+    private byte[] _topY = [];
+    private byte[] _topU = [];
+    private byte[] _topV = [];
+    private byte[] _nextTopY = [];
+    private byte[] _nextTopU = [];
+    private byte[] _nextTopV = [];
 
-    public Vp8Reconstructor(Vp8Frame frame)
+    /// <summary>Starts on <paramref name="frame" />, taking the rows along the top for its width from the pool.</summary>
+    public void Rent(Vp8Frame frame)
     {
         _frame = frame;
         var pool = ArrayPool<byte>.Shared;
@@ -35,18 +40,20 @@ internal sealed class Vp8Reconstructor : IDisposable
         _nextTopV = pool.Rent(frame.MacroblocksWide * 8);
     }
 
+    /// <summary>Gives the rows back; a second call, or one before <see cref="Rent" />, does nothing.</summary>
     public void Dispose()
     {
+        if (_topY.Length == 0)
+            return;
         var pool = ArrayPool<byte>.Shared;
-        pool.Return(_y);
-        pool.Return(_u);
-        pool.Return(_v);
         pool.Return(_topY);
         pool.Return(_topU);
         pool.Return(_topV);
         pool.Return(_nextTopY);
         pool.Return(_nextTopU);
         pool.Return(_nextTopV);
+        _topY = _topU = _topV = _nextTopY = _nextTopU = _nextTopV = [];
+        _frame = null!;
     }
 
     /// <summary>Called after the last macroblock of a row: its bottom samples become the next row's top.</summary>

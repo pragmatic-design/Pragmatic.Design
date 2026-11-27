@@ -118,16 +118,19 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     [NativeRequiredFact]
     public void ThumbnailNative_OneCall_AllocatesTwoWrappers() => Expect(80, () => _uploads.Thumbnail_Native());
 
+    // The image's wrapper and nothing else: the decoder keeps its reader, lists and code tables on the thread.
     [Fact]
-    public void DecodeWebPLosslessManaged_OneCall_AllocatesWhatItDid() => Expect(480, () => _webp.DecodeWebPLossless_Managed());
+    public void DecodeWebPLosslessManaged_OneCall_AllocatesOneWrapper() => Expect(32, () => _webp.DecodeWebPLossless_Managed());
 
     [NativeRequiredFact]
     public void DecodeWebPLosslessNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossless_Native());
 
-    // In this Debug build the lossy decode allocates 3,904 B, where the runner's Release build measures
-    // 2,104: the same kind of build difference as the JPEG decode above.
+    // The image's wrapper (32 B in a Release build): the decoder keeps its partitions, header, frame and
+    // reconstructor on the thread. In this Debug build each read of the quantizer step tables (a
+    // ReadOnlySpan<short>) allocates 72 B more: six per segment, four segments, 1,728 B, where optimized code
+    // allocates nothing for them.
     [Fact]
-    public void DecodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(3904, () => _webp.DecodeWebPLossy_Managed());
+    public void DecodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(1760, () => _webp.DecodeWebPLossy_Managed());
 
     [NativeRequiredFact]
     public void DecodeWebPLossyNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossy_Native());

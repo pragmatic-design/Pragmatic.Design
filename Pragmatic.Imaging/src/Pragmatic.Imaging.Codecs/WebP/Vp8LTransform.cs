@@ -9,7 +9,7 @@ namespace Pragmatic.Imaging.Codecs.WebP;
 /// <param name="Bits">The size bits of the transform's sub-image, or for colour indexing the packing bits.</param>
 /// <param name="Data">The sub-image (predictor, cross colour) or the colour table; empty for subtract green.</param>
 /// <param name="Width">The width of the image the inverse transform writes.</param>
-internal sealed record Vp8LTransform(int Kind, int Bits, uint[] Data, int Width)
+internal readonly record struct Vp8LTransform(int Kind, int Bits, uint[] Data, int Width)
 {
     public const int Predictor = 0;
     public const int CrossColor = 1;
