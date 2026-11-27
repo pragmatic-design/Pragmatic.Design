@@ -1,5 +1,6 @@
 // Follows libwebp (BSD-3-Clause, Copyright (c) 2010 Google Inc.): see THIRD-PARTY-NOTICES.md.
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -146,19 +147,33 @@ internal sealed class Vp8Costs : IDisposable
     ///     The cost of one block's levels (scan order) of <paramref name="type" />, from position
     ///     <paramref name="first" />, in context <paramref name="ctx0" /> (libwebp's <c>GetResidualCost</c>).
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Residual(int type, int first, int ctx0, ReadOnlySpan<short> levels) => Residual(type, first, ctx0, levels, out _);
 
     /// <summary>
     ///     The same, and whether any level from <paramref name="first" /> on is non-zero: the context the block
     ///     gives its neighbours, found on the way rather than by scanning the levels again.
     /// </summary>
-    [SkipLocalsInit]
+    /// <remarks>
+    ///     Inlined, so the work receives one reference instead of the span. On Linux a span argument arrives in
+    ///     two registers, which the callee spilled as two 8-byte stores and read back as one 16-byte load: a
+    ///     load the stores cannot forward to, paid on every call.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Residual(int type, int first, int ctx0, ReadOnlySpan<short> levels, out bool coded)
     {
         if (levels.Length < 16)
-            throw new ArgumentException("A block has 16 levels.");
+            ThrowShortBlock();
+        return ResidualOf(type, first, ctx0, ref MemoryMarshal.GetReference(levels), out coded);
+    }
 
-        ref var values = ref MemoryMarshal.GetReference(levels);
+    [DoesNotReturn]
+    private static void ThrowShortBlock() => throw new ArgumentException("A block has 16 levels.");
+
+    /// <summary><see cref="Residual(int, int, int, ReadOnlySpan{short}, out bool)" /> over the 16 levels at <paramref name="values" />.</summary>
+    [SkipLocalsInit]
+    private int ResidualOf(int type, int first, int ctx0, ref short values, out bool coded)
+    {
         var zero = Vector128<short>.Zero;
         var zeros = Vector128.Equals(Vector128.LoadUnsafe(ref values), zero).ExtractMostSignificantBits() |
                     (Vector128.Equals(Vector128.LoadUnsafe(ref values, 8), zero).ExtractMostSignificantBits() << 8);
