@@ -1,5 +1,6 @@
 using Pragmatic.Imaging.Benchmarks.Workload;
 using Pragmatic.Imaging.Codecs;
+using Pragmatic.Imaging.Codecs.Bmp;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
 using Pragmatic.Imaging.Codecs.Transforms;
@@ -24,6 +25,14 @@ public static class ManagedPipeline
 
     /// <summary>The lossless WebP encoder alone, from pixels already in a buffer.</summary>
     public static byte[] EncodeWebP(PixelBuffer image) => WebPEncoder.EncodeLossless(image);
+
+    public static int DecodeBmp(byte[] encoded)
+    {
+        using var image = BmpDecoder.Decode(encoded);
+        return image.Width;
+    }
+
+    public static byte[] EncodeBmp(PixelBuffer image) => BmpEncoder.Encode(image);
 
     /// <summary>
     ///     Decode at the largest reduction that still covers the thumbnail box (the DCT does the first
