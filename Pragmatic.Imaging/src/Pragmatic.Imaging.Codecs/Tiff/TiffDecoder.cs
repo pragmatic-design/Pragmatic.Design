@@ -63,13 +63,13 @@ public static class TiffDecoder
 
         // Eight-bit RGBA in one plane is already the output's layout: the chunks go straight into the pixels.
         var direct = image.Format == TiffPixelFormat.Rgba8 && layout.Planes == 1 && layout.RowStride == (long)image.Width * 4;
-        var samples = direct ? null : ArrayPool<byte>.Shared.Rent((int)length);
+        byte[]? rented = null;
         PixelBuffer? output = null;
         try
         {
             if (direct)
                 output = new PixelBuffer(image.Width, image.Height);
-            var buffer = direct ? output!.Pixels : samples.AsSpan(0, (int)length);
+            var buffer = direct ? output!.Pixels : workspace.Samples((int)length, out rented);
             buffer.Clear();
             for (var chunk = 0L; chunk < layout.ChunksPerPlane; chunk++)
             {
@@ -86,7 +86,7 @@ public static class TiffDecoder
                         throw new ImageDecodeException("TIFF: a strip is larger than the native library read.");
                     var (width, rows) = DataSize(image, index);
                     using var source = TiffChunks.Open(image, encoded, index, workspace);
-                    TiffChunkExpander.Expand(image, layout, source, buffer[(int)start..], width, rows);
+                    TiffChunkExpander.Expand(image, layout, source, buffer[(int)start..], width, rows, workspace);
                 }
             }
 
@@ -103,8 +103,8 @@ public static class TiffDecoder
         }
         finally
         {
-            if (samples is not null)
-                ArrayPool<byte>.Shared.Return(samples);
+            if (rented is not null)
+                ArrayPool<byte>.Shared.Return(rented);
         }
     }
 

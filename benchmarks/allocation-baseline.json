@@ -130,7 +130,7 @@
   "Pragmatic.Imaging.Benchmarks.TiffBenchmarks.DecodeTiffFax_Native": 40,
   "Pragmatic.Imaging.Benchmarks.TiffBenchmarks.DecodeTiffPhoto_Managed": 32,
   "Pragmatic.Imaging.Benchmarks.TiffBenchmarks.DecodeTiffPhoto_Native": 40,
-  "Pragmatic.Imaging.Benchmarks.TiffBenchmarks.EncodeTiff2Mp_Managed": 7680342,
+  "Pragmatic.Imaging.Benchmarks.TiffBenchmarks.EncodeTiff2Mp_Managed": 7680344,
   "Pragmatic.Imaging.Benchmarks.TiffBenchmarks.EncodeTiff2Mp_Native": 7680385,
   "Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Decode_Managed": 1504,
   "Pragmatic.Imaging.Benchmarks.UploadPathBenchmarks.Decode_Native": 40,

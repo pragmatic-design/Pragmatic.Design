@@ -1,4 +1,4 @@
-using System.Buffers;
+
 using System.Buffers.Binary;
 
 namespace Pragmatic.Imaging.Codecs.Tiff;
@@ -16,7 +16,9 @@ internal static class TiffChunkExpander
     /// <param name="buffer">The sample buffer from where the chunk starts to its end.</param>
     /// <param name="width">The chunk's pixels across that lie in the image.</param>
     /// <param name="rows">The chunk's rows that lie in the image.</param>
-    public static void Expand(TiffImage image, in TiffLayout layout, ITiffChunkSource source, Span<byte> buffer, long width, long rows)
+    /// <param name="workspace">The scratch rows.</param>
+    public static void Expand(TiffImage image, in TiffLayout layout, ITiffChunkSource source, Span<byte> buffer, long width, long rows,
+        TiffWorkspace workspace)
     {
         var dataRowBytes = layout.DataRowBytes(image, width);
         var stride = layout.RowStride;
@@ -30,64 +32,55 @@ internal static class TiffChunkExpander
             var chunk = buffer[..(int)(tiffRow * rows)];
             ReadExact(source, chunk);
             for (var r = 0; r < rows; r++)
-                Restore(image, layout, chunk.Slice((int)(r * tiffRow), (int)tiffRow));
+                Restore(image, layout, chunk.Slice((int)(r * tiffRow), (int)tiffRow), workspace);
             Invert(image, chunk);
             return;
         }
 
-        var encoded = ArrayPool<byte>.Shared.Rent((int)tiffRow);
-        try
+        var encoded = workspace.Row((int)tiffRow);
+        if (tiffRow > dataRowBytes && image.Predictor == TiffImage.FloatPredictor)
         {
-            if (tiffRow > dataRowBytes && image.Predictor == TiffImage.FloatPredictor)
+            for (var r = 0; r < rows; r++)
             {
-                for (var r = 0; r < rows; r++)
-                {
-                    var input = encoded.AsSpan(0, (int)tiffRow);
-                    ReadExact(source, input);
-                    var row = buffer.Slice((int)(r * stride), (int)dataRowBytes);
-                    UndoFloatPredictor(input, row, image.Bits, layout.TiffSamples);
-                    Invert(image, row);
-                }
-            }
-            else if (allBits)
-            {
-                for (var r = 0; r < rows; r++)
-                {
-                    var row = buffer.Slice((int)(r * stride), (int)dataRowBytes);
-                    ReadExact(source, row[..(int)Math.Min(dataRowBytes, tiffRow)]);
-                    if (tiffRow > dataRowBytes)
-                        Skip(source, encoded.AsSpan(0, (int)(tiffRow - dataRowBytes)));
-                    Restore(image, layout, row);
-                    Invert(image, row);
-                }
-            }
-            else
-            {
-                // Extra samples past the colour model: a whole coded row, then the first samples of each pixel. The
-                // row the crate writes into is a whole buffer row from the chunk's start, past the chunk when a tile
-                // is not the leftmost, and so is the row it restores.
-                var pixelBits = image.Bits * image.Samples;
-                var keptBits = image.Bits * layout.DataSamples;
-                if (pixelBits % 8 != 0 || keptBits % 8 != 0)
-                    throw new ImageDecodeException("TIFF: the extra samples do not fill whole bytes.");
-                int kept = keptBits / 8, all = pixelBits / 8;
-                for (var r = 0; r < rows; r++)
-                {
-                    var input = encoded.AsSpan(0, (int)tiffRow);
-                    ReadExact(source, input);
-                    var start = r * stride;
-                    var row = buffer.Slice((int)start, (int)Math.Min(stride, buffer.Length - start));
-                    var pixels = Math.Min(input.Length / all, row.Length / kept);
-                    for (var p = 0; p < pixels; p++)
-                        input.Slice(p * all, kept).CopyTo(row[(p * kept)..]);
-                    Restore(image, layout, row);
-                    Invert(image, row);
-                }
+                ReadExact(source, encoded);
+                var row = buffer.Slice((int)(r * stride), (int)dataRowBytes);
+                UndoFloatPredictor(encoded, row, image.Bits, layout.TiffSamples);
+                Invert(image, row);
             }
         }
-        finally
+        else if (allBits)
         {
-            ArrayPool<byte>.Shared.Return(encoded);
+            for (var r = 0; r < rows; r++)
+            {
+                var row = buffer.Slice((int)(r * stride), (int)dataRowBytes);
+                ReadExact(source, row[..(int)Math.Min(dataRowBytes, tiffRow)]);
+                if (tiffRow > dataRowBytes)
+                    Skip(source, encoded[..(int)(tiffRow - dataRowBytes)]);
+                Restore(image, layout, row, workspace);
+                Invert(image, row);
+            }
+        }
+        else
+        {
+            // Extra samples past the colour model: a whole coded row, then the first samples of each pixel. The row the
+            // crate writes into is a whole buffer row from the chunk's start, past the chunk when a tile is not the
+            // leftmost, and so is the row it restores.
+            var pixelBits = image.Bits * image.Samples;
+            var keptBits = image.Bits * layout.DataSamples;
+            if (pixelBits % 8 != 0 || keptBits % 8 != 0)
+                throw new ImageDecodeException("TIFF: the extra samples do not fill whole bytes.");
+            int kept = keptBits / 8, all = pixelBits / 8;
+            for (var r = 0; r < rows; r++)
+            {
+                ReadExact(source, encoded);
+                var start = r * stride;
+                var row = buffer.Slice((int)start, (int)Math.Min(stride, buffer.Length - start));
+                var pixels = Math.Min(encoded.Length / all, row.Length / kept);
+                for (var p = 0; p < pixels; p++)
+                    encoded.Slice(p * all, kept).CopyTo(row[(p * kept)..]);
+                Restore(image, layout, row, workspace);
+                Invert(image, row);
+            }
         }
     }
 
@@ -115,21 +108,13 @@ internal static class TiffChunkExpander
     }
 
     // The samples to the machine's byte order and the predictor undone: fix_endianness_and_predict.
-    private static void Restore(TiffImage image, in TiffLayout layout, Span<byte> row)
+    private static void Restore(TiffImage image, in TiffLayout layout, Span<byte> row, TiffWorkspace workspace)
     {
         if (image.Predictor == TiffImage.FloatPredictor)
         {
-            var copy = ArrayPool<byte>.Shared.Rent(row.Length);
-            try
-            {
-                row.CopyTo(copy);
-                UndoFloatPredictor(copy.AsSpan(0, row.Length), row, image.Bits, layout.TiffSamples);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(copy);
-            }
-
+            var copy = workspace.Copy(row.Length);
+            row.CopyTo(copy);
+            UndoFloatPredictor(copy, row, image.Bits, layout.TiffSamples);
             return;
         }
 
