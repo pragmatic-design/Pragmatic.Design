@@ -88,8 +88,8 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     public void SharpenNative_OneCall_AllocatesNothingManaged() => Expect(0, _operations.Sharpen_Native);
 
     // The managed decode is the one path whose count depends on the build: in this suite's Debug build it
-    // allocates more than the runner's Release one measures (1,504 B for the decode, 36,472 with the
-    // thumbnail, 100,560 with the encode), and 24 B less on .NET 11 than on .NET 10. The numbers here are
+    // allocates more than the runner's Release one measures (1,512 B for the decode, 36,488 with the
+    // thumbnail, 100,576 with the encode), and 24 B less on .NET 11 than on .NET 10. The numbers here are
     // this build's; the baseline keeps the runner's.
     [Fact]
     public void DecodeManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 1552 : 1576, () => _uploads.Decode_Managed());
@@ -125,7 +125,7 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     [NativeRequiredFact]
     public void DecodeWebPLosslessNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossless_Native());
 
-    // The image's wrapper (32 B in a Release build): the decoder keeps its partitions, header, frame and
+    // The image's wrapper (40 B in a Release build): the decoder keeps its partitions, header, frame and
     // reconstructor on the thread. In this Debug build each read of the quantizer step tables (a
     // ReadOnlySpan<short>) allocates 72 B more: six per segment, four segments, 1,728 B, where optimized code
     // allocates nothing for them.
