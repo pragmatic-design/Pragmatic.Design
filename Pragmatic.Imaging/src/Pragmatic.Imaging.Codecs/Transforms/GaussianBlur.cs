@@ -7,7 +7,10 @@ namespace Pragmatic.Imaging.Codecs.Transforms;
 ///     A separable Gaussian blur and the unsharp mask built on it, with the kernel the <c>image</c> crate
 ///     builds for the same sigma (its size and its weights), edges clamped, horizontal pass first, every
 ///     channel alpha included, rounded to nearest at the end. Summation order differs from the crate's,
-///     so a channel can land one unit away from the native library's on a rounding boundary.
+///     so a channel can land one unit away from the native library's on a rounding boundary. An image
+///     with any translucent pixel is filtered premultiplied, so the colour of a pixel nobody sees does not
+///     leak into its visible neighbours; an opaque one, where premultiplying changes nothing, takes the
+///     straight path, the native library's arithmetic.
 /// </summary>
 /// <remarks>
 ///     The crate converts the whole image to floats twice over (16 bytes a pixel each). Here the
@@ -23,7 +26,7 @@ public static class GaussianBlur
     public static PixelBuffer Blur(PixelBuffer source, float sigma)
     {
         ArgumentNullException.ThrowIfNull(source);
-        return Convolve(source, Kernel(sigma == 0f ? 0.8f : sigma));
+        return Convolve(source, Kernel(sigma == 0f ? 0.8f : sigma), !PixelRows.IsOpaque(source));
     }
 
     /// <summary>
@@ -33,7 +36,14 @@ public static class GaussianBlur
     public static PixelBuffer Unsharpen(PixelBuffer source, float sigma, int threshold)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var result = Convolve(source, Kernel(sigma));
+        var translucent = !PixelRows.IsOpaque(source);
+        var result = Convolve(source, Kernel(sigma), translucent);
+        if (translucent)
+        {
+            UnsharpenPremultiplied(source, result, threshold);
+            return result;
+        }
+
         if (source.Format != PixelFormat.Rgba8)
         {
             UnsharpenAnyFormat(source, result, threshold);
@@ -81,6 +91,42 @@ public static class GaussianBlur
         }
     }
 
+    // The rule on premultiplied pixels, the threshold in 8-bit steps scaled to the format's. Colour and alpha are
+    // sharpened alike, so their ratio, the colour that shows, holds; the colour is divided back by the alpha before
+    // the alpha is clamped, or an alpha pushed past opaque would brighten it.
+    private static void UnsharpenPremultiplied(PixelBuffer source, PixelBuffer result, int threshold)
+    {
+        var scale = PixelRows.Scale(source.Format);
+        var limit = threshold * scale / 255f;
+        var pool = ArrayPool<float>.Shared;
+        var original = pool.Rent(source.Width * 4);
+        var blurred = pool.Rent(source.Width * 4);
+        try
+        {
+            var row = source.Width * 4;
+            for (var y = 0; y < source.Height; y++)
+            {
+                PixelRows.Widen(source.Format, source.Row(y), original);
+                PixelRows.Widen(source.Format, result.Row(y), blurred);
+                PixelRows.Premultiply(original.AsSpan(0, row), scale);
+                PixelRows.Premultiply(blurred.AsSpan(0, row), scale);
+                for (var i = 0; i < row; i++)
+                {
+                    var diff = original[i] - blurred[i];
+                    blurred[i] = MathF.Abs(diff) > limit ? original[i] + diff : original[i];
+                }
+
+                PixelRows.Unpremultiply(blurred.AsSpan(0, row), scale);
+                PixelRows.Narrow(source.Format, blurred.AsSpan(0, row), result.Row(y));
+            }
+        }
+        finally
+        {
+            pool.Return(original);
+            pool.Return(blurred);
+        }
+    }
+
     /// <summary>The crate's kernel: odd size from sigma (at least 3), Gaussian weights normalised to one.</summary>
     internal static float[] Kernel(float sigma)
     {
@@ -112,8 +158,9 @@ public static class GaussianBlur
         return kernel;
     }
 
-    private static PixelBuffer Convolve(PixelBuffer source, float[] kernel)
+    private static PixelBuffer Convolve(PixelBuffer source, float[] kernel, bool premultiply)
     {
+        var scale = PixelRows.Scale(source.Format);
         var (width, height) = (source.Width, source.Height);
         var size = kernel.Length;
         var half = size / 2;
@@ -129,7 +176,7 @@ public static class GaussianBlur
             for (var y = 0; y < height; y++)
             {
                 for (; loaded < Math.Min(height - 1, y + half); loaded++)
-                    FilterRow(source.Format, source.Row(loaded + 1), width, padded, kernel, ring.AsSpan((loaded + 1) % size * rowFloats, rowFloats));
+                    FilterRow(source.Format, source.Row(loaded + 1), width, padded, kernel, ring.AsSpan((loaded + 1) % size * rowFloats, rowFloats), premultiply);
 
                 var acc = sum.AsSpan(0, rowFloats);
                 acc.Clear();
@@ -138,6 +185,9 @@ public static class GaussianBlur
                     var sy = Math.Clamp(y + k - half, 0, height - 1);
                     MultiplyAdd(ring.AsSpan(sy % size * rowFloats, rowFloats), kernel[k], acc);
                 }
+
+                if (premultiply)
+                    PixelRows.Unpremultiply(acc, scale);
 
                 if (source.Format == PixelFormat.Rgba8)
                 {
@@ -168,12 +218,18 @@ public static class GaussianBlur
         }
     }
 
-    /// <summary>One source row, widened to floats in place inside its padding, its edge pixels repeated, convolved horizontally.</summary>
-    private static void FilterRow(PixelFormat format, ReadOnlySpan<byte> row, int width, float[] padded, float[] kernel, Span<float> output)
+    /// <summary>
+    ///     One source row, widened to floats in place inside its padding (premultiplied when asked), its edge pixels
+    ///     repeated, convolved horizontally.
+    /// </summary>
+    private static void FilterRow(PixelFormat format, ReadOnlySpan<byte> row, int width, float[] padded, float[] kernel, Span<float> output, bool premultiply)
     {
         var half = kernel.Length / 2;
         var line = padded.AsSpan(0, (width + 2 * half) * 4);
-        PixelRows.Widen(format, row, line.Slice(half * 4, width * 4));
+        var pixels = line.Slice(half * 4, width * 4);
+        PixelRows.Widen(format, row, pixels);
+        if (premultiply)
+            PixelRows.Premultiply(pixels, PixelRows.Scale(format));
         var first = line.Slice(half * 4, 4);
         var last = line.Slice((half + width - 1) * 4, 4);
         for (var p = 0; p < half; p++)

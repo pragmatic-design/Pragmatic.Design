@@ -9,7 +9,10 @@ namespace Pragmatic.Imaging.Tests.Parity;
 ///     Every pipeline operation gives what the native library gives for the same call on the same pixels:
 ///     exactly, for the operations that move or map pixels; within one unit per channel for blur and
 ///     sharpen, whose sums are formed in a different order. The source is 61×47 (odd, so no operation
-///     gets an even-sized shortcut) with noise and a varying alpha, so edges and alpha are exercised.
+///     gets an even-sized shortcut) with noise and a varying alpha, so edges and alpha are exercised. Blur
+///     and sharpen are compared on the same image made opaque: on translucent pixels they work
+///     premultiplied, which the native library does not, and differ from it on purpose
+///     (<see cref="ABlurredTransparentImageHasNoDarkFringeTests" />).
 /// </summary>
 public unsafe class TheOperationsMatchTheNativeLibraryTests
 {
@@ -39,7 +42,7 @@ public unsafe class TheOperationsMatchTheNativeLibraryTests
     [MemberData(nameof(FilterOperations))]
     public void A_filter_matches_within_one_unit_per_channel(string operation)
     {
-        var (managed, native) = Run(operation);
+        var (managed, native) = Run(operation, opaque: true);
 
         managed.Rgba.Length.Should().Be(native.Rgba.Length);
         var worst = 0;
@@ -48,9 +51,9 @@ public unsafe class TheOperationsMatchTheNativeLibraryTests
         worst.Should().BeLessThanOrEqualTo(1);
     }
 
-    private static (NativeReference.Image Managed, NativeReference.Image Native) Run(string operation)
+    private static (NativeReference.Image Managed, NativeReference.Image Native) Run(string operation, bool opaque = false)
     {
-        var source = Source();
+        var source = Source(opaque);
         var png = Encode(source);
         using var pipeline = ImagePipeline.Load(png);
 
@@ -122,7 +125,7 @@ public unsafe class TheOperationsMatchTheNativeLibraryTests
         return (new NativeReference.Image(result.Pixels.ToArray(), result.Width, result.Height), native);
     }
 
-    private static NativeReference.Image Source()
+    private static NativeReference.Image Source(bool opaque)
     {
         var random = new Random(42);
         var rgba = new byte[Width * Height * 4];
@@ -134,7 +137,7 @@ public unsafe class TheOperationsMatchTheNativeLibraryTests
                 rgba[i] = (byte)Math.Clamp(x * 4 + random.Next(-20, 21), 0, 255);
                 rgba[i + 1] = (byte)Math.Clamp(y * 5 + random.Next(-20, 21), 0, 255);
                 rgba[i + 2] = (byte)random.Next(256);
-                rgba[i + 3] = (byte)(x % 5 == 0 ? 255 : 128 + (x * y) % 128);
+                rgba[i + 3] = opaque ? (byte)255 : (byte)(x % 5 == 0 ? 255 : 128 + (x * y) % 128);
             }
         }
 
