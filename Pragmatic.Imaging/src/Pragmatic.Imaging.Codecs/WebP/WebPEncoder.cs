@@ -62,6 +62,8 @@ public static class WebPEncoder
     public static byte[] EncodeLossy(PixelBuffer image, int quality)
     {
         ArgumentNullException.ThrowIfNull(image);
+        using var lease = new Rgba8Lease(image);
+        image = lease.Image;
         ArgumentOutOfRangeException.ThrowIfGreaterThan(image.Width, 16383, nameof(image));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(image.Height, 16383, nameof(image));
         ArgumentOutOfRangeException.ThrowIfNegative(quality);
@@ -130,6 +132,8 @@ public static class WebPEncoder
     private static Vp8LBitWriter Encode(PixelBuffer image)
     {
         ArgumentNullException.ThrowIfNull(image);
+        using var lease = new Rgba8Lease(image);
+        image = lease.Image;
         ArgumentOutOfRangeException.ThrowIfGreaterThan(image.Width, 16384, nameof(image));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(image.Height, 16384, nameof(image));
 

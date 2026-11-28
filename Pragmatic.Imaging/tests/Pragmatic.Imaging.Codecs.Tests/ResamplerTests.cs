@@ -96,6 +96,9 @@ public class ResamplerTests
         var p = source.Pixels;
         for (var i = 0; i < p.Length; i++)
             p[i] = (byte)(i * 37);
+        // Opaque: the integer path. A translucent image is averaged premultiplied (the test below).
+        for (var i = 3; i < p.Length; i += 4)
+            p[i] = 255;
 
         using var half = Resampler.Resize(source, 3, 2, ResizeFilter.Triangle);
 
@@ -110,6 +113,34 @@ public class ResamplerTests
                     var d = p[((y * 2 + 1) * 6 + x * 2) * 4 + c];
                     var e = p[((y * 2 + 1) * 6 + x * 2 + 1) * 4 + c];
                     Assert.Equal((a + b + d + e + 2) >> 2, half.Pixels[(y * 3 + x) * 4 + c]);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Halving_a_translucent_image_averages_colour_weighted_by_alpha()
+    {
+        using var source = new PixelBuffer(6, 4);
+        for (var i = 0; i < source.ByteLength; i++)
+            source.Pixels[i] = (byte)(i * 37);
+        var p = source.Pixels.ToArray();
+
+        using var half = Resampler.Resize(source, 3, 2, ResizeFilter.Triangle);
+
+        for (var y = 0; y < 2; y++)
+        {
+            for (var x = 0; x < 3; x++)
+            {
+                int[] at = [(y * 2 * 6 + x * 2) * 4, (y * 2 * 6 + x * 2 + 1) * 4, ((y * 2 + 1) * 6 + x * 2) * 4, ((y * 2 + 1) * 6 + x * 2 + 1) * 4];
+                var alphaSum = at.Sum(o => p[o + 3]);
+                var o = (y * 3 + x) * 4;
+                Assert.Equal((int)Math.Floor(alphaSum / 4.0 + 0.5), half.Pixels[o + 3]);
+                for (var c = 0; c < 3; c++)
+                {
+                    var weighted = at.Sum(s => p[s + c] * p[s + 3]);
+                    var expected = alphaSum == 0 ? 0 : (int)Math.Floor((double)weighted / alphaSum + 0.5);
+                    Assert.Equal(expected, half.Pixels[o + c]);
                 }
             }
         }

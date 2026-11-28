@@ -9,8 +9,10 @@ namespace Pragmatic.Imaging.Codecs.Transforms;
 ///     Resizes RGBA pixels in two separable passes, vertical first: each destination row is a weighted
 ///     sum of whole source rows (a vector at a time, the pass that vectorises best), then that one row
 ///     is resampled horizontally into the destination width. Source rows are converted to floats once,
-///     into a window that slides down the image. The weights are computed once per axis. Alpha is
-///     resampled like a colour, not premultiplied: what the native library does today.
+///     into a window that slides down the image. The weights are computed once per axis. An image with any
+///     translucent pixel is resampled premultiplied, colour times alpha, so a transparent neighbour does not
+///     darken an edge; an opaque one, where premultiplying changes nothing, takes the straight path, the
+///     native library's arithmetic. Any pixel format: rows are widened to floats in the format's scale.
 /// </summary>
 public static class Resampler
 {
@@ -29,19 +31,21 @@ public static class Resampler
         if (filter == ResizeFilter.Nearest)
             return Nearest(source, width, height);
 
+        // Halving keeps an opaque image opaque, so one scan of the source decides for every step.
+        var translucent = !PixelRows.IsOpaque(source);
         if (!exact && source.Width >= width * 2 && source.Height >= height * 2)
         {
-            var reduced = BoxReduce.Half(source);
+            var reduced = BoxReduce.Half(source, translucent);
             try
             {
                 while (reduced.Width >= width * 2 && reduced.Height >= height * 2)
                 {
-                    var next = BoxReduce.Half(reduced);
+                    var next = BoxReduce.Half(reduced, translucent);
                     reduced.Dispose();
                     reduced = next;
                 }
 
-                return reduced.Width == width && reduced.Height == height ? reduced : ResizeWithKernel(reduced, width, height, filter);
+                return reduced.Width == width && reduced.Height == height ? reduced : ResizeWithKernel(reduced, width, height, filter, translucent);
             }
             finally
             {
@@ -50,10 +54,10 @@ public static class Resampler
             }
         }
 
-        return ResizeWithKernel(source, width, height, filter);
+        return ResizeWithKernel(source, width, height, filter, translucent);
     }
 
-    private static PixelBuffer ResizeWithKernel(PixelBuffer source, int width, int height, ResizeFilter filter)
+    private static PixelBuffer ResizeWithKernel(PixelBuffer source, int width, int height, ResizeFilter filter, bool translucent)
     {
         var kernel = ResampleKernel.For(filter);
         var horizontal = ResampleWeights.Compute(source.Width, width, kernel);
@@ -62,12 +66,13 @@ public static class Resampler
         var sourceRowFloats = source.Width * 4;
         var destinationRowFloats = width * 4;
         var windowRows = vertical.TapsPerIndex;
+        var scale = PixelRows.Scale(source.Format);
 
         var pool = ArrayPool<float>.Shared;
         var window = pool.Rent(windowRows * sourceRowFloats);
         var accumulator = pool.Rent(sourceRowFloats);
         var resampled = pool.Rent(destinationRowFloats);
-        var destination = new PixelBuffer(width, height);
+        var destination = new PixelBuffer(width, height, source.Format);
         try
         {
             var loadedUpTo = 0;
@@ -78,12 +83,19 @@ public static class Resampler
 
                 // Rows enter the window in order and never come back: convert each one once.
                 for (var row = Math.Max(loadedUpTo, start); row < start + count; row++)
-                    Widen(source.Row(row), window.AsSpan(row % windowRows * sourceRowFloats, sourceRowFloats));
+                {
+                    var floats = window.AsSpan(row % windowRows * sourceRowFloats, sourceRowFloats);
+                    PixelRows.Widen(source.Format, source.Row(row), floats);
+                    if (translucent)
+                        PixelRows.Premultiply(floats, scale);
+                }
                 loadedUpTo = Math.Max(loadedUpTo, start + count);
 
                 VerticalPass(window, windowRows, sourceRowFloats, vertical, y, accumulator.AsSpan(0, sourceRowFloats));
                 HorizontalPass(accumulator.AsSpan(0, sourceRowFloats), horizontal, resampled.AsSpan(0, destinationRowFloats));
-                Narrow(resampled.AsSpan(0, destinationRowFloats), destination.Row(y));
+                if (translucent)
+                    PixelRows.Unpremultiply(resampled.AsSpan(0, destinationRowFloats), scale);
+                PixelRows.Narrow(source.Format, resampled.AsSpan(0, destinationRowFloats), destination.Row(y));
             }
 
             return destination;
@@ -149,78 +161,31 @@ public static class Resampler
         }
     }
 
-    private static void Widen(ReadOnlySpan<byte> bytes, Span<float> floats)
-    {
-        var i = 0;
-        if (Vector.IsHardwareAccelerated && bytes.Length >= Vector<byte>.Count)
-        {
-            var vectors = MemoryMarshal.Cast<byte, Vector<byte>>(bytes);
-            var outVectors = MemoryMarshal.Cast<float, Vector<float>>(floats);
-            var o = 0;
-            foreach (var v in vectors)
-            {
-                Vector.Widen(v, out var low16, out var high16);
-                Vector.Widen(low16, out var a, out var b);
-                Vector.Widen(high16, out var c, out var d);
-                outVectors[o++] = Vector.ConvertToSingle(a);
-                outVectors[o++] = Vector.ConvertToSingle(b);
-                outVectors[o++] = Vector.ConvertToSingle(c);
-                outVectors[o++] = Vector.ConvertToSingle(d);
-            }
-
-            i = vectors.Length * Vector<byte>.Count;
-        }
-
-        for (; i < bytes.Length; i++)
-            floats[i] = bytes[i];
-    }
-
-    /// <summary>Floats back to bytes, rounded and clamped: a Lanczos sum can overshoot either end.</summary>
-    private static void Narrow(ReadOnlySpan<float> floats, Span<byte> bytes)
-    {
-        var i = 0;
-        if (Vector.IsHardwareAccelerated && floats.Length >= Vector<float>.Count * 4)
-        {
-            var vectors = MemoryMarshal.Cast<float, Vector<float>>(floats);
-            var outVectors = MemoryMarshal.Cast<byte, Vector<byte>>(bytes);
-            var half = new Vector<float>(0.5f);
-            var max = new Vector<float>(255f);
-            var o = 0;
-            for (var v = 0; v + 3 < vectors.Length; v += 4)
-            {
-                var a = Vector.ConvertToUInt32(Vector.Min(Vector.Max(vectors[v] + half, Vector<float>.Zero), max));
-                var b = Vector.ConvertToUInt32(Vector.Min(Vector.Max(vectors[v + 1] + half, Vector<float>.Zero), max));
-                var c = Vector.ConvertToUInt32(Vector.Min(Vector.Max(vectors[v + 2] + half, Vector<float>.Zero), max));
-                var d = Vector.ConvertToUInt32(Vector.Min(Vector.Max(vectors[v + 3] + half, Vector<float>.Zero), max));
-                var ab = Vector.Narrow(a, b);
-                var cd = Vector.Narrow(c, d);
-                outVectors[o++] = Vector.Narrow(ab, cd);
-            }
-
-            i = o * Vector<byte>.Count;
-        }
-
-        for (; i < floats.Length; i++)
-            bytes[i] = (byte)Math.Clamp(floats[i] + 0.5f, 0f, 255f);
-    }
-
     private static PixelBuffer Nearest(PixelBuffer source, int width, int height)
     {
-        var destination = new PixelBuffer(width, height);
+        var destination = new PixelBuffer(width, height, source.Format);
         var xScale = (double)source.Width / width;
         var yScale = (double)source.Height / height;
         var columns = new int[width];
         for (var x = 0; x < width; x++)
             columns[x] = Math.Min(source.Width - 1, (int)((x + 0.5) * xScale));
 
+        var bytes = source.BytesPerPixel;
         for (var y = 0; y < height; y++)
         {
             var sourceRow = source.Row(Math.Min(source.Height - 1, (int)((y + 0.5) * yScale)));
             var row = destination.Row(y);
-            var sourcePixels = MemoryMarshal.Cast<byte, uint>(sourceRow);
-            var pixels = MemoryMarshal.Cast<byte, uint>(row);
+            if (bytes == 4)
+            {
+                var sourcePixels = MemoryMarshal.Cast<byte, uint>(sourceRow);
+                var pixels = MemoryMarshal.Cast<byte, uint>(row);
+                for (var x = 0; x < width; x++)
+                    pixels[x] = sourcePixels[columns[x]];
+                continue;
+            }
+
             for (var x = 0; x < width; x++)
-                pixels[x] = sourcePixels[columns[x]];
+                sourceRow.Slice(columns[x] * bytes, bytes).CopyTo(row[(x * bytes)..]);
         }
 
         return destination;

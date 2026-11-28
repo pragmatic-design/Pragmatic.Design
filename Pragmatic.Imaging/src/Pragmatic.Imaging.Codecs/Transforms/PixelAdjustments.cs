@@ -22,6 +22,17 @@ public static class PixelAdjustments
     public static void Grayscale(PixelBuffer image)
     {
         ArgumentNullException.ThrowIfNull(image);
+        if (image.Format != PixelFormat.Rgba8)
+        {
+            if (!image.Format.IsGray())
+                AnyFormat(image, static (pixel, scale) =>
+                {
+                    var gray = RedWeight * pixel[0] + GreenWeight * pixel[1] + BlueWeight * pixel[2];
+                    pixel[0] = pixel[1] = pixel[2] = Truncated(gray, scale);
+                });
+            return;
+        }
+
         var pixels = image.Pixels;
         var i = 0;
         if (Vector256.IsHardwareAccelerated)
@@ -39,6 +50,12 @@ public static class PixelAdjustments
     public static void Brightness(PixelBuffer image, int value)
     {
         ArgumentNullException.ThrowIfNull(image);
+        if (image.Format != PixelFormat.Rgba8)
+        {
+            BrightnessAnyFormat(image, value);
+            return;
+        }
+
         Span<byte> table = stackalloc byte[256];
         for (var c = 0; c < 256; c++)
             table[c] = (byte)Math.Clamp(c + value, 0, 255);
@@ -55,6 +72,12 @@ public static class PixelAdjustments
         ArgumentNullException.ThrowIfNull(image);
         var factor = (100f + value) / 100f;
         var percent = factor * factor;
+        if (image.Format != PixelFormat.Rgba8)
+        {
+            ContrastAnyFormat(image, percent);
+            return;
+        }
+
         Span<byte> table = stackalloc byte[256];
         for (var c = 0; c < 256; c++)
         {
@@ -66,6 +89,50 @@ public static class PixelAdjustments
         for (var i = 0; i < pixels.Length; i++)
             pixels[i] = table[pixels[i]];
     }
+
+    // The lambdas capture, so they live in methods of their own: in the caller the closure would be allocated on entry,
+    // on the 8-bit path too, which allocates nothing.
+    private static void BrightnessAnyFormat(PixelBuffer image, int value) => AnyFormat(image, (pixel, scale) =>
+    {
+        // The value is in 8-bit steps, whatever the format.
+        for (var c = 0; c < 3; c++)
+            pixel[c] = Math.Clamp(pixel[c] + value * scale / 255f, 0f, scale);
+    });
+
+    private static void ContrastAnyFormat(PixelBuffer image, float percent) => AnyFormat(image, (pixel, scale) =>
+    {
+        for (var c = 0; c < 4; c++)
+            pixel[c] = Truncated(Math.Clamp(((pixel[c] / scale - 0.5f) * percent + 0.5f) * scale, 0f, scale), scale);
+    });
+
+    // A pixel as four floats in the format's scale, changed in place.
+    private delegate void PixelChange(Span<float> pixel, float scale);
+
+    // Any format but 8-bit RGBA: each row widened to floats, each pixel changed, the row narrowed back. A format
+    // without alpha gains none: narrowing drops it again.
+    private static void AnyFormat(PixelBuffer image, PixelChange change)
+    {
+        var scale = PixelRows.Scale(image.Format);
+        var floats = System.Buffers.ArrayPool<float>.Shared.Rent(image.Width * 4);
+        try
+        {
+            var row = floats.AsSpan(0, image.Width * 4);
+            for (var y = 0; y < image.Height; y++)
+            {
+                PixelRows.Widen(image.Format, image.Row(y), row);
+                for (var x = 0; x < image.Width; x++)
+                    change(row.Slice(x * 4, 4), scale);
+                PixelRows.Narrow(image.Format, row, image.Row(y));
+            }
+        }
+        finally
+        {
+            System.Buffers.ArrayPool<float>.Shared.Return(floats);
+        }
+    }
+
+    // Integer formats truncate as the 8-bit tables do; floats keep the value.
+    private static float Truncated(float value, float scale) => scale == 1f ? value : MathF.Floor(value);
 
     private static void ApplyToColour(Span<byte> pixels, ReadOnlySpan<byte> table)
     {

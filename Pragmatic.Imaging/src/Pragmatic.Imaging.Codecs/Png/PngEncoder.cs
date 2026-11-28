@@ -7,7 +7,8 @@ using System.Runtime.InteropServices;
 namespace Pragmatic.Imaging.Codecs.Png;
 
 /// <summary>
-///     8-bit RGBA to PNG. An image whose every pixel is opaque is written as RGB, a quarter smaller for
+///     Pixels to PNG, at the depth the buffer holds: 8-bit RGBA here, every other format through <see cref="PngRowLayout" />,
+///     16 bits a sample when the buffer has more than 8. An image whose every pixel is opaque is written as RGB, a quarter smaller for
 ///     the same pixels; each row takes the filter that leaves it smallest to deflate, by the usual
 ///     minimum-sum heuristic. The five candidates are computed into five buffers and the winner handed
 ///     to the deflater as it is; filtered rows gather in a staging buffer so the deflater is called a
@@ -24,13 +25,15 @@ public static class PngEncoder
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(output);
 
-        var opaque = IsOpaque(image.Pixels);
-        var channels = opaque ? 3 : 4;
+        var rgba8 = image.Format == PixelFormat.Rgba8;
+        var opaque = rgba8 && IsOpaque(image.Pixels);
+        var layout = rgba8 ? new PngRowLayout(opaque ? PngColorType.Rgb : PngColorType.Rgba, 8, opaque ? 3 : 4) : PngRowLayout.Of(image);
+        var channels = layout.BytesPerPixel;
         var rowBytes = image.Width * channels;
         var filteredRowBytes = rowBytes + 1;
 
         output.Write(Signature);
-        WriteHeader(output, image.Width, image.Height, opaque ? PngColorType.Rgb : PngColorType.Rgba);
+        WriteHeader(output, image.Width, image.Height, layout.ColorType, layout.BitDepth);
 
         using var idat = new PngIdatWriter(output);
         var pool = ArrayPool<byte>.Shared;
@@ -50,7 +53,9 @@ public static class PngEncoder
                 for (var y = 0; y < image.Height; y++)
                 {
                     var rawRow = raw.AsSpan(0, rowBytes);
-                    if (opaque)
+                    if (!rgba8)
+                        layout.Fill(image, y, rawRow);
+                    else if (opaque)
                         DropAlpha(image.Row(y), rawRow);
                     else
                         image.Row(y).CopyTo(rawRow);
@@ -86,12 +91,12 @@ public static class PngEncoder
         PngChunkWriter.Write(output, PngChunk.Iend, ReadOnlySpan<byte>.Empty);
     }
 
-    private static void WriteHeader(Stream output, int width, int height, PngColorType colorType)
+    private static void WriteHeader(Stream output, int width, int height, PngColorType colorType, int bitDepth)
     {
         Span<byte> ihdr = stackalloc byte[13];
         BinaryPrimitives.WriteInt32BigEndian(ihdr, width);
         BinaryPrimitives.WriteInt32BigEndian(ihdr[4..], height);
-        ihdr[8] = 8;
+        ihdr[8] = (byte)bitDepth;
         ihdr[9] = (byte)colorType;
         ihdr[10] = 0;
         ihdr[11] = 0;

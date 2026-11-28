@@ -33,6 +33,44 @@ public sealed class TheTiffCodecMatchesTheNativeOneTests
         files.Length.Should().Be(78);
     }
 
+    // The depth each file declares, in its name: what the pipeline then keeps to the encode.
+    [Theory]
+    [InlineData("chelsea-grey16.tiff", PixelFormat.Gray16)]
+    [InlineData("coffee-grey16-white-is-zero.tiff", PixelFormat.Gray16)]
+    [InlineData("minisblack-1c-16b.tiff", PixelFormat.Gray16)]
+    [InlineData("coffee-rgb16-big-endian.tiff", PixelFormat.Rgb16)]
+    [InlineData("coffee-rgb16-predictor.tiff", PixelFormat.Rgb16)]
+    [InlineData("rgb-3c-16b.tiff", PixelFormat.Rgb16)]
+    [InlineData("coffee-cmyk16.tiff", PixelFormat.Rgb16)]
+    [InlineData("coffee-rgba16.tiff", PixelFormat.Rgba16)]
+    [InlineData("coffee-float.tiff", PixelFormat.RgbaFloat)]
+    [InlineData("coffee-float-predictor.tiff", PixelFormat.RgbaFloat)]
+    [InlineData("coffee-float-rgba.tiff", PixelFormat.RgbaFloat)]
+    public void Decode_OfADeepFile_KeepsItsDepth(string file, PixelFormat expected)
+    {
+        using var image = TiffDecoder.Decode(File.ReadAllBytes(Path.Combine(Files, file)));
+
+        image.Format.Should().Be(expected);
+    }
+
+    // Written by libtiff, read by the module, written by the module at 16 bits, read back: the same samples.
+    [Theory]
+    [InlineData("coffee-rgba16.tiff")]
+    [InlineData("coffee-rgb16-big-endian.tiff")]
+    [InlineData("chelsea-grey16.tiff")]
+    public void A_deep_file_through_the_pipeline_is_written_at_its_depth(string file)
+    {
+        var encoded = File.ReadAllBytes(Path.Combine(Files, file));
+        using var original = TiffDecoder.Decode(encoded);
+        using var expected = PixelConversion.ToRgba16(original);
+
+        using var pipeline = ImagePipeline.Load(encoded);
+        using var written = TiffDecoder.Decode(pipeline.Encode(ImageFormat.Tiff));
+
+        written.Format.Should().Be(PixelFormat.Rgba16);
+        written.Pixels.SequenceEqual(expected.Pixels).Should().BeTrue($"{file} lost samples through the pipeline");
+    }
+
     [NativeRequiredFact]
     public void Encode_IsTheNativeEncodersFile()
     {
@@ -93,9 +131,15 @@ public sealed class TheTiffCodecMatchesTheNativeOneTests
                     : $"native {(native is null ? "refused" : "read")} it, managed {(managed is null ? $"refused it ({refusal})" : "read it")}";
             if (managed.Width != native.Value.Width || managed.Height != native.Value.Height)
                 return $"{managed.Width} x {managed.Height}, native {native.Value.Width} x {native.Value.Height}";
-            if (managed.Pixels.SequenceEqual(native.Value.Rgba))
+
+            // A 16-bit or float file keeps its depth; the native library gave its 8-bit RGBA, which is what an encode
+            // to an 8-bit format narrows the managed pixels to.
+            if (managed.Format != PixelFormat.Rgba8 && managed.Format.BitsPerChannel() == 8)
+                return $"an 8-bit file decoded to {managed.Format}";
+            using var narrowed = managed.Format == PixelFormat.Rgba8 ? null : PixelConversion.ToRgba8(managed);
+            var pixels = (narrowed ?? managed).Pixels;
+            if (pixels.SequenceEqual(native.Value.Rgba))
                 return null;
-            var pixels = managed.Pixels;
             var first = 0;
             while (pixels[first] == native.Value.Rgba[first])
                 first++;

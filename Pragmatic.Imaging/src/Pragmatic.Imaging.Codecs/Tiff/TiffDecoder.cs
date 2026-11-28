@@ -3,8 +3,8 @@ using System.Buffers;
 namespace Pragmatic.Imaging.Codecs.Tiff;
 
 /// <summary>
-///     Decodes the first image of a TIFF to RGBA, as the native library did (the image crate 0.25 over the TIFF crate
-///     0.11): strips or tiles, chunky or planar, either byte order; uncompressed, PackBits, LZW, Deflate, JPEG and
+///     Decodes the first image of a TIFF, as the native library did (the image crate 0.25 over the TIFF crate 0.11), to
+///     8-bit RGBA, or at its own depth when it has 16-bit or float samples (<see cref="TiffDeepPixels" />): strips or tiles, chunky or planar, either byte order; uncompressed, PackBits, LZW, Deflate, JPEG and
 ///     Group 4; one-bit, 8 and 16-bit grey, 8 and 16-bit RGB and RGBA, 32-bit float RGB and RGBA, 8 and 16-bit CMYK;
 ///     the horizontal and floating-point predictors. What the native library refused is refused: palettes, YCbCr,
 ///     grey with alpha, other depths and sample formats, Group 3, BigTIFF. Later images in the file are not read.
@@ -92,8 +92,13 @@ public static class TiffDecoder
 
             if (direct)
                 return output!;
-            output = new PixelBuffer(image.Width, image.Height);
-            TiffPixels.ToRgba(image, layout, buffer, output);
+            // 16 bits and floats keep their depth; everything shallower becomes 8-bit RGBA.
+            var format = TiffDeepPixels.FormatOf(image.Format);
+            output = new PixelBuffer(image.Width, image.Height, format);
+            if (format == PixelFormat.Rgba8)
+                TiffPixels.ToRgba(image, layout, buffer, output);
+            else
+                TiffDeepPixels.Convert(image, layout, buffer, output);
             return output;
         }
         catch

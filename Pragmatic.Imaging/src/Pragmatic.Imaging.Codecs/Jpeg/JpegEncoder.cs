@@ -20,6 +20,8 @@ public static class JpegEncoder
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(output);
+        using var lease = new Rgba8Lease(image);
+        image = lease.Image;
 
         var (lumaQuant, chromaQuant) = JpegQuantization.ForQuality(quality);
         using var planes = JpegPlanes.From(image);

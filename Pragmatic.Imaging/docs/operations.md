@@ -26,6 +26,8 @@ pipe.Resize(800, 600, ResizeFilter.Lanczos3);
 
 Passing `0` for either dimension throws `ArgumentException`.
 
+An image with any translucent pixel is resampled with **premultiplied alpha** (colour times alpha, divided back after), so a transparent neighbour does not darken an edge: the dark fringe around a resized transparent PNG does not appear. An opaque image takes the straight path, where premultiplying would change nothing, and gives the native library's result. The same holds for `Thumbnail`.
+
 ### `Thumbnail(maxWidth, maxHeight, filter, allowUpscale)`
 
 Fit the image inside the bounding box while **preserving aspect ratio**. At most one dimension hits the bound; the other is smaller. By default it never upscales: a source already smaller than the box is returned at its original size. Pass `allowUpscale: true` to enlarge small sources up to the box.
@@ -72,7 +74,7 @@ pipe.FlipVertical();     // top-bottom mirror
 
 ### `Grayscale()`
 
-Convert to luminance (ITU-R BT.601). The pixel layout stays RGBA (pixels just have R=G=B); the alpha channel is preserved.
+Convert to luminance (ITU-R BT.601). The pixel format stays what it was (pixels just have R=G=B; a grey image is left as it is); the alpha channel is preserved.
 
 ```csharp
 pipe.Grayscale();

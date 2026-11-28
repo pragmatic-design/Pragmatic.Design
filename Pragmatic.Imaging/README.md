@@ -24,14 +24,16 @@ Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP, GIF, TIFF 
 | WebP: encode, lossless, and lossy with `EncodeWebP` | yes | |
 | BMP: header, decode (1 to 8-bit palettes, RLE8, RLE4, 16, 24 and 32-bit, bitfields), encode (32-bit with alpha) | yes | |
 | GIF: header, decode (the first frame on its logical screen), encode (an exact table up to 256 colours, Wu's palette over more) | yes | |
-| TIFF: header, decode (the first image: strips and tiles, chunky and planar; uncompressed, PackBits, LZW, Deflate, JPEG, Group 4; 1, 8, 16-bit grey, 8 and 16-bit RGB and RGBA, 32-bit float RGB and RGBA, CMYK), encode (8-bit RGBA, uncompressed) | yes | |
+| TIFF: header, decode (the first image: strips and tiles, chunky and planar; uncompressed, PackBits, LZW, Deflate, JPEG, Group 4; 1, 8, 16-bit grey, 8 and 16-bit RGB and RGBA, 32-bit float RGB and RGBA, CMYK), encode (8 or 16-bit RGBA, uncompressed) | yes | |
 | AVIF: header, decode, encode | | yes, until its managed codec lands (#854) |
 | Resize, thumbnail, crop, rotate, flip, filters | yes, whatever format was loaded | |
 | QR codes, `StripExif` for JPEG and PNG | yes | |
 
 The choice is made per file, from its signature and (for JPEG) its frame header; a caller sees one API.
 The operations give the native library's results: exactly for the geometric operations, greyscale,
-brightness and contrast, within one unit per channel for blur and sharpen.
+brightness and contrast, within one unit per channel for blur and sharpen. Resizing differs on purpose
+on a translucent image, which is resampled premultiplied so its edges keep their colour (the native
+library darkens them); an opaque one resizes as the native library resized it.
 
 ## Installation
 
@@ -130,6 +132,21 @@ C# API -> Engine/ (routes by format)
 
 Whatever decoded a file, its pixels sit in a `PixelBuffer` (native memory from a pool, not the
 managed heap) and every operation after the load runs managed.
+
+### Pixel formats and depth
+
+A `PixelBuffer` has a `PixelFormat`: `Rgba8` (the default), `Rgba16`, `RgbaFloat`, `Rgb8`, `Rgb16`,
+`Gray8` or `Gray16`. A file decodes at its own depth and keeps it to the end:
+
+- a 16-bit PNG or TIFF decodes to `Rgba16`, `Rgb16` or `Gray16` (RGBA when the file has alpha or a
+  transparent colour key), a float TIFF to `RgbaFloat`; every file of 8 bits or fewer decodes to `Rgba8`;
+- every operation takes every format and returns the format it was given;
+- PNG and TIFF write a deep buffer at 16 bits; JPEG, WebP, BMP, GIF and AVIF, which have no deeper form
+  here, narrow it to 8 bits at the encode, each 16-bit sample to `round(v × 255 / 65535)`, the native
+  library's conversion.
+
+So a 16-bit PNG cropped and saved as PNG comes out with every sample it had.
+`PixelConversion.ToRgba8` and `ToRgba16` convert a buffer when code of your own needs one layout.
 
 Important public entrypoints:
 

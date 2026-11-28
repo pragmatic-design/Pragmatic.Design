@@ -43,11 +43,21 @@ internal static unsafe class NativeCodec
 
     public static NativeBuffer Encode(PixelBuffer image, ImageFormat format, byte quality)
     {
-        nint output;
-        nuint length;
-        var rc = NativeImports.pragmatic_image_encode(image.Pointer, (nuint)image.ByteLength,
-            (uint)image.Width, (uint)image.Height, (int)format, quality, &output, &length);
-        NativeError.CheckResult(rc, "image_encode");
-        return new NativeBuffer(output, length);
+        // The native library reads 8-bit RGBA only.
+        var rgba = PixelConversion.ToRgba8(image);
+        try
+        {
+            nint output;
+            nuint length;
+            var rc = NativeImports.pragmatic_image_encode(rgba.Pointer, (nuint)rgba.ByteLength,
+                (uint)rgba.Width, (uint)rgba.Height, (int)format, quality, &output, &length);
+            NativeError.CheckResult(rc, "image_encode");
+            return new NativeBuffer(output, length);
+        }
+        finally
+        {
+            if (!ReferenceEquals(rgba, image))
+                rgba.Dispose();
+        }
     }
 }
