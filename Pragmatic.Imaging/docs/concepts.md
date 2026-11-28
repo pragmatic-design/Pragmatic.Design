@@ -16,9 +16,10 @@ Pragmatic.Imaging takes a different shape: a small, purposeful API over its own 
 
 ## The approach
 
-- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads and encodes it lossless or, by name, lossy, decodes and encodes BMP, GIF and TIFF as the native library did, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
+- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads and encodes it lossless or, by name, lossy, decodes and encodes BMP, GIF and TIFF as the native library did, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen; a translucent image is resized premultiplied, so its edges keep their colour where the native library darkened them.
 - **Native library, for the rest**: AVIF is decoded and encoded by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
 - **Controlled native memory**: decoded pixels live in a `PixelBuffer`, native memory from a pool the garbage collector does not move or count, whichever engine decoded them.
+- **The file's own depth**: a 16-bit PNG or TIFF stays 16-bit (a float TIFF stays float) through every operation, and PNG and TIFF write it back at 16 bits; the 8-bit formats narrow it at the encode. Files of 8 bits or fewer are 8-bit RGBA throughout.
 
 ```
     ┌──────────────────────────────────────────────────┐

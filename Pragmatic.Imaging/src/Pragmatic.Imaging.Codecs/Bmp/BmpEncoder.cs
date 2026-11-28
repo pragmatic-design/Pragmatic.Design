@@ -26,6 +26,8 @@ public static class BmpEncoder
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(output);
+        using var lease = new Rgba8Lease(image);
+        image = lease.Image;
         Span<byte> headers = stackalloc byte[HeadersSize];
         WriteHeaders(image, headers);
         output.Write(headers);
@@ -46,6 +48,8 @@ public static class BmpEncoder
 
     private static void Write(PixelBuffer image, Span<byte> output)
     {
+        using var lease = new Rgba8Lease(image);
+        image = lease.Image;
         WriteHeaders(image, output);
         var stride = image.Width * 4;
         for (var y = image.Height - 1; y >= 0; y--)

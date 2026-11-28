@@ -4,7 +4,8 @@ using System.IO.Compression;
 namespace Pragmatic.Imaging.Codecs.Png;
 
 /// <summary>
-///     PNG to 8-bit RGBA: every colour type, every bit depth, interlaced or not. Rows are inflated,
+///     PNG to pixels: every colour type, every bit depth, interlaced or not. Up to 8 bits a sample the image becomes
+///     8-bit RGBA; a 16-bit one keeps its depth, as RGBA, RGB or grey (<see cref="PngWideScanlineConverter" />). Rows are inflated,
 ///     unfiltered and converted one at a time, so what the decode holds beyond the pixels is two rows.
 /// </summary>
 public static class PngDecoder
@@ -33,7 +34,7 @@ public static class PngDecoder
         if (header.ColorType == PngColorType.Palette && palette.Count == 0)
             throw new ImageDecodeException("PNG is palette-based and has no PLTE chunk.");
 
-        var image = new PixelBuffer(header.Width, header.Height);
+        var image = new PixelBuffer(header.Width, header.Height, PngWideScanlineConverter.FormatOf(header, palette));
         try
         {
             using var inflater = new ZLibStream(new PngIdatStream(encoded, idat), CompressionMode.Decompress);
@@ -119,7 +120,7 @@ public static class PngDecoder
                 var filter = staging[consumed];
                 var row = staging.AsSpan(consumed + 1, rowBytes);
                 PngFilter.Unfilter(filter, row, priorSpan.Span, step);
-                PngScanlineConverter.Convert(header, palette, row, image.Row(y), header.Width);
+                ConvertRow(header, palette, row, image.Row(y), header.Width, image.Format);
                 priorSpan = staging.AsMemory(consumed + 1, rowBytes);
                 consumed += filteredRowBytes;
             }
@@ -171,7 +172,8 @@ public static class PngDecoder
             var rowBytes = header.ScanlineBytes(passWidth);
             var prior = pool.Rent(rowBytes);
             var current = pool.Rent(rowBytes);
-            var rgba = pool.Rent(passWidth * 4);
+            var bytes = image.BytesPerPixel;
+            var rgba = pool.Rent(passWidth * bytes);
             try
             {
                 Array.Clear(prior, 0, rowBytes);
@@ -180,11 +182,11 @@ public static class PngDecoder
                     var filter = ReadFilterByte(inflater);
                     ReadRow(inflater, current.AsSpan(0, rowBytes));
                     PngFilter.Unfilter(filter, current.AsSpan(0, rowBytes), prior.AsSpan(0, rowBytes), step);
-                    PngScanlineConverter.Convert(header, palette, current.AsSpan(0, rowBytes), rgba, passWidth);
+                    ConvertRow(header, palette, current.AsSpan(0, rowBytes), rgba, passWidth, image.Format);
 
                     var row = image.Row(pass.YStart + py * pass.YStep);
                     for (int px = 0, x = pass.XStart; px < passWidth; px++, x += pass.XStep)
-                        rgba.AsSpan(px * 4, 4).CopyTo(row.Slice(x * 4, 4));
+                        rgba.AsSpan(px * bytes, bytes).CopyTo(row.Slice(x * bytes, bytes));
 
                     (prior, current) = (current, prior);
                 }
@@ -196,6 +198,14 @@ public static class PngDecoder
                 pool.Return(rgba);
             }
         }
+    }
+
+    private static void ConvertRow(in PngHeader header, PngPalette palette, ReadOnlySpan<byte> scanline, Span<byte> row, int pixels, PixelFormat format)
+    {
+        if (format == PixelFormat.Rgba8)
+            PngScanlineConverter.Convert(header, palette, scanline, row, pixels);
+        else
+            PngWideScanlineConverter.Convert(header, palette, scanline, row, pixels, format);
     }
 
     private static byte ReadFilterByte(Stream inflater)

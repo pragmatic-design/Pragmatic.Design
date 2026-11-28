@@ -34,6 +34,12 @@ public static class GaussianBlur
     {
         ArgumentNullException.ThrowIfNull(source);
         var result = Convolve(source, Kernel(sigma));
+        if (source.Format != PixelFormat.Rgba8)
+        {
+            UnsharpenAnyFormat(source, result, threshold);
+            return result;
+        }
+
         var original = source.Pixels;
         var blurred = result.Pixels;
         for (var i = 0; i < original.Length; i++)
@@ -43,6 +49,36 @@ public static class GaussianBlur
         }
 
         return result;
+    }
+
+    // The same rule on any other format, the threshold in 8-bit steps scaled to the format's.
+    private static void UnsharpenAnyFormat(PixelBuffer source, PixelBuffer result, int threshold)
+    {
+        var scale = PixelRows.Scale(source.Format);
+        var limit = threshold * scale / 255f;
+        var pool = ArrayPool<float>.Shared;
+        var original = pool.Rent(source.Width * 4);
+        var blurred = pool.Rent(source.Width * 4);
+        try
+        {
+            for (var y = 0; y < source.Height; y++)
+            {
+                PixelRows.Widen(source.Format, source.Row(y), original);
+                PixelRows.Widen(source.Format, result.Row(y), blurred);
+                for (var i = 0; i < source.Width * 4; i++)
+                {
+                    var diff = original[i] - blurred[i];
+                    blurred[i] = MathF.Abs(diff) > limit ? Math.Clamp(original[i] + diff, 0f, scale) : original[i];
+                }
+
+                PixelRows.Narrow(source.Format, blurred.AsSpan(0, source.Width * 4), result.Row(y));
+            }
+        }
+        finally
+        {
+            pool.Return(original);
+            pool.Return(blurred);
+        }
     }
 
     /// <summary>The crate's kernel: odd size from sigma (at least 3), Gaussian weights normalised to one.</summary>
@@ -86,14 +122,14 @@ public static class GaussianBlur
         var padded = pool.Rent((width + 2 * half) * 4);
         var ring = pool.Rent(size * rowFloats);
         var sum = pool.Rent(rowFloats);
-        var result = new PixelBuffer(width, height);
+        var result = new PixelBuffer(width, height, source.Format);
         try
         {
             var loaded = -1;
             for (var y = 0; y < height; y++)
             {
                 for (; loaded < Math.Min(height - 1, y + half); loaded++)
-                    FilterRow(source.Row(loaded + 1), padded, kernel, ring.AsSpan((loaded + 1) % size * rowFloats, rowFloats));
+                    FilterRow(source.Format, source.Row(loaded + 1), width, padded, kernel, ring.AsSpan((loaded + 1) % size * rowFloats, rowFloats));
 
                 var acc = sum.AsSpan(0, rowFloats);
                 acc.Clear();
@@ -103,9 +139,18 @@ public static class GaussianBlur
                     MultiplyAdd(ring.AsSpan(sy % size * rowFloats, rowFloats), kernel[k], acc);
                 }
 
-                var output = result.Row(y);
-                for (var i = 0; i < rowFloats; i++)
-                    output[i] = (byte)Math.Clamp(MathF.Round(acc[i], MidpointRounding.AwayFromZero), 0f, 255f);
+                if (source.Format == PixelFormat.Rgba8)
+                {
+                    // The crate's rounding, half away from zero: adding a half and truncating rounds up a sum just
+                    // below a half whose low bits the addition drops.
+                    var output = result.Row(y);
+                    for (var i = 0; i < rowFloats; i++)
+                        output[i] = (byte)Math.Clamp(MathF.Round(acc[i], MidpointRounding.AwayFromZero), 0f, 255f);
+                }
+                else
+                {
+                    PixelRows.Narrow(source.Format, acc, result.Row(y));
+                }
             }
 
             return result;
@@ -123,19 +168,18 @@ public static class GaussianBlur
         }
     }
 
-    /// <summary>One source row, widened to floats with its edge pixels repeated, convolved horizontally.</summary>
-    private static void FilterRow(ReadOnlySpan<byte> row, float[] padded, float[] kernel, Span<float> output)
+    /// <summary>One source row, widened to floats in place inside its padding, its edge pixels repeated, convolved horizontally.</summary>
+    private static void FilterRow(PixelFormat format, ReadOnlySpan<byte> row, int width, float[] padded, float[] kernel, Span<float> output)
     {
         var half = kernel.Length / 2;
-        var width = row.Length / 4;
         var line = padded.AsSpan(0, (width + 2 * half) * 4);
-        for (var p = 0; p < width + 2 * half; p++)
+        PixelRows.Widen(format, row, line.Slice(half * 4, width * 4));
+        var first = line.Slice(half * 4, 4);
+        var last = line.Slice((half + width - 1) * 4, 4);
+        for (var p = 0; p < half; p++)
         {
-            var sx = Math.Clamp(p - half, 0, width - 1) * 4;
-            line[p * 4] = row[sx];
-            line[p * 4 + 1] = row[sx + 1];
-            line[p * 4 + 2] = row[sx + 2];
-            line[p * 4 + 3] = row[sx + 3];
+            first.CopyTo(line[(p * 4)..]);
+            last.CopyTo(line[((half + width + p) * 4)..]);
         }
 
         output.Clear();

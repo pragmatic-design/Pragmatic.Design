@@ -4,7 +4,8 @@ namespace Pragmatic.Imaging.Codecs.Tiff;
 
 /// <summary>
 ///     Writes RGBA as the file the native library wrote (the image crate 0.25 over the TIFF crate 0.11): little-endian,
-///     uncompressed, four 8-bit samples a pixel with no extra-samples tag, strips of about a megabyte, a resolution of
+///     uncompressed, four samples a pixel with no extra-samples tag, of 8 bits, or of 16 when the buffer holds more than
+///     8 (<see cref="Prepared" />), strips of about a megabyte, a resolution of
 ///     one to one with no unit. The values that do not fit in their entries come where the crate wrote them: the two
 ///     resolutions before the strips, the depths, sample formats and strip lists after them, then the directory.
 /// </summary>
@@ -20,6 +21,20 @@ public static class TiffEncoder
     public static byte[] Encode(PixelBuffer image)
     {
         ArgumentNullException.ThrowIfNull(image);
+        var prepared = Prepared(image);
+        try
+        {
+            return EncodePrepared(prepared);
+        }
+        finally
+        {
+            if (!ReferenceEquals(prepared, image))
+                prepared.Dispose();
+        }
+    }
+
+    private static byte[] EncodePrepared(PixelBuffer image)
+    {
         var (strips, rowsPerStrip, tailBytes) = Plan(image);
         var file = new byte[24 + image.ByteLength + tailBytes + DirectoryBytes];
         WriteHead(file, image, tailBytes);
@@ -33,6 +48,23 @@ public static class TiffEncoder
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentNullException.ThrowIfNull(output);
+        var prepared = Prepared(image);
+        try
+        {
+            WritePrepared(prepared, output);
+        }
+        finally
+        {
+            if (!ReferenceEquals(prepared, image))
+                prepared.Dispose();
+        }
+    }
+
+    // The buffer as the file holds it: 8-bit RGBA, or 16-bit RGBA for any format deeper than 8 bits.
+    private static PixelBuffer Prepared(PixelBuffer image) => image.Format.BitsPerChannel() > 8 ? PixelConversion.ToRgba16(image) : PixelConversion.ToRgba8(image);
+
+    private static void WritePrepared(PixelBuffer image, Stream output)
+    {
         var (strips, rowsPerStrip, tailBytes) = Plan(image);
         Span<byte> head = stackalloc byte[24];
         WriteHead(head, image, tailBytes);
@@ -47,7 +79,7 @@ public static class TiffEncoder
     // the strip lists when there is more than one strip.
     private static (int Strips, long RowsPerStrip, int TailBytes) Plan(PixelBuffer image)
     {
-        var rowBytes = (long)image.Width * 4;
+        var rowBytes = (long)image.Stride;
         var rowsPerStrip = (1_000_000 + rowBytes - 1) / rowBytes;
         var strips = (int)((image.Height + rowsPerStrip - 1) / rowsPerStrip);
         var tail = 16 + (strips > 1 ? strips * 8 : 0);
@@ -69,10 +101,10 @@ public static class TiffEncoder
     private static void WriteTail(Span<byte> tail, PixelBuffer image, int strips, long rowsPerStrip)
     {
         var dataEnd = (uint)(24 + image.ByteLength);
-        var rowBytes = (long)image.Width * 4;
+        var rowBytes = (long)image.Stride;
         for (var i = 0; i < 4; i++)
         {
-            BinaryPrimitives.WriteUInt16LittleEndian(tail[(i * 2)..], 8);
+            BinaryPrimitives.WriteUInt16LittleEndian(tail[(i * 2)..], (ushort)(image.BytesPerPixel * 2));
             BinaryPrimitives.WriteUInt16LittleEndian(tail[(8 + i * 2)..], 1);
         }
 

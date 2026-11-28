@@ -10,12 +10,17 @@ namespace Pragmatic.Imaging.Codecs.Transforms;
 ///     Halves an image: every output pixel is the rounded mean of a 2×2 block, the step that takes a large
 ///     image most of the way to a small one at a fraction of a kernel's cost. The vertical sum is a
 ///     widening add of two rows; the horizontal one pairs adjacent pixels with AVX2 unpacks where the
-///     hardware has them.
+///     hardware has them. That path is for opaque 8-bit RGBA; a translucent image, or another format, takes
+///     the mean in floats, premultiplied when translucent so a transparent pixel does not darken its neighbour.
 /// </summary>
 internal static class BoxReduce
 {
-    public static PixelBuffer Half(PixelBuffer source)
+    /// <param name="source">The image to halve.</param>
+    /// <param name="translucent">Whether any pixel of the source is translucent: the caller checks once for every halving.</param>
+    public static PixelBuffer Half(PixelBuffer source, bool translucent)
     {
+        if (source.Format != PixelFormat.Rgba8 || translucent)
+            return HalfInFloats(source, translucent);
         var width = (source.Width + 1) / 2;
         var height = (source.Height + 1) / 2;
         var destination = new PixelBuffer(width, height);
@@ -41,6 +46,57 @@ internal static class BoxReduce
         finally
         {
             ArrayPool<ushort>.Shared.Return(sums);
+        }
+    }
+
+    // The same 2×2 mean on the rows widened to floats, rounded half up as the integer path rounds.
+    private static PixelBuffer HalfInFloats(PixelBuffer source, bool premultiply)
+    {
+        var scale = PixelRows.Scale(source.Format);
+        var width = (source.Width + 1) / 2;
+        var height = (source.Height + 1) / 2;
+        var destination = new PixelBuffer(width, height, source.Format);
+        var pool = ArrayPool<float>.Shared;
+        var top = pool.Rent(source.Width * 4);
+        var bottom = pool.Rent(source.Width * 4);
+        var means = pool.Rent(width * 4);
+        try
+        {
+            for (var y = 0; y < height; y++)
+            {
+                PixelRows.Widen(source.Format, source.Row(y * 2), top);
+                PixelRows.Widen(source.Format, source.Row(Math.Min(y * 2 + 1, source.Height - 1)), bottom);
+                if (premultiply)
+                {
+                    PixelRows.Premultiply(top.AsSpan(0, source.Width * 4), scale);
+                    PixelRows.Premultiply(bottom.AsSpan(0, source.Width * 4), scale);
+                }
+
+                for (var x = 0; x < width; x++)
+                {
+                    var x0 = x * 2 * 4;
+                    var x1 = Math.Min(x * 2 + 1, source.Width - 1) * 4;
+                    for (var c = 0; c < 4; c++)
+                        means[x * 4 + c] = (top[x0 + c] + top[x1 + c] + bottom[x0 + c] + bottom[x1 + c]) * 0.25f;
+                }
+
+                if (premultiply)
+                    PixelRows.Unpremultiply(means.AsSpan(0, width * 4), scale);
+                PixelRows.Narrow(source.Format, means.AsSpan(0, width * 4), destination.Row(y));
+            }
+
+            return destination;
+        }
+        catch
+        {
+            destination.Dispose();
+            throw;
+        }
+        finally
+        {
+            pool.Return(top);
+            pool.Return(bottom);
+            pool.Return(means);
         }
     }
 

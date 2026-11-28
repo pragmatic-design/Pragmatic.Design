@@ -3,9 +3,9 @@ using System.Runtime.InteropServices;
 namespace Pragmatic.Imaging.Codecs.Transforms;
 
 /// <summary>
-///     Crops, quarter turns, mirrors and the two diagonal flips EXIF orientation needs. Each moves whole
-///     pixels as 32-bit words and computes nothing, so the result is exactly what the native library's
-///     <c>image</c> crate produces for the same call. The flips work in place; every operation that
+///     Crops, quarter turns, mirrors and the two diagonal flips EXIF orientation needs, on any pixel format. Each moves
+///     whole pixels and computes nothing, so an 8-bit RGBA result is exactly what the native library's <c>image</c>
+///     crate produces for the same call, and no format loses anything. The flips work in place; every operation that
 ///     changes the shape returns a new buffer, which the caller owns.
 /// </summary>
 public static class PixelGeometry
@@ -21,9 +21,10 @@ public static class PixelGeometry
         if ((long)x + width > source.Width || (long)y + height > source.Height)
             throw new ArgumentOutOfRangeException(nameof(width), $"The region ({x},{y},{width},{height}) exceeds the image ({source.Width}x{source.Height}).");
 
-        var result = new PixelBuffer(width, height);
+        var bytes = source.BytesPerPixel;
+        var result = new PixelBuffer(width, height, source.Format);
         for (var row = 0; row < height; row++)
-            source.Row(y + row).Slice(x * 4, width * 4).CopyTo(result.Row(row));
+            source.Row(y + row).Slice(x * bytes, width * bytes).CopyTo(result.Row(row));
         return result;
     }
 
@@ -34,13 +35,39 @@ public static class PixelGeometry
     public static PixelBuffer Rotate180(PixelBuffer source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var result = new PixelBuffer(source.Width, source.Height);
-        var from = Words(source);
-        var to = Words(result);
+        var result = new PixelBuffer(source.Width, source.Height, source.Format);
+        switch (source.BytesPerPixel)
+        {
+            case 2:
+                ReverseInto<ushort>(source, result);
+                break;
+            case 4:
+                ReverseInto<uint>(source, result);
+                break;
+            case 8:
+                ReverseInto<ulong>(source, result);
+                break;
+            case 16:
+                ReverseInto<UInt128>(source, result);
+                break;
+            default:
+                source.Pixels.CopyTo(result.Pixels);
+                Reverse(result.Pixels, source.BytesPerPixel);
+                break;
+        }
+
+        return result;
+    }
+
+    // One pass: the last source pixel to the first destination one, and on.
+    private static void ReverseInto<T>(PixelBuffer source, PixelBuffer result)
+        where T : unmanaged
+    {
+        var from = MemoryMarshal.Cast<byte, T>(source.Pixels);
+        var to = MemoryMarshal.Cast<byte, T>(result.Pixels);
         var last = from.Length - 1;
         for (var i = 0; i < from.Length; i++)
             to[i] = from[last - i];
-        return result;
     }
 
     /// <summary>A quarter turn counter-clockwise: the right column becomes the top row.</summary>
@@ -51,7 +78,7 @@ public static class PixelGeometry
     {
         ArgumentNullException.ThrowIfNull(image);
         for (var y = 0; y < image.Height; y++)
-            MemoryMarshal.Cast<byte, uint>(image.Row(y)).Reverse();
+            Reverse(image.Row(y), image.BytesPerPixel);
     }
 
     /// <summary>Mirrors top to bottom, in place.</summary>
@@ -76,6 +103,39 @@ public static class PixelGeometry
     /// <summary>Mirrors across the anti-diagonal. EXIF orientation 7.</summary>
     public static PixelBuffer Transverse(PixelBuffer source) => Remap(source, static (y, w, h) => ((h - 1) * w + (w - 1 - y), -w));
 
+    // The pixels of a span in reverse order, whole pixels at a time.
+    private static void Reverse(Span<byte> pixels, int bytes)
+    {
+        switch (bytes)
+        {
+            case 1:
+                pixels.Reverse();
+                return;
+            case 2:
+                MemoryMarshal.Cast<byte, ushort>(pixels).Reverse();
+                return;
+            case 4:
+                MemoryMarshal.Cast<byte, uint>(pixels).Reverse();
+                return;
+            case 8:
+                MemoryMarshal.Cast<byte, ulong>(pixels).Reverse();
+                return;
+            case 16:
+                MemoryMarshal.Cast<byte, UInt128>(pixels).Reverse();
+                return;
+            default:
+                Span<byte> swap = stackalloc byte[bytes];
+                for (int left = 0, right = pixels.Length - bytes; left < right; left += bytes, right -= bytes)
+                {
+                    pixels.Slice(left, bytes).CopyTo(swap);
+                    pixels.Slice(right, bytes).CopyTo(pixels.Slice(left, bytes));
+                    swap.CopyTo(pixels.Slice(right, bytes));
+                }
+
+                return;
+        }
+    }
+
     /// <summary>
     ///     The four operations that swap the axes. Destination row <c>y</c> is one source column read
     ///     with a fixed step, so <paramref name="column" /> answers, for that row and the source's size,
@@ -85,19 +145,58 @@ public static class PixelGeometry
     private static PixelBuffer Remap(PixelBuffer source, Func<int, int, int, (int Start, int Step)> column)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var (w, h) = (source.Width, source.Height);
-        var result = new PixelBuffer(h, w);
-        var from = Words(source);
-        for (var y = 0; y < result.Height; y++)
+        var result = new PixelBuffer(source.Height, source.Width, source.Format);
+        switch (source.BytesPerPixel)
         {
-            var row = MemoryMarshal.Cast<byte, uint>(result.Row(y));
-            var (index, step) = column(y, w, h);
-            for (var x = 0; x < row.Length; x++, index += step)
-                row[x] = from[index];
+            case 1:
+                Remap<byte>(source, result, column);
+                break;
+            case 2:
+                Remap<ushort>(source, result, column);
+                break;
+            case 4:
+                Remap<uint>(source, result, column);
+                break;
+            case 8:
+                Remap<ulong>(source, result, column);
+                break;
+            case 16:
+                Remap<UInt128>(source, result, column);
+                break;
+            default:
+                RemapBytes(source, result, column);
+                break;
         }
 
         return result;
     }
 
-    private static Span<uint> Words(PixelBuffer image) => MemoryMarshal.Cast<byte, uint>(image.Pixels);
+    private static void Remap<T>(PixelBuffer source, PixelBuffer result, Func<int, int, int, (int Start, int Step)> column)
+        where T : unmanaged
+    {
+        var (w, h) = (source.Width, source.Height);
+        var from = MemoryMarshal.Cast<byte, T>(source.Pixels);
+        for (var y = 0; y < result.Height; y++)
+        {
+            var row = MemoryMarshal.Cast<byte, T>(result.Row(y));
+            var (index, step) = column(y, w, h);
+            for (var x = 0; x < row.Length; x++, index += step)
+                row[x] = from[index];
+        }
+    }
+
+    // Three and six-byte pixels, which no machine word holds: copied a pixel at a time.
+    private static void RemapBytes(PixelBuffer source, PixelBuffer result, Func<int, int, int, (int Start, int Step)> column)
+    {
+        var (w, h) = (source.Width, source.Height);
+        var bytes = source.BytesPerPixel;
+        var from = source.Pixels;
+        for (var y = 0; y < result.Height; y++)
+        {
+            var row = result.Row(y);
+            var (index, step) = column(y, w, h);
+            for (var x = 0; x < result.Width; x++, index += step)
+                from.Slice(index * bytes, bytes).CopyTo(row[(x * bytes)..]);
+        }
+    }
 }

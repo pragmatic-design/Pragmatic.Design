@@ -43,7 +43,7 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     }
 
     [Fact]
-    public void BlurManaged_OneCall_AllocatesTheResultAndTheKernel() => Expect(104, _operations.Blur_Managed);
+    public void BlurManaged_OneCall_AllocatesTheResultAndTheKernel() => Expect(112, _operations.Blur_Managed);
 
     [NativeRequiredFact]
     public void BlurNative_OneCall_AllocatesNothingManaged() => Expect(0, _operations.Blur_Native);
@@ -76,13 +76,13 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     public void GrayscaleNative_OneCall_AllocatesNothingManaged() => Expect(0, _operations.Grayscale_Native);
 
     [Fact]
-    public void Rotate90Managed_OneCall_AllocatesTheResult() => Expect(32, _operations.Rotate90_Managed);
+    public void Rotate90Managed_OneCall_AllocatesTheResult() => Expect(40, _operations.Rotate90_Managed);
 
     [NativeRequiredFact]
     public void Rotate90Native_OneCall_AllocatesNothingManaged() => Expect(0, _operations.Rotate90_Native);
 
     [Fact]
-    public void SharpenManaged_OneCall_AllocatesTheResultAndTheKernel() => Expect(80, _operations.Sharpen_Managed);
+    public void SharpenManaged_OneCall_AllocatesTheResultAndTheKernel() => Expect(88, _operations.Sharpen_Managed);
 
     [NativeRequiredFact]
     public void SharpenNative_OneCall_AllocatesNothingManaged() => Expect(0, _operations.Sharpen_Native);
@@ -92,7 +92,7 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     // thumbnail, 100,560 with the encode), and 24 B less on .NET 11 than on .NET 10. The numbers here are
     // this build's; the baseline keeps the runner's.
     [Fact]
-    public void DecodeManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 1544 : 1568, () => _uploads.Decode_Managed());
+    public void DecodeManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 1552 : 1576, () => _uploads.Decode_Managed());
 
     [NativeRequiredFact]
     public void DecodeNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _uploads.Decode_Native());
@@ -101,26 +101,26 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     public void EncodeNative_OneCall_AllocatesTheEncodedImage() => Expect(15088, () => _uploads.Encode_Native());
 
     [Fact]
-    public void PipelineManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 100816 : 100840, () => _uploads.Pipeline_Managed());
+    public void PipelineManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 100832 : 100856, () => _uploads.Pipeline_Managed());
 
     [NativeRequiredFact]
     public void PipelineNative_OneCall_AllocatesTwoWrappersAndTheEncodedImage() => Expect(20096, () => _uploads.Pipeline_Native());
 
     [Fact]
-    public void ResizeManaged_OneCall_AllocatesWhatItDid() => Expect(35032, () => _uploads.Resize_Managed());
+    public void ResizeManaged_OneCall_AllocatesWhatItDid() => Expect(35056, () => _uploads.Resize_Managed());
 
     [NativeRequiredFact]
     public void ResizeNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _uploads.Resize_Native());
 
     [Fact]
-    public void ThumbnailManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 36584 : 36608, () => _uploads.Thumbnail_Managed());
+    public void ThumbnailManaged_OneCall_AllocatesWhatItDid() => Expect(OnNet11 ? 36600 : 36624, () => _uploads.Thumbnail_Managed());
 
     [NativeRequiredFact]
     public void ThumbnailNative_OneCall_AllocatesTwoWrappers() => Expect(80, () => _uploads.Thumbnail_Native());
 
     // The image's wrapper and nothing else: the decoder keeps its reader, lists and code tables on the thread.
     [Fact]
-    public void DecodeWebPLosslessManaged_OneCall_AllocatesOneWrapper() => Expect(32, () => _webp.DecodeWebPLossless_Managed());
+    public void DecodeWebPLosslessManaged_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossless_Managed());
 
     [NativeRequiredFact]
     public void DecodeWebPLosslessNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossless_Native());
@@ -130,7 +130,7 @@ public sealed class TheBenchmarkedOperationsAllocateWhatTheyDidTests : IDisposab
     // ReadOnlySpan<short>) allocates 72 B more: six per segment, four segments, 1,728 B, where optimized code
     // allocates nothing for them.
     [Fact]
-    public void DecodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(1760, () => _webp.DecodeWebPLossy_Managed());
+    public void DecodeWebPLossyManaged_OneCall_AllocatesWhatItDid() => Expect(1768, () => _webp.DecodeWebPLossy_Managed());
 
     [NativeRequiredFact]
     public void DecodeWebPLossyNative_OneCall_AllocatesOneWrapper() => Expect(40, () => _webp.DecodeWebPLossy_Native());

@@ -35,6 +35,8 @@ public static class GifEncoder
     private static GifOutput Write(PixelBuffer image, bool dither)
     {
         ArgumentNullException.ThrowIfNull(image);
+        using var lease = new Rgba8Lease(image);
+        image = lease.Image;
         if (image.Width > MaxSide || image.Height > MaxSide)
             throw new ArgumentException($"A GIF is at most {MaxSide} pixels a side; this image is {image.Width} x {image.Height}.", nameof(image));
 
