@@ -192,7 +192,7 @@ Pass `allowUpscale: true` to enlarge, or enforce a minimum with `Resize`.
 
 ## 12. Running on Alpine Linux
 
-The native binary is built against glibc; Alpine uses musl. PNG, JPEG, WebP, BMP, the operations and QR codes are managed and work there; the first AVIF, GIF or TIFF load or encode fails with `DllNotFoundException`. For those formats, use a Debian/Ubuntu base image, or build the native library for musl yourself (non-trivial). See [native-deployment.md](native-deployment.md).
+The native binary is built against glibc; Alpine uses musl. PNG, JPEG, WebP, BMP, GIF, the operations and QR codes are managed and work there; the first AVIF or TIFF load or encode fails with `DllNotFoundException`. For those formats, use a Debian/Ubuntu base image, or build the native library for musl yourself (non-trivial). See [native-deployment.md](native-deployment.md).
 
 ---
 

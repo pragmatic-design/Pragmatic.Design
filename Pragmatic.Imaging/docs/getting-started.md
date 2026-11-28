@@ -10,7 +10,7 @@ Five concrete scenarios, each ~3 minutes.
 dotnet add package Pragmatic.Imaging
 ```
 
-PNG, JPEG, WebP, BMP, every operation and QR codes are managed. For AVIF, GIF and TIFF the NuGet includes the native binary for `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner, and no test runs it on macOS yet. See [native-deployment.md](native-deployment.md).
+PNG, JPEG, WebP, BMP, GIF, every operation and QR codes are managed. For AVIF and TIFF the NuGet includes the native binary for `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging Native` CI workflow on a macOS runner, and no test runs it on macOS yet. See [native-deployment.md](native-deployment.md).
 
 ---
 

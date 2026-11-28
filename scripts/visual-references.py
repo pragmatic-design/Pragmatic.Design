@@ -5,6 +5,7 @@ recorded for them.
     python -I scripts/visual-references.py metrics       # the image pairs and the values the metrics are held to
     python -I scripts/visual-references.py webp          # WebP files libwebp wrote, for the managed decoder
     python -I scripts/visual-references.py bmp           # the BMP Suite's files, for the managed BMP decoder
+    python -I scripts/visual-references.py gif           # GIF files Pillow wrote, for the managed GIF decoder
 
 Needs scikit-image, Pillow and NumPy (pip install scikit-image pillow, in a virtual environment: docs/TESTING.md,
 "Images and PDF pages, compared visually"); `metrics` also downloads the CIEDE2000 test data from scikit-image's
@@ -33,6 +34,7 @@ PHOTOGRAPHS = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' /
 METRICS = ROOT / 'shared' / 'VisualTesting.Tests' / 'References'
 WEBP = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Codecs.Tests' / 'References' / 'WebP'
 BMP = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' / 'References' / 'Bmp'
+GIF = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' / 'References' / 'Gif'
 TODAY = datetime.date.today().isoformat()
 TOOLS = f'scikit-image {skimage.__version__}, Pillow {PIL.__version__}, NumPy {np.__version__}'
 SKIMAGE_DATA = Path(data.__file__).parent
@@ -312,7 +314,72 @@ def bmp_files():
     write_manifest(BMP, entries)
 
 
-COMMANDS = {'photographs': photographs, 'metrics': metric_fixtures, 'webp': webp_files, 'bmp': bmp_files}
+def gif_files():
+    """GIF files Pillow wrote, for the managed decoder to read as the native library read them: palettes of 2 to 256
+    colours, interlaced and not, transparency, a local colour table, a comment, the smallest sizes and an animation."""
+    GIF.mkdir(parents=True, exist_ok=True)
+    for old in GIF.glob('*.gif'):
+        old.unlink()
+    entries = {}
+    tools = f'Pillow {PIL.__version__}, NumPy {np.__version__}'
+
+    def save(file, image, how, source=None, **options):
+        image.save(GIF / file, 'GIF', **options)
+        settings = ', '.join(f'{key}={value!r}' for key, value in sorted(options.items()) if key != 'append_images')
+        entries[file] = {
+            'origin': f'scikit-image {skimage.__version__}, skimage.data.{source}' if source else 'synthetic, made by the script',
+            'licence': SOURCES[source][2] if source else 'no licence needed: generated pixels',
+            'producedBy': f'scripts/visual-references.py gif, {tools}: {how}' + (f', saved with {settings}' if settings else ''),
+            'date': TODAY,
+        }
+
+    crops = {
+        'astronaut': Image.fromarray(data.astronaut()[60:211, 140:343]),
+        'coffee': Image.fromarray(data.coffee()[120:271, 200:403]),
+        'chelsea': Image.fromarray(data.chelsea()[40:191, 100:303]),
+    }
+    for name, crop in crops.items():
+        how = f'a 203 x 151 crop of skimage.data.{name}, reduced to 256 colours by Pillow'
+        paletted = crop.quantize(256)
+        save(f'{name}.gif', paletted, how, name, interlace=False)
+        save(f'{name}-interlaced.gif', paletted, how, name, interlace=True)
+    save('coffee-local-table.gif', crops['coffee'].quantize(64), 'the coffee crop in 64 colours', 'coffee', include_color_table=True,
+         interlace=False)
+    save('coffee-comment.gif', crops['coffee'].quantize(32), 'the coffee crop in 32 colours', 'coffee', comment=b'Pragmatic', interlace=False)
+
+    # Transparency: the chelsea crop with a hard-edged transparent disc.
+    rgb = np.asarray(crops['chelsea'])
+    yy, xx = np.mgrid[0:rgb.shape[0], 0:rgb.shape[1]]
+    alpha = np.where(np.hypot(yy - 75, xx - 100) < 40, 0, 255).astype(np.uint8)
+    save('chelsea-transparent.gif', Image.fromarray(np.dstack([rgb, alpha])), 'the chelsea crop with a transparent disc', 'chelsea',
+         interlace=False)
+
+    # Few colours, so the minimum code size is 2, 2, 4 and 8.
+    rng = np.random.default_rng(855)
+    for colours in (2, 4, 16, 200):
+        palette = rng.integers(0, 256, size=(colours, 3), dtype=np.uint8)
+        index = (np.add.outer(np.arange(67) // 5, np.arange(45) // 3) + rng.integers(0, 2, size=(67, 45))) % colours
+        save(f'palette-{colours}.gif', Image.fromarray(palette[index]),
+             f'a 45 x 67 pattern over {colours} random colours, NumPy default_rng(855)', interlace=False)
+
+    # The smallest images, one row and one column: under 16 pixels a side Pillow never interlaces.
+    for width, height in ((1, 1), (13, 1), (1, 13), (31, 13)):
+        tile = Image.fromarray(rng.integers(0, 256, size=(height, width, 3), dtype=np.uint8))
+        save(f'random-{width}x{height}.gif', tile, f'{width} x {height} random pixels, NumPy default_rng(855)')
+
+    # An animation: the first frame is the image; Pillow writes the later ones as smaller changed regions.
+    base = np.asarray(crops['coffee'].quantize(128).convert('RGB'))
+    frames = [Image.fromarray(base)]
+    for shift in (1, 2):
+        frame = base.copy()
+        frame[10:60, 10:90] = np.roll(frame[10:60, 10:90], shift * 17, axis=1)
+        frames.append(Image.fromarray(frame))
+    save('animated.gif', frames[0], 'three frames: the coffee crop in 128 colours, then two with a shifted rectangle', 'coffee',
+         save_all=True, append_images=frames[1:], duration=100, loop=0, interlace=False)
+    write_manifest(GIF, entries)
+
+
+COMMANDS = {'photographs': photographs, 'metrics': metric_fixtures, 'webp': webp_files, 'bmp': bmp_files, 'gif': gif_files}
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or sys.argv[1] not in COMMANDS:

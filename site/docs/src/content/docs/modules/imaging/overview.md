@@ -1,12 +1,12 @@
 ---
 title: "Pragmatic.Imaging"
-description: "Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP and every operation, and a Rust native library, still shipped, for the other formats."
+description: "Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP, GIF and every operation, and a Rust native library, still shipped, for the other formats."
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Imaging/README.md
 sidebar:
   order: 0
   label: Overview
 ---
-Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP and every operation, and a Rust native library, still shipped, for the other formats.
+Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP, GIF and every operation, and a Rust native library, still shipped, for the other formats.
 
 `Pragmatic.Imaging` is designed for AOT-friendly server-side image work: decode, encode, resize, crop, rotate, filter, inspect, and generate QR codes without pulling in large managed imaging stacks.
 
@@ -29,7 +29,8 @@ Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP and every o
 | WebP: header, decode (lossless, lossy, alpha, an animation's first frame) | yes | |
 | WebP: encode, lossless, and lossy with `EncodeWebP` | yes | |
 | BMP: header, decode (1 to 8-bit palettes, RLE8, RLE4, 16, 24 and 32-bit, bitfields), encode (32-bit with alpha) | yes | |
-| AVIF, GIF, TIFF: header, decode, encode | | yes, until their managed codecs land (#854, #855) |
+| GIF: header, decode (the first frame on its logical screen), encode (an exact table up to 256 colours, Wu's palette over more) | yes | |
+| AVIF, TIFF: header, decode, encode | | yes, until their managed codecs land (#854, #855) |
 | Resize, thumbnail, crop, rotate, flip, filters | yes, whatever format was loaded | |
 | QR codes, `StripExif` for JPEG and PNG | yes | |
 
@@ -128,8 +129,8 @@ it.
 
 ```text
 C# API -> Engine/ (routes by format)
-            ├── PNG, JPEG, WebP, BMP, operations, QR -> Pragmatic.Imaging.Codecs (managed)
-            └── AVIF, GIF, TIFF -> LibraryImport P/Invoke -> Rust native library
+            ├── PNG, JPEG, WebP, BMP, GIF, operations, QR -> Pragmatic.Imaging.Codecs (managed)
+            └── AVIF, TIFF -> LibraryImport P/Invoke -> Rust native library
 ```
 
 Whatever decoded a file, its pixels sit in a `PixelBuffer` (native memory from a pool, not the
@@ -185,8 +186,8 @@ path at 32.6 ms on v2 and 27.4 ms on v3 (one run each, 2026-10-17). To target ol
 
 ## Status
 
-**Preview** within 1.0.0-alpha: PNG, JPEG, WebP and BMP, every operation and QR codes run on the managed
-engine; AVIF, GIF and TIFF still run on the native library. The package ships native binaries for
+**Preview** within 1.0.0-alpha: PNG, JPEG, WebP, BMP and GIF, every operation and QR codes run on the managed
+engine; AVIF and TIFF still run on the native library. The package ships native binaries for
 `win-x64`, `linux-x64` (glibc) and `osx-arm64`; the macOS one is built and stamped by the `Imaging
 Native` CI workflow on a macOS runner, and no test runs it on macOS yet
 ([native-deployment.md](/modules/imaging/native-deployment/)). See the [roadmap](https://github.com/pragmatic-design/Pragmatic.Design/blob/main/docs/ROADMAP.md).
@@ -207,8 +208,8 @@ Samples:
 ## Requirements
 
 - .NET 10.0+
-- For AVIF, GIF and TIFF, one of the platforms above: the native library is loaded from the
-  package's `runtimes/` folder. PNG, JPEG, WebP, BMP, the operations and QR codes run anywhere .NET does.
+- For AVIF and TIFF, one of the platforms above: the native library is loaded from the
+  package's `runtimes/` folder. PNG, JPEG, WebP, BMP, GIF, the operations and QR codes run anywhere .NET does.
 
 ## License
 

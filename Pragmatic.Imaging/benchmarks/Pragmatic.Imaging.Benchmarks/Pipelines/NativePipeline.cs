@@ -45,6 +45,9 @@ public static unsafe class NativePipeline
     public static byte[] EncodeBmp(byte* rgba, nuint length, uint width, uint height)
         => RustImaging.Encode(rgba, length, width, height, ImageFormat.Bmp, 90);
 
+    public static byte[] EncodeGif(byte* rgba, nuint length, uint width, uint height)
+        => RustImaging.Encode(rgba, length, width, height, ImageFormat.Gif, 90);
+
     public static byte[] EncodeWebP(byte* rgba, nuint length, uint width, uint height)
         => RustImaging.Encode(rgba, length, width, height, ImageFormat.WebP, 90);
 

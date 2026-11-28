@@ -1,5 +1,6 @@
 using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Bmp;
+using Pragmatic.Imaging.Codecs.Gif;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Metadata;
 using Pragmatic.Imaging.Codecs.Png;
@@ -8,13 +9,13 @@ using Pragmatic.Imaging.Codecs.WebP;
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Reads a file with the engine that handles it: PNG, JPEG, WebP and BMP with the managed core, every other
+///     Reads a file with the engine that handles it: PNG, JPEG, WebP, BMP and GIF with the managed core, every other
 ///     format with the native library, and a JPEG whose frame the managed decoder does not handle (CMYK,
 ///     12-bit, arithmetic coding) with the native library too, chosen from the frame header. A JPEG or
 ///     PNG is returned the way it is shown, its EXIF orientation applied whichever engine decoded it, and
 ///     <see cref="Identify" /> reports that size, so the limits are checked against the image that will
-///     exist. A WebP is returned as stored, its EXIF chunk not read, as the native library returned it, and so is a BMP,
-///     which has no orientation to apply.
+///     exist. A WebP is returned as stored, its EXIF chunk not read, as the native library returned it, and so are a
+///     BMP and a GIF, which have no orientation to apply.
 /// </summary>
 internal static class ImageDecoding
 {
@@ -33,6 +34,7 @@ internal static class ImageDecoding
                 ImageFormat.Png => PngDecoder.Identify(data),
                 ImageFormat.WebP => WebPDecoder.Identify(data),
                 ImageFormat.Bmp => BmpDecoder.Identify(data),
+                ImageFormat.Gif => GifDecoder.Identify(data),
                 _ => JpegDecoder.Identify(data),
             };
         }
@@ -41,7 +43,7 @@ internal static class ImageDecoding
             throw Failed(e);
         }
 
-        if (format is ImageFormat.WebP or ImageFormat.Bmp)
+        if (format is ImageFormat.WebP or ImageFormat.Bmp or ImageFormat.Gif)
             return new ImageInfo((uint)size.Width, (uint)size.Height, format);
         return ExifOrientation.SwapsAxes(ExifOrientation.Read(data))
             ? new ImageInfo((uint)size.Height, (uint)size.Width, format)
@@ -61,6 +63,7 @@ internal static class ImageDecoding
                 ImageFormat.Jpeg when JpegDecoder.CanDecode(span) => JpegDecoder.Decode(data),
                 ImageFormat.WebP => WebPDecoder.Decode(span),
                 ImageFormat.Bmp => BmpDecoder.Decode(span),
+                ImageFormat.Gif => GifDecoder.Decode(span),
                 _ => NativeCodec.Decode(span),
             };
         }
