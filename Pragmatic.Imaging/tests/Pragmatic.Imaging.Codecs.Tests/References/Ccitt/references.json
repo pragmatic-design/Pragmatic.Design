@@ -1,0 +1,125 @@
+{
+  "about": "Every reference in this directory, with what produced it. Regenerate with scripts/visual-references.py; a reference is never produced by the code it checks.",
+  "references": {
+    "coffee-g3-1d-203x151.bits": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-1d-203x151.fax": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, coded Group 3 one-dimensional by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-1d-fill-203x151.bits": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-1d-fill-203x151.fax": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, coded Group 3 one-dimensional, fill before EOL by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-2d-203x151.bits": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-2d-203x151.fax": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, coded Group 3 two-dimensional by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-2d-fill-203x151.bits": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "coffee-g3-2d-fill-203x151.fax": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, coded Group 3 two-dimensional, fill before EOL by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "coffee-g4-203x151.bits": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "coffee-g4-203x151.fax": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop thresholded at 110, coded Group 4 by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-1d-1800x61.bits": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-1d-1800x61.fax": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, coded Group 3 one-dimensional by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-1d-fill-1800x61.bits": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-1d-fill-1800x61.fax": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, coded Group 3 one-dimensional, fill before EOL by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-2d-1800x61.bits": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-2d-1800x61.fax": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, coded Group 3 two-dimensional by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-2d-fill-1800x61.bits": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "stripes-g3-2d-fill-1800x61.fax": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, coded Group 3 two-dimensional, fill before EOL by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    },
+    "stripes-g4-1800x61.bits": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, the pixels coded, 1 for black",
+      "date": "2026-11-28"
+    },
+    "stripes-g4-1800x61.fax": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py ccitt, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: 1800 x 61 stripes of changing widths, runs past the 1728 make-up code, coded Group 4 by libtiff, the strip's bytes",
+      "date": "2026-11-28"
+    }
+  }
+}

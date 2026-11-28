@@ -2,6 +2,7 @@ using System.IO.Compression;
 using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Bmp;
 using Pragmatic.Imaging.Codecs.Gif;
+using Pragmatic.Imaging.Codecs.Tiff;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
 using Pragmatic.Imaging.Codecs.WebP;
@@ -9,8 +10,8 @@ using Pragmatic.Imaging.Codecs.WebP;
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Writes an image with the engine that handles the format: PNG, JPEG, WebP, BMP and GIF with the managed core,
-///     straight into the output; AVIF and TIFF with the native library.
+///     Writes an image with the engine that handles the format: PNG, JPEG, WebP, BMP, GIF and TIFF with the managed core,
+///     straight into the output; AVIF with the native library.
 /// </summary>
 internal static class ImageEncoding
 {
@@ -23,7 +24,7 @@ internal static class ImageEncoding
     /// </remarks>
     internal const CompressionLevel PngCompression = CompressionLevel.Fastest;
 
-    // A BMP or GIF encoder refuses an image too large for its format with an ArgumentException; this module's
+    // A BMP, GIF or TIFF encoder refuses an image too large for its format with an ArgumentException; this module's
     // callers got the native library's ImagingException for it, and still do.
     private static void Sized(Action encode) => Sized(() =>
     {
@@ -63,6 +64,9 @@ internal static class ImageEncoding
                 return;
             case ImageFormat.Gif:
                 Sized(() => GifEncoder.Write(image, output));
+                return;
+            case ImageFormat.Tiff:
+                Sized(() => TiffEncoder.Write(image, output));
                 return;
             case ImageFormat.Unknown:
                 throw new ImagingException("Cannot encode to an unknown format.", ImagingError.UnsupportedFormat);
@@ -105,6 +109,8 @@ internal static class ImageEncoding
             return Sized(() => BmpEncoder.Encode(image));
         if (format == ImageFormat.Gif)
             return Sized(() => GifEncoder.Encode(image));
+        if (format == ImageFormat.Tiff)
+            return Sized(() => TiffEncoder.Encode(image));
 
         using var output = new MemoryStream();
         Encode(image, format, quality, output);

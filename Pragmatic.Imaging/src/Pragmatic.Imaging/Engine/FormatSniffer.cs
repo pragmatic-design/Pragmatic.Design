@@ -1,11 +1,12 @@
 using Pragmatic.Imaging.Codecs.Bmp;
 using Pragmatic.Imaging.Codecs.Gif;
+using Pragmatic.Imaging.Codecs.Tiff;
 using Pragmatic.Imaging.Codecs.WebP;
 
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Whether encoded bytes are a PNG, a JPEG, a WebP, a BMP or a GIF, from their signature: the formats the managed
+///     Whether encoded bytes are a PNG, a JPEG, a WebP, a BMP, a GIF or a TIFF, from their signature: the formats the managed
 ///     core reads. Anything else is <see cref="ImageFormat.Unknown" /> here and goes to the native library,
 ///     which names its own formats. Nothing past the first bytes is read, and no extension is trusted.
 /// </summary>
@@ -25,6 +26,8 @@ internal static class FormatSniffer
             return ImageFormat.Bmp;
         if (GifDecoder.IsGif(data))
             return ImageFormat.Gif;
+        if (TiffDecoder.IsTiff(data))
+            return ImageFormat.Tiff;
         return ImageFormat.Unknown;
     }
 }

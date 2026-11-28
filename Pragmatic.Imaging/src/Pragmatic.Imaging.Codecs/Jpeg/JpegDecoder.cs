@@ -81,7 +81,63 @@ public static class JpegDecoder
         if (scale is not (JpegScale.Full or JpegScale.Half or JpegScale.Quarter or JpegScale.Eighth))
             throw new ArgumentOutOfRangeException(nameof(scale), scale, "The scale is 1, 1/2, 1/4 or 1/8.");
 
-        var data = encoded.Span;
+        var rented = new List<byte[]>();
+        var rentedCoefficients = new List<short[]>();
+        PixelBuffer? output = null;
+        try
+        {
+            var frame = DecodeFrame(encoded.Span, scale, rented, rentedCoefficients);
+            output = new PixelBuffer(frame.OutputWidth, frame.OutputHeight);
+            JpegColorConverter.ToRgba(frame, output);
+            return output;
+        }
+        catch
+        {
+            output?.Dispose();
+            throw;
+        }
+        finally
+        {
+            Return(rented, rentedCoefficients);
+        }
+    }
+
+    /// <summary>
+    ///     Decodes the image to its components without converting their colour, as zune-jpeg does when its output
+    ///     colour space is the input's: the luma of a greyscale image, or Y, Cb and Cr of each pixel, the chroma brought
+    ///     up to full size. This is what a JPEG-compressed TIFF strip holds for the TIFF crate.
+    /// </summary>
+    /// <returns>A pooled array holding width × height × components bytes; the caller returns it to the shared pool.</returns>
+    internal static byte[] DecodeComponents(ReadOnlySpan<byte> encoded, out int width, out int height, out int components)
+    {
+        var rented = new List<byte[]>();
+        var rentedCoefficients = new List<short[]>();
+        try
+        {
+            var frame = DecodeFrame(encoded, JpegScale.Full, rented, rentedCoefficients);
+            width = frame.OutputWidth;
+            height = frame.OutputHeight;
+            components = frame.Components.Length;
+            var output = ArrayPool<byte>.Shared.Rent(width * height * components);
+            JpegColorConverter.ToComponents(frame, output);
+            return output;
+        }
+        finally
+        {
+            Return(rented, rentedCoefficients);
+        }
+    }
+
+    private static void Return(List<byte[]> rented, List<short[]> rentedCoefficients)
+    {
+        foreach (var plane in rented)
+            ArrayPool<byte>.Shared.Return(plane);
+        foreach (var coefficients in rentedCoefficients)
+            ArrayPool<short>.Shared.Return(coefficients);
+    }
+
+    private static JpegFrame DecodeFrame(ReadOnlySpan<byte> data, JpegScale scale, List<byte[]> rented, List<short[]> rentedCoefficients)
+    {
         if (data.Length < 4 || data[0] != 0xFF || data[1] != JpegMarker.Soi)
             throw new ImageDecodeException("The bytes do not start with a JPEG SOI marker.");
 
@@ -90,11 +146,6 @@ public static class JpegDecoder
         var acTables = new JpegHuffmanTable?[4];
         JpegFrame? frame = null;
         var restartInterval = 0;
-        var rented = new List<byte[]>();
-        var rentedCoefficients = new List<short[]>();
-        PixelBuffer? output = null;
-
-        try
         {
             var position = 2;
             while (true)
@@ -145,22 +196,7 @@ public static class JpegDecoder
                 throw new ImageDecodeException("JPEG has no frame header.");
             if (frame.Progressive)
                 TransformProgressive(frame, quantization);
-
-            output = new PixelBuffer(frame.OutputWidth, frame.OutputHeight);
-            JpegColorConverter.ToRgba(frame, output);
-            return output;
-        }
-        catch
-        {
-            output?.Dispose();
-            throw;
-        }
-        finally
-        {
-            foreach (var plane in rented)
-                ArrayPool<byte>.Shared.Return(plane);
-            foreach (var coefficients in rentedCoefficients)
-                ArrayPool<short>.Shared.Return(coefficients);
+            return frame;
         }
     }
 

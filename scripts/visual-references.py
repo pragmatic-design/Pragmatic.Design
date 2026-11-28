@@ -6,6 +6,8 @@ recorded for them.
     python -I scripts/visual-references.py webp          # WebP files libwebp wrote, for the managed decoder
     python -I scripts/visual-references.py bmp           # the BMP Suite's files, for the managed BMP decoder
     python -I scripts/visual-references.py gif           # GIF files Pillow wrote, for the managed GIF decoder
+    python -I scripts/visual-references.py tiff          # libtiff's test images and TIFF files made here, for the managed TIFF decoder
+    python -I scripts/visual-references.py ccitt         # fax streams libtiff coded, for the core's CCITT decoder
 
 Needs scikit-image, Pillow and NumPy (pip install scikit-image pillow, in a virtual environment: docs/TESTING.md,
 "Images and PDF pages, compared visually"); `metrics` also downloads the CIEDE2000 test data from scikit-image's
@@ -35,6 +37,8 @@ METRICS = ROOT / 'shared' / 'VisualTesting.Tests' / 'References'
 WEBP = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Codecs.Tests' / 'References' / 'WebP'
 BMP = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' / 'References' / 'Bmp'
 GIF = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' / 'References' / 'Gif'
+TIFF = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Tests' / 'References' / 'Tiff'
+CCITT = ROOT / 'Pragmatic.Imaging' / 'tests' / 'Pragmatic.Imaging.Codecs.Tests' / 'References' / 'Ccitt'
 TODAY = datetime.date.today().isoformat()
 TOOLS = f'scikit-image {skimage.__version__}, Pillow {PIL.__version__}, NumPy {np.__version__}'
 SKIMAGE_DATA = Path(data.__file__).parent
@@ -379,7 +383,388 @@ def gif_files():
     write_manifest(GIF, entries)
 
 
-COMMANDS = {'photographs': photographs, 'metrics': metric_fixtures, 'webp': webp_files, 'bmp': bmp_files, 'gif': gif_files}
+LIBTIFF_RELEASE = 'https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz'
+LIBTIFF_RELEASE_SHA256 = 'f698d94f3103da8ca7438d84e0344e453fe0ba3b7486e04c5bf7a9a3fabe9b69'
+LIBTIFF_LICENCE = ('libtiff\'s licence, LICENSE-libtiff.md beside the files: "Permission to use, copy, modify, distribute, and sell '
+                   'this software and its documentation for any purpose is hereby granted without fee"')
+LIBTIFF_FILES = [
+    '32bpp-None-jpeg.tiff', '32bpp-None.tiff', 'custom_dir_EXIF_GPS.tiff', 'deflate-last-strip-extra-data.tiff',
+    'logluv-3c-16b.tiff', 'lzw-single-strip.tiff', 'minisblack-1c-16b.tiff', 'minisblack-1c-8b.tiff',
+    'minisblack-2c-8b-alpha.tiff', 'miniswhite-1c-1b.tiff', 'ojpeg_chewey_subsamp21_multi_strip.tiff',
+    'ojpeg_single_strip_no_rowsperstrip.tiff', 'ojpeg_zackthecat_subsamp22_single_strip.tiff', 'palette-1c-1b.tiff',
+    'palette-1c-4b.tiff', 'palette-1c-8b.tiff', 'quad-lzw-compat.tiff', 'quad-tile.jpg.tiff', 'rgb-3c-16b.tiff',
+    'rgb-3c-8b.tiff', 'test_float64_predictor2_be_lzw.tif', 'test_float64_predictor2_le_lzw.tif', 'test_ifd_loop_subifd.tif',
+    'test_ifd_loop_to_first.tif', 'test_ifd_loop_to_self.tif', 'test_two_ifds.tif', 'testfax3_bug54_1dnoEOL.tif',
+    'testfax3_bug_513.tiff', 'testfax4.tiff', 'tiff_with_subifd_chain.tif', 'webp_lossless_rgba_alpha_fully_opaque.tif',
+]
+
+
+def tiff_lzw(data):
+    """TIFF's LZW: most significant bit first, a clear code first, the code width raised one code early, a new table
+    before the 4,096th entry, and the end code last."""
+    out, bits, held = bytearray(), 0, 0
+
+    def put(code, width):
+        nonlocal bits, held
+        bits = (bits << width) | code
+        held += width
+        while held >= 8:
+            held -= 8
+            out.append((bits >> held) & 0xFF)
+
+    table, width, prefix = {}, 9, None
+    put(256, width)
+    for byte in data:
+        key = (prefix, byte)
+        if prefix is not None and key in table:
+            prefix = table[key]
+            continue
+        if prefix is None:
+            prefix = byte
+            continue
+        put(prefix, width)
+        table[key] = 258 + len(table)
+        if 258 + len(table) + 1 > (1 << width) and width < 12:
+            width += 1
+        if 258 + len(table) >= 4094:
+            put(256, width)
+            table, width = {}, 9
+        prefix = byte
+    if prefix is not None:
+        put(prefix, width)
+        if 258 + len(table) + 1 + 1 > (1 << width) and width < 12:
+            width += 1
+    put(257, width)
+    if held:
+        out.append((bits << (8 - held)) & 0xFF)
+    return bytes(out)
+
+
+def packbits(data):
+    """Apple's PackBits: runs of two or more equal bytes as a repeat, the rest as literals of up to 128 bytes."""
+    out, i = bytearray(), 0
+    while i < len(data):
+        run = 1
+        while i + run < len(data) and run < 128 and data[i + run] == data[i]:
+            run += 1
+        if run > 1:
+            out += bytes([257 - run, data[i]])
+            i += run
+            continue
+        start = i
+        while i < len(data) and i - start < 128 and (i + 1 >= len(data) or data[i + 1] != data[i]):
+            i += 1
+        if i == start:
+            i += 1
+        out.append(i - start - 1)
+        out += data[start:i]
+    return bytes(out)
+
+
+def write_tiff(path, pixels, photometric, *, compression=1, predictor=1, planar=1, tile=None, rows_per_strip=None, order='<',
+               big=False, extra_samples=None, sample_format=1, bits=None, jpeg=None):
+    """A TIFF from a height x width x samples array, with every layout choice in the caller's hands: strips or tiles,
+    chunky or planar, either byte order, classic or BigTIFF. Partial edge tiles are padded with zeros."""
+    import struct
+    import zlib
+    height, width, samples = pixels.shape
+    bits = bits or pixels.dtype.itemsize * 8
+    if bits == 1:
+        packed = np.packbits(pixels[:, :, 0].astype(bool), axis=1)
+    dtype = pixels.dtype.newbyteorder(order)
+
+    def chunk_bytes(region):
+        if bits == 1:
+            raw = region.tobytes()
+        else:
+            region = region.astype(dtype)
+            if predictor == 2:
+                region = region.copy()
+                region[:, 1:] = (region[:, 1:].astype(np.int64) - region[:, :-1].astype(np.int64)).astype(dtype)
+            if predictor == 3:
+                h, w, s = region.shape
+                bytes_ = region.astype(pixels.dtype.newbyteorder('>')).view(np.uint8).reshape(h, w * s, pixels.dtype.itemsize)
+                shuffled = bytes_.transpose(0, 2, 1).reshape(h, -1).astype(np.int16)
+                shuffled[:, s:] -= shuffled[:, :-s].copy()
+                raw = (shuffled & 0xFF).astype(np.uint8).tobytes()
+            else:
+                raw = region.tobytes()
+        if compression == 1:
+            return raw
+        if compression == 5:
+            return tiff_lzw(raw)
+        if compression == 8:
+            return zlib.compress(raw)
+        if compression == 32773:
+            row = len(raw) // region.shape[0]
+            return b''.join(packbits(raw[r * row:(r + 1) * row]) for r in range(region.shape[0]))
+        if compression == 7:
+            return jpeg(region)
+        raise ValueError(compression)
+
+    planes = [pixels[:, :, s:s + 1] for s in range(samples)] if planar == 2 else [pixels]
+    chunks = []
+    for plane in planes:
+        source = packed[:, :, None] if bits == 1 else plane
+        if tile:
+            tw, th = tile
+            for ty in range(0, height, th):
+                for tx in range(0, width, tw):
+                    block = np.zeros((th, tw if bits != 1 else tw // 8, source.shape[2]), source.dtype)
+                    part = source[ty:ty + th, (tx if bits != 1 else tx // 8):(tx + tw if bits != 1 else (tx + tw) // 8)]
+                    block[:part.shape[0], :part.shape[1]] = part
+                    chunks.append(chunk_bytes(block))
+        else:
+            step = rows_per_strip or height
+            for y in range(0, height, step):
+                chunks.append(chunk_bytes(source[y:y + step]))
+
+    tags = {256: (4, [width]), 257: (4, [height]), 258: (3, [bits] * samples), 259: (3, [compression]),
+            262: (3, [photometric]), 277: (3, [samples]), 284: (3, [planar]), 339: (3, [sample_format] * samples)}
+    if predictor != 1:
+        tags[317] = (3, [predictor])
+    if extra_samples:
+        tags[338] = (3, extra_samples)
+    offset_type = 16 if big else 4
+    if tile:
+        tags[322], tags[323] = (4, [tile[0]]), (4, [tile[1]])
+        offsets_tag, counts_tag = 324, 325
+    else:
+        tags[278] = (4, [rows_per_strip or height])
+        offsets_tag, counts_tag = 273, 279
+
+    header = 16 if big else 8
+    data_start = header
+    body = bytearray()
+    positions = []
+    for chunk in chunks:
+        positions.append(data_start + len(body))
+        body += chunk
+        if len(body) % 2:
+            body += b'\0'
+    tags[offsets_tag] = (offset_type, positions)
+    tags[counts_tag] = (offset_type, [len(c) for c in chunks])
+
+    sizes = {3: 2, 4: 4, 16: 8}
+    formats = {3: 'H', 4: 'I', 16: 'Q'}
+    inline = 8 if big else 4
+    ifd_at = data_start + len(body)
+    entry_size = 20 if big else 12
+    count_size = 8 if big else 2
+    values_at = ifd_at + count_size + entry_size * len(tags) + (8 if big else 4)
+    entries, values = bytearray(), bytearray()
+    for tag in sorted(tags):
+        kind, items = tags[tag]
+        data = struct.pack(order + formats[kind] * len(items), *items)
+        entries += struct.pack(order + 'HH', tag, kind) + struct.pack(order + ('Q' if big else 'I'), len(items))
+        if len(data) <= inline:
+            entries += data.ljust(inline, b'\0')
+        else:
+            entries += struct.pack(order + ('Q' if big else 'I'), values_at + len(values))
+            values += data
+            if len(values) % 2:
+                values += b'\0'
+    magic = b'II' if order == '<' else b'MM'
+    if big:
+        head = magic + struct.pack(order + 'HHHQ', 43, 8, 0, ifd_at)
+        ifd = struct.pack(order + 'Q', len(tags)) + entries + struct.pack(order + 'Q', 0)
+    else:
+        head = magic + struct.pack(order + 'HI', 42, ifd_at)
+        ifd = struct.pack(order + 'H', len(tags)) + entries + struct.pack(order + 'I', 0)
+    path.write_bytes(head + body + ifd + values)
+
+
+def tiff_files():
+    """libtiff's test images, byte for byte, then files Pillow (through libtiff) and this script wrote: every
+    compression, layout and sample type the native decoder reads, and some it refuses, for the managed decoder to be
+    held to what the native one did with each."""
+    TIFF.mkdir(parents=True, exist_ok=True)
+    for old in list(TIFF.glob('*.tif')) + list(TIFF.glob('*.tiff')):
+        old.unlink()
+    entries = libtiff_files()
+    entries.update(made_tiff_files())
+    write_manifest(TIFF, entries)
+
+
+def libtiff_files():
+    """libtiff's test images from its 4.7.1 release, the libtiff Pillow builds on, copied byte for byte, with
+    libtiff's licence beside them. The tarball is checked against its SHA-256 before anything is taken from it."""
+    import hashlib
+    import io
+    import tarfile
+    entries = {}
+    with urllib.request.urlopen(LIBTIFF_RELEASE) as response:
+        tarball = response.read()
+    if hashlib.sha256(tarball).hexdigest() != LIBTIFF_RELEASE_SHA256:
+        raise SystemExit(f'{LIBTIFF_RELEASE}: the SHA-256 is not the one recorded')
+    with tarfile.open(fileobj=io.BytesIO(tarball), mode='r:gz') as archive:
+        def member(path):
+            return archive.extractfile(f'tiff-4.7.1/{path}').read()
+        for name in LIBTIFF_FILES:
+            (TIFF / name).write_bytes(member(f'test/images/{name}'))
+            origin = f'libtiff 4.7.1, test/images/{name} in {LIBTIFF_RELEASE}'
+            if name == 'deflate-last-strip-extra-data.tiff':
+                origin += ' (libtiff took it from GDAL, autotest/alg/data/utmsmall_near.tiff)'
+            entries[name] = {'origin': origin, 'licence': LIBTIFF_LICENCE,
+                             'producedBy': 'scripts/visual-references.py tiff: copied byte for byte', 'date': TODAY}
+        (TIFF / 'LICENSE-libtiff.md').write_bytes(member('LICENSE.md'))
+        entries['LICENSE-libtiff.md'] = {
+            'origin': f'libtiff 4.7.1, LICENSE.md in {LIBTIFF_RELEASE}', 'licence': LIBTIFF_LICENCE,
+            'producedBy': 'scripts/visual-references.py tiff: copied byte for byte, the notice libtiff\'s licence asks copies to carry',
+            'date': TODAY,
+        }
+    return entries
+
+
+def made_tiff_files():
+    """TIFF files Pillow (through libtiff) and this script's own writer made from scikit-image's photographs: every
+    compression, layout and sample type the native decoder reads, and some it refuses."""
+    import io
+    entries = {}
+    tools = f'Pillow {PIL.__version__} with libtiff {features.version("libtiff")}, NumPy {np.__version__}'
+    coffee = data.coffee()[120:271, 200:403]
+    chelsea = data.chelsea()[40:191, 100:303]
+
+    def made(file, how, source, by):
+        entries[file] = {
+            'origin': f'scikit-image {skimage.__version__}, skimage.data.{source}' if source else 'synthetic, made by the script',
+            'licence': SOURCES[source][2] if source else 'no licence needed: generated pixels',
+            'producedBy': f'scripts/visual-references.py tiff, {by}: {how}', 'date': TODAY,
+        }
+
+    def pillow(file, image, how, source, **options):
+        image.save(TIFF / file, 'TIFF', **options)
+        settings = ', '.join(f'{key}={value!r}' for key, value in sorted(options.items()) if key != 'append_images')
+        made(file, how + (f', saved with {settings}' if settings else ''), source, tools)
+
+    rgb = Image.fromarray(coffee)
+    for compression in ('raw', 'tiff_lzw', 'tiff_deflate', 'tiff_adobe_deflate', 'packbits', 'jpeg'):
+        pillow(f'coffee-rgb-{compression}.tiff', rgb, 'the 203 x 151 coffee crop, RGB', 'coffee', compression=compression)
+        pillow(f'coffee-grey-{compression}.tiff', rgb.convert('L'), 'the coffee crop in grey', 'coffee', compression=compression)
+    rgba = np.dstack([chelsea, np.tile(np.linspace(0, 255, chelsea.shape[1]).astype(np.uint8), (chelsea.shape[0], 1))])
+    pillow('chelsea-rgba-lzw.tiff', Image.fromarray(rgba), 'the 203 x 151 chelsea crop with a horizontal alpha ramp', 'chelsea',
+           compression='tiff_lzw')
+    pillow('chelsea-cmyk.tiff', Image.fromarray(chelsea).convert('CMYK'), 'the chelsea crop in CMYK', 'chelsea', compression='raw')
+    pillow('chelsea-grey16.tiff', Image.fromarray(np.asarray(Image.fromarray(chelsea).convert('L')).astype(np.uint16) * 257),
+           'the chelsea crop in 16-bit grey', 'chelsea')
+    bilevel = Image.fromarray(coffee).convert('L').point(lambda v: 255 if v > 110 else 0).convert('1')
+    for compression in ('raw', 'packbits', 'group4', 'tiff_lzw'):
+        pillow(f'coffee-bilevel-{compression}.tiff', bilevel, 'the coffee crop thresholded at 110', 'coffee', compression=compression)
+    pillow('coffee-two-pages.tiff', rgb, 'two pages: the coffee crop, then the chelsea crop', 'coffee', save_all=True,
+           append_images=[Image.fromarray(chelsea)])
+    pillow('coffee-rgb-bigtiff.tiff', rgb, 'the coffee crop as BigTIFF', 'coffee', big_tiff=True)
+    pillow('coffee-rgb-strips.tiff', rgb, 'the coffee crop in strips of 16 rows, the last one short', 'coffee',
+           tiffinfo={278: 16})
+
+    def mine(file, pixels, how, source, photometric, **options):
+        write_tiff(TIFF / file, pixels, photometric, **options)
+        settings = ', '.join(f'{key}={value!r}' for key, value in sorted(options.items()) if key != 'jpeg')
+        made(file, f'{how}, written by the script\'s own TIFF writer with {settings}', source, f'NumPy {np.__version__}')
+
+    def jpeg_of(region):
+        out = io.BytesIO()
+        Image.fromarray(region).save(out, 'JPEG', quality=90)
+        return out.getvalue()
+
+    rgb8 = np.ascontiguousarray(coffee)
+    for compression, label in ((1, 'raw'), (5, 'lzw'), (8, 'deflate'), (32773, 'packbits')):
+        mine(f'coffee-tiles-{label}.tiff', rgb8, 'the coffee crop in 64 x 48 tiles, the edge ones padded', 'coffee', 2,
+             compression=compression, tile=(64, 48))
+    mine('coffee-tiles-jpeg.tiff', rgb8, 'the coffee crop in 64 x 48 tiles, each a JPEG Pillow wrote at quality 90', 'coffee', 2,
+         compression=7, tile=(64, 48), jpeg=jpeg_of)
+    mine('coffee-planar.tiff', rgb8, 'the coffee crop, one plane per channel, strips of 40 rows', 'coffee', 2, planar=2,
+         rows_per_strip=40)
+    # 144 rows, a whole number of tiles: past the first plane the TIFF crate does not take a bottom tile's padding off,
+    # and on the last plane that runs past its buffer, a panic the native library does not survive.
+    mine('coffee-planar-tiles-lzw.tiff', np.ascontiguousarray(rgb8[:144]), 'the top 144 rows of the coffee crop, one plane per '
+         'channel, in 32 x 48 tiles, the right ones padded', 'coffee', 2, planar=2, tile=(32, 48), compression=5)
+    mine('coffee-big-endian.tiff', rgb8, 'the coffee crop, big-endian', 'coffee', 2, order='>', rows_per_strip=50)
+    mine('coffee-bigtiff-tiles.tiff', rgb8, 'the coffee crop as BigTIFF in tiles', 'coffee', 2, big=True, tile=(48, 48),
+         compression=8)
+    mine('coffee-predictor-lzw.tiff', rgb8, 'the coffee crop with the horizontal predictor', 'coffee', 2, predictor=2, compression=5)
+    rgb16 = (rgb8.astype(np.uint16) * 257 + np.arange(rgb8.shape[1], dtype=np.uint16)[None, :, None]).astype(np.uint16)
+    mine('coffee-rgb16-predictor.tiff', rgb16, 'the coffee crop in 16 bits, a ramp in the low byte, horizontal predictor', 'coffee',
+         2, predictor=2, compression=8)
+    mine('coffee-rgb16-big-endian.tiff', rgb16, 'the 16-bit coffee crop, big-endian', 'coffee', 2, order='>', rows_per_strip=37)
+    alpha16 = np.tile(np.linspace(0, 65535, rgb8.shape[1]).astype(np.uint16), (rgb8.shape[0], 1))
+    mine('coffee-rgba16.tiff', np.dstack([rgb16, alpha16]), 'the 16-bit coffee crop with an alpha ramp', 'coffee', 2,
+         extra_samples=[2])
+    mine('coffee-rgba-associated.tiff', np.dstack([rgb8, rgba[:, :, 3]]), 'the coffee crop with associated alpha', 'coffee', 2,
+         extra_samples=[1])
+    mine('coffee-rgb-two-extra.tiff', np.dstack([rgb8, rgba[:, :, 3], 255 - rgba[:, :, 3]]),
+         'the coffee crop with two unspecified extra samples', 'coffee', 2, extra_samples=[0, 0])
+    floats = (rgb8.astype(np.float32) / 255.0 * 1.25 - 0.1).astype(np.float32)
+    floats[0, :3, 0] = [np.nan, np.inf, -np.inf]
+    mine('coffee-float.tiff', floats, 'the coffee crop as floats from -0.1 to 1.15, with a NaN and two infinities', 'coffee', 2,
+         sample_format=3)
+    mine('coffee-float-predictor.tiff', floats, 'the float coffee crop with the floating-point predictor', 'coffee', 2,
+         sample_format=3, predictor=3, compression=8)
+    mine('coffee-float-rgba.tiff', np.dstack([floats, floats[:, :, :1]]), 'the float coffee crop with its red as alpha', 'coffee', 2,
+         sample_format=3, extra_samples=[2])
+    grey16 = rgb16[:, :, :1]
+    mine('coffee-grey16-white-is-zero.tiff', grey16, 'the 16-bit red of the coffee crop, white is zero', 'coffee', 0)
+    mine('coffee-grey8-white-is-zero.tiff', rgb8[:, :, 1:2], 'the green of the coffee crop, white is zero', 'coffee', 0,
+         compression=32773)
+    mine('coffee-cmyk16.tiff', np.dstack([rgb16, rgb16[:, :, :1]]), 'the 16-bit coffee crop with its red as the black channel',
+         'coffee', 5)
+    bits = (np.asarray(bilevel) > 0).astype(np.uint8)[:, :, None]
+    mine('coffee-bilevel-tiles.tiff', bits, 'the thresholded coffee crop, one bit per pixel, in 32 x 32 tiles', 'coffee', 1,
+         bits=1, tile=(32, 32))
+    mine('coffee-bilevel-strips.tiff', bits, 'the thresholded coffee crop, one bit per pixel, white is zero, strips of 10',
+         'coffee', 0, bits=1, rows_per_strip=10, compression=8)
+    mine('coffee-grey-int8.tiff', rgb8[:, :, :1].astype(np.int8), 'the red of the coffee crop as signed samples', 'coffee', 1,
+         sample_format=2)
+    mine('coffee-grey4.tiff', (rgb8[:, :, :1] >> 4).astype(np.uint8), 'the red of the coffee crop as 4-bit samples, unpacked',
+         'coffee', 1, bits=4)
+    return entries
+
+
+def ccitt_files():
+    """Fax streams libtiff coded, through Pillow, for the core's CCITT decoder: Group 4, and Group 3 one and two
+    dimensional, with and without fill before each end of line. Each `.fax` is a TIFF strip's bytes; the `.bits` beside
+    it is the image a line at a time, a bit a pixel, most significant first, 1 for black, from the pixels Pillow coded
+    (its photometric interpretation turned back into fax colours)."""
+    import io
+    CCITT.mkdir(parents=True, exist_ok=True)
+    for old in list(CCITT.glob('*.fax')) + list(CCITT.glob('*.bits')):
+        old.unlink()
+    entries = {}
+    tools = f'Pillow {PIL.__version__} with libtiff {features.version("libtiff")}, NumPy {np.__version__}'
+    coffee = Image.fromarray(data.coffee()[120:271, 200:403]).convert('L').point(lambda v: 255 if v > 110 else 0).convert('1')
+    yy, xx = np.mgrid[0:61, 0:1800]
+    stripes = Image.fromarray(((xx // (1 + yy % 9) + yy) % 5 < 2)).convert('1')
+    images = {'coffee': (coffee, 'the 203 x 151 coffee crop thresholded at 110', 'coffee'),
+              'stripes': (stripes, '1800 x 61 stripes of changing widths, runs past the 1728 make-up code', None)}
+    variants = {'g4': ('group4', None, 'Group 4'), 'g3-1d': ('group3', 0, 'Group 3 one-dimensional'),
+                'g3-2d': ('group3', 1, 'Group 3 two-dimensional'), 'g3-1d-fill': ('group3', 4, 'Group 3 one-dimensional, fill before EOL'),
+                'g3-2d-fill': ('group3', 5, 'Group 3 two-dimensional, fill before EOL')}
+    for name, (image, how, source) in images.items():
+        for variant, (compression, options, label) in variants.items():
+            out = io.BytesIO()
+            image.save(out, 'TIFF', compression=compression, **({'tiffinfo': {292: options}} if options is not None else {}))
+            out.seek(0)
+            with Image.open(out) as back:
+                offsets, counts = back.tag_v2[273], back.tag_v2[279]
+                if len(offsets) != 1:
+                    raise SystemExit(f'{name} {variant}: {len(offsets)} strips')
+                black = (np.asarray(back) != 0) if back.tag_v2[262] == 1 else (np.asarray(back) == 0)
+            file = f'{name}-{variant}-{image.width}x{image.height}'
+            (CCITT / f'{file}.fax').write_bytes(out.getvalue()[offsets[0]:offsets[0] + counts[0]])
+            (CCITT / f'{file}.bits').write_bytes(np.packbits(black, axis=1).tobytes())
+            for suffix in ('fax', 'bits'):
+                entries[f'{file}.{suffix}'] = {
+                    'origin': f'scikit-image {skimage.__version__}, skimage.data.{source}' if source else 'synthetic, made by the script',
+                    'licence': SOURCES[source][2] if source else 'no licence needed: generated pixels',
+                    'producedBy': f'scripts/visual-references.py ccitt, {tools}: {how}, '
+                                  + (f'coded {label} by libtiff, the strip\'s bytes' if suffix == 'fax' else 'the pixels coded, 1 for black'),
+                    'date': TODAY,
+                }
+    write_manifest(CCITT, entries)
+
+
+COMMANDS = {'photographs': photographs, 'metrics': metric_fixtures, 'webp': webp_files, 'bmp': bmp_files, 'gif': gif_files,
+            'ccitt': ccitt_files,
+            'tiff': tiff_files}
 
 if __name__ == '__main__':
     if len(sys.argv) != 2 or sys.argv[1] not in COMMANDS:

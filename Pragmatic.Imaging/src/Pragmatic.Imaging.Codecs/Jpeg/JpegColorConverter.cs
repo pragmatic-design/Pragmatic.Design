@@ -47,6 +47,51 @@ internal static class JpegColorConverter
         }
     }
 
+    /// <summary>The components interleaved, unconverted: luma alone, or Y, Cb and Cr with the chroma upsampled as for RGB.</summary>
+    public static void ToComponents(JpegFrame frame, Span<byte> output)
+    {
+        var width = frame.OutputWidth;
+        var y = frame.Components[0];
+        if (frame.Components.Length == 1)
+        {
+            for (var row = 0; row < frame.OutputHeight; row++)
+                y.Plane.AsSpan(row * y.PlaneStride, width).CopyTo(output.Slice(row * width, width));
+            return;
+        }
+
+        var cb = frame.Components[1];
+        var cr = frame.Components[2];
+        if (y.HorizontalFactor != frame.MaxHorizontalFactor || y.VerticalFactor != frame.MaxVerticalFactor)
+            throw new ImageDecodeException("JPEG luma is subsampled, which is not supported.");
+
+        var pool = ArrayPool<byte>.Shared;
+        var cbRow = pool.Rent(width);
+        var crRow = pool.Rent(width);
+        var blend = pool.Rent(Math.Max(cb.ScaledWidth, cr.ScaledWidth));
+        try
+        {
+            for (var row = 0; row < frame.OutputHeight; row++)
+            {
+                UpsampledRow(cb, frame, row, cbRow.AsSpan(0, width), blend);
+                UpsampledRow(cr, frame, row, crRow.AsSpan(0, width), blend);
+                var luma = y.Plane.AsSpan(row * y.PlaneStride, width);
+                var target = output.Slice(row * width * 3, width * 3);
+                for (int x = 0, o = 0; x < width; x++, o += 3)
+                {
+                    target[o] = luma[x];
+                    target[o + 1] = cbRow[x];
+                    target[o + 2] = crRow[x];
+                }
+            }
+        }
+        finally
+        {
+            pool.Return(cbRow);
+            pool.Return(crRow);
+            pool.Return(blend);
+        }
+    }
+
     private static void GrayToRgba(JpegFrame frame, PixelBuffer output)
     {
         var c = frame.Components[0];

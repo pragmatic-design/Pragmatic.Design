@@ -28,6 +28,9 @@
   <ItemGroup>
     <None Include="..\..\tests\Pragmatic.Imaging.Tests\References\Photographs\coffee.png" Link="References\Photographs\coffee.png" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tests\Pragmatic.Imaging.Tests\References\Gif\coffee.gif" Link="References\Gif\coffee.gif" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tests\Pragmatic.Imaging.Tests\References\Tiff\coffee-rgb-tiff_lzw.tiff" Link="References\Tiff\coffee-rgb-tiff_lzw.tiff" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tests\Pragmatic.Imaging.Tests\References\Tiff\lzw-single-strip.tiff" Link="References\Tiff\lzw-single-strip.tiff" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tests\Pragmatic.Imaging.Tests\References\Tiff\testfax4.tiff" Link="References\Tiff\testfax4.tiff" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
