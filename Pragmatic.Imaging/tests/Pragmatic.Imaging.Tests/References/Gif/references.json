@@ -1,0 +1,113 @@
+{
+  "about": "Every reference in this directory, with what produced it. Regenerate with scripts/visual-references.py; a reference is never produced by the code it checks.",
+  "references": {
+    "animated.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: three frames: the coffee crop in 128 colours, then two with a shifted rectangle, saved with duration=100, interlace=False, loop=0, save_all=True",
+      "date": "2026-11-28"
+    },
+    "astronaut-interlaced.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, reduced to 256 colours by Pillow, saved with interlace=True",
+      "date": "2026-11-28"
+    },
+    "astronaut.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.astronaut",
+      "licence": "Public domain: \"No known copyright restrictions, released into the public domain.\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.astronaut, reduced to 256 colours by Pillow, saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "chelsea-interlaced.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, reduced to 256 colours by Pillow, saved with interlace=True",
+      "date": "2026-11-28"
+    },
+    "chelsea-transparent.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: the chelsea crop with a transparent disc, saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "chelsea.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.chelsea, reduced to 256 colours by Pillow, saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "coffee-comment.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: the coffee crop in 32 colours, saved with comment=b'Pragmatic', interlace=False",
+      "date": "2026-11-28"
+    },
+    "coffee-interlaced.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, reduced to 256 colours by Pillow, saved with interlace=True",
+      "date": "2026-11-28"
+    },
+    "coffee-local-table.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: the coffee crop in 64 colours, saved with include_color_table=True, interlace=False",
+      "date": "2026-11-28"
+    },
+    "coffee.gif": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 203 x 151 crop of skimage.data.coffee, reduced to 256 colours by Pillow, saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "palette-16.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 45 x 67 pattern over 16 random colours, NumPy default_rng(855), saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "palette-2.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 45 x 67 pattern over 2 random colours, NumPy default_rng(855), saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "palette-200.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 45 x 67 pattern over 200 random colours, NumPy default_rng(855), saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "palette-4.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: a 45 x 67 pattern over 4 random colours, NumPy default_rng(855), saved with interlace=False",
+      "date": "2026-11-28"
+    },
+    "random-13x1.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: 13 x 1 random pixels, NumPy default_rng(855)",
+      "date": "2026-11-28"
+    },
+    "random-1x1.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: 1 x 1 random pixels, NumPy default_rng(855)",
+      "date": "2026-11-28"
+    },
+    "random-1x13.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: 1 x 13 random pixels, NumPy default_rng(855)",
+      "date": "2026-11-28"
+    },
+    "random-31x13.gif": {
+      "origin": "synthetic, made by the script",
+      "licence": "no licence needed: generated pixels",
+      "producedBy": "scripts/visual-references.py gif, Pillow 13.0.0, NumPy 2.5.5: 31 x 13 random pixels, NumPy default_rng(855)",
+      "date": "2026-11-28"
+    }
+  }
+}

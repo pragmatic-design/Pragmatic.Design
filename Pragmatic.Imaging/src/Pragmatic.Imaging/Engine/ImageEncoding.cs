@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Bmp;
+using Pragmatic.Imaging.Codecs.Gif;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
 using Pragmatic.Imaging.Codecs.WebP;
@@ -8,8 +9,8 @@ using Pragmatic.Imaging.Codecs.WebP;
 namespace Pragmatic.Imaging.Engine;
 
 /// <summary>
-///     Writes an image with the engine that handles the format: PNG, JPEG, WebP and BMP with the managed core,
-///     straight into the output; AVIF, GIF and TIFF with the native library.
+///     Writes an image with the engine that handles the format: PNG, JPEG, WebP, BMP and GIF with the managed core,
+///     straight into the output; AVIF and TIFF with the native library.
 /// </summary>
 internal static class ImageEncoding
 {
@@ -21,6 +22,26 @@ internal static class ImageEncoding
     /// file again (1.61 MB) and take twice the native library's time.
     /// </remarks>
     internal const CompressionLevel PngCompression = CompressionLevel.Fastest;
+
+    // A BMP or GIF encoder refuses an image too large for its format with an ArgumentException; this module's
+    // callers got the native library's ImagingException for it, and still do.
+    private static void Sized(Action encode) => Sized(() =>
+    {
+        encode();
+        return true;
+    });
+
+    private static T Sized<T>(Func<T> encode)
+    {
+        try
+        {
+            return encode();
+        }
+        catch (ArgumentException e)
+        {
+            throw new ImagingException(e.Message, e, ImagingError.EncodeFailed);
+        }
+    }
 
     /// <summary>Writes <paramref name="image" /> to <paramref name="output" />. <paramref name="quality" /> is JPEG's, 1 to 100.</summary>
     public static void Encode(PixelBuffer image, ImageFormat format, byte quality, Stream output)
@@ -38,7 +59,10 @@ internal static class ImageEncoding
                 WebPEncoder.EncodeLossless(image, output);
                 return;
             case ImageFormat.Bmp:
-                BmpEncoder.Write(image, output);
+                Sized(() => BmpEncoder.Write(image, output));
+                return;
+            case ImageFormat.Gif:
+                Sized(() => GifEncoder.Write(image, output));
                 return;
             case ImageFormat.Unknown:
                 throw new ImagingException("Cannot encode to an unknown format.", ImagingError.UnsupportedFormat);
@@ -78,7 +102,9 @@ internal static class ImageEncoding
         if (format == ImageFormat.WebP)
             return WebPEncoder.EncodeLossless(image);
         if (format == ImageFormat.Bmp)
-            return BmpEncoder.Encode(image);
+            return Sized(() => BmpEncoder.Encode(image));
+        if (format == ImageFormat.Gif)
+            return Sized(() => GifEncoder.Encode(image));
 
         using var output = new MemoryStream();
         Encode(image, format, quality, output);

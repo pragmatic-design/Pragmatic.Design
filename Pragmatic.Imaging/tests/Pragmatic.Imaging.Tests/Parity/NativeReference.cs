@@ -90,6 +90,22 @@ internal static unsafe class NativeReference
         return buffer.ToArray();
     }
 
+    /// <summary>The native GIF encoder: what the managed one replaced.</summary>
+    public static byte[] EncodeGif(Image source)
+    {
+        nint output;
+        nuint length;
+        fixed (byte* pixels = source.Rgba)
+        {
+            var rc = NativeImports.pragmatic_image_encode(pixels, (nuint)source.Rgba.Length, (uint)source.Width, (uint)source.Height,
+                (int)ImageFormat.Gif, 90, &output, &length);
+            NativeError.CheckResult(rc, "reference encode");
+        }
+
+        using var buffer = new NativeBuffer(output, length);
+        return buffer.ToArray();
+    }
+
     /// <summary>The native decoder: what the managed one replaced, on the same file.</summary>
     public static Image Decode(byte[] encoded)
     {

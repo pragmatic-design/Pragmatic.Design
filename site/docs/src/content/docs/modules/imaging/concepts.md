@@ -1,11 +1,11 @@
 ---
 title: "Architecture and Core Concepts"
-description: "`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG, WebP, BMP and every operation, "
+description: "`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG, WebP, BMP, GIF and every operat"
 editUrl: https://github.com/pragmatic-design/Pragmatic.Design/edit/main/Pragmatic.Imaging/docs/concepts.md
 sidebar:
   order: 1
 ---
-`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG, WebP, BMP and every operation, and a Rust native library built on the `image` crate, still shipped, for AVIF, GIF and TIFF until their managed codecs land. It exists to give server-side .NET code a small, AOT-friendly, predictable image pipeline without adopting a heavy managed dependency.
+`Pragmatic.Imaging` is a small image pipeline for server-side .NET: a managed engine (`Pragmatic.Imaging.Codecs`) for PNG, JPEG, WebP, BMP, GIF and every operation, and a Rust native library built on the `image` crate, still shipped, for AVIF and TIFF until their managed codecs land. It exists to give server-side .NET code a small, AOT-friendly, predictable image pipeline without adopting a heavy managed dependency.
 
 ---
 
@@ -21,8 +21,8 @@ Pragmatic.Imaging takes a different shape: a small, purposeful API over its own 
 
 ## The approach
 
-- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads and encodes it lossless or, by name, lossy, decodes and encodes BMP as the native library did, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
-- **Native library, for the rest**: AVIF, GIF and TIFF are decoded and encoded by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
+- **Managed engine**: `Pragmatic.Imaging.Codecs` decodes and encodes PNG and JPEG, decodes WebP (lossless, lossy with alpha, an animation's first frame) to the pixels libwebp reads and encodes it lossless or, by name, lossy, decodes and encodes BMP and GIF as the native library did, and runs every operation (resize, crop, rotate, flip, filters), with vector paths where they pay. Its operations give the native library's results: exactly for geometry, greyscale, brightness and contrast, within one unit per channel for blur and sharpen.
+- **Native library, for the rest**: AVIF and TIFF are decoded and encoded by the Rust library, as is a JPEG the managed decoder does not handle (CMYK, 12-bit, arithmetic-coded, lossless). Nothing else reaches it.
 - **Controlled native memory**: decoded pixels live in a `PixelBuffer`, native memory from a pool the garbage collector does not move or count, whichever engine decoded them.
 
 ```
@@ -37,7 +37,7 @@ Pragmatic.Imaging takes a different shape: a small, purposeful API over its own 
           ├──────────────────────────┐
           ▼                          ▼
     Pragmatic.Imaging.Codecs   Pragmatic.Imaging.Native.dll / .so / .dylib
-    PNG, JPEG, WebP, BMP       AVIF, GIF, TIFF
+    PNG, JPEG, WebP, BMP, GIF  AVIF, TIFF
     (managed)                  (LibraryImport P/Invoke)
 ```
 
