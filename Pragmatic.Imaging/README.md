@@ -31,9 +31,10 @@ Image processing for .NET: a managed engine for PNG, JPEG, WebP, BMP, GIF, TIFF 
 
 The choice is made per file, from its signature and (for JPEG) its frame header; a caller sees one API.
 The operations give the native library's results: exactly for the geometric operations, greyscale,
-brightness and contrast, within one unit per channel for blur and sharpen. Resizing differs on purpose
-on a translucent image, which is resampled premultiplied so its edges keep their colour (the native
-library darkens them); an opaque one resizes as the native library resized it.
+brightness and contrast, within one unit per channel for blur and sharpen. Resizing, blur and sharpen
+differ on purpose on a translucent image, which they process premultiplied so its edges keep their
+colour (the native library mixes in the colour of the transparent pixels); on an opaque one they give
+the native library's result.
 
 ## Installation
 

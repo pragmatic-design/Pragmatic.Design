@@ -87,7 +87,7 @@ pipe.Grayscale();
 
 ### `Blur(sigma)`
 
-Gaussian blur. `sigma` is the standard deviation in pixels; `1.0` is light, `5.0` is heavy. `0` means the default of `0.8`; a negative, NaN or infinite sigma throws `ArgumentOutOfRangeException`. Edges are extended by repeating the border pixels, and alpha is blurred like a colour.
+Gaussian blur. `sigma` is the standard deviation in pixels; `1.0` is light, `5.0` is heavy. `0` means the default of `0.8`; a negative, NaN or infinite sigma throws `ArgumentOutOfRangeException`. Edges are extended by repeating the border pixels, and alpha is blurred like a colour. An image with any translucent pixel is blurred with **premultiplied alpha**, so the colour of a pixel nobody sees (the black, or white, under a transparent area) does not leak into its visible neighbours; an opaque image gives the native library's result.
 
 ```csharp
 pipe.Blur(sigma: 2.0f);
@@ -95,7 +95,7 @@ pipe.Blur(sigma: 2.0f);
 
 ### `Sharpen(sigma, threshold)`
 
-Unsharp-mask sharpening. `sigma` (default `1.0`, must be positive) controls the underlying blur radius; `threshold` (default `1`) is the minimum channel difference that triggers sharpening. Every channel is sharpened, alpha included.
+Unsharp-mask sharpening. `sigma` (default `1.0`, must be positive) controls the underlying blur radius; `threshold` (default `1`) is the minimum channel difference that triggers sharpening. Every channel is sharpened, alpha included. On an image with translucent pixels the difference is taken premultiplied, as for `Blur`, so a hidden colour is not subtracted from a visible edge.
 
 ```csharp
 pipe.Sharpen();                              // sigma 1.0, threshold 1
