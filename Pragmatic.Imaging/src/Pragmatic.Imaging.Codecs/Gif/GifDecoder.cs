@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Runtime.InteropServices;
 
 namespace Pragmatic.Imaging.Codecs.Gif;
 
@@ -63,6 +64,16 @@ public static class GifDecoder
         var right = Math.Min(header.FrameLeft + width, header.Width);
         var columns = right - header.FrameLeft;
 
+        // Each index's pixel, once: the entry's colour, alpha 0 at the transparent index, and transparent black past
+        // the table.
+        Span<uint> colours = stackalloc uint[256];
+        colours.Clear();
+        for (var index = 0; index < 256 && index * 3 + 3 <= palette.Length; index++)
+        {
+            var alpha = index == header.Transparent ? 0u : 0xFFu;
+            colours[index] = palette[index * 3] | ((uint)palette[index * 3 + 1] << 8) | ((uint)palette[index * 3 + 2] << 16) | (alpha << 24);
+        }
+
         // Interlaced rows come every 8th from 0, every 8th from 4, every 4th from 2, then every 2nd from 1.
         var row = 0;
         var pass = 0;
@@ -72,17 +83,9 @@ public static class GifDecoder
             if (columns > 0 && y < header.Height)
             {
                 var source = indices.AsSpan(stored * width, columns);
-                var target = image.Row(y).Slice(header.FrameLeft * 4, columns * 4);
-                for (var x = 0; x < columns; x++)
-                {
-                    int index = source[x];
-                    if (index * 3 + 3 > palette.Length)
-                        continue;
-                    target[x * 4] = palette[index * 3];
-                    target[x * 4 + 1] = palette[index * 3 + 1];
-                    target[x * 4 + 2] = palette[index * 3 + 2];
-                    target[x * 4 + 3] = index == header.Transparent ? (byte)0 : (byte)0xFF;
-                }
+                var target = MemoryMarshal.Cast<byte, uint>(image.Row(y).Slice(header.FrameLeft * 4, columns * 4));
+                for (var x = 0; x < target.Length; x++)
+                    target[x] = colours[source[x]];
             }
 
             if (!header.Interlaced)

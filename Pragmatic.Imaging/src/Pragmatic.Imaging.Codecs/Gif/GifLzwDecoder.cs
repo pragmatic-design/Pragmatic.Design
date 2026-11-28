@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Pragmatic.Imaging.Codecs.Gif;
 
 /// <summary>
@@ -7,6 +10,11 @@ namespace Pragmatic.Imaging.Codecs.Gif;
 ///     next one itself where there is no code before it. A full table of 4,096 entries stops growing. Decoding stops
 ///     once the frame has its pixels, so what follows them is not read.
 /// </summary>
+/// <remarks>
+///     Every word in the table has already been written to the output once: an entry is the previous word and the
+///     byte that follows it there. So an entry is kept as where that copy starts and how long it is, and a word is
+///     one copy from earlier in the output, instead of a walk down a chain of prefixes a byte at a time.
+/// </remarks>
 internal ref struct GifLzwDecoder
 {
     private const int MaxEntries = 4096;
@@ -14,13 +22,8 @@ internal ref struct GifLzwDecoder
 
     private readonly GifSubBlocks _input;
     private readonly int _minimumSize;
-    private readonly int _clear;
-    private readonly int _end;
-    private readonly Span<short> _prefix;
-    private readonly Span<byte> _suffix;
-    private readonly Span<byte> _first;
+    private readonly Span<int> _start;
     private readonly Span<short> _length;
-    private readonly Span<byte> _word;
 
     /// <param name="input">The frame's sub-blocks, after the minimum code size.</param>
     /// <param name="minimumSize">The minimum code size, 1 to 11.</param>
@@ -29,33 +32,26 @@ internal ref struct GifLzwDecoder
     {
         _input = input;
         _minimumSize = minimumSize;
-        _clear = 1 << minimumSize;
-        _end = _clear + 1;
-        _prefix = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(table[..(MaxEntries * 2)]);
-        _length = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, short>(table.Slice(MaxEntries * 2, MaxEntries * 2));
-        _suffix = table.Slice(MaxEntries * 4, MaxEntries);
-        _first = table.Slice(MaxEntries * 5, MaxEntries);
-        _word = table.Slice(MaxEntries * 6, MaxEntries + 1);
+        _start = MemoryMarshal.Cast<byte, int>(table[..(MaxEntries * 4)]);
+        _length = MemoryMarshal.Cast<byte, short>(table.Slice(MaxEntries * 4, MaxEntries * 2));
     }
 
-    /// <summary>The scratch the code table takes, and a word that does not fit the output.</summary>
-    public const int TableBytes = MaxEntries * 7 + 1;
+    /// <summary>The scratch the code table takes.</summary>
+    public const int TableBytes = MaxEntries * 6;
 
     /// <summary>Fills <paramref name="output" /> with palette indices.</summary>
     /// <exception cref="ImageDecodeException">The stream ends, or has an invalid code, before the frame is whole.</exception>
     public void Decode(Span<byte> output)
     {
-        for (var code = 0; code < _clear; code++)
-        {
-            _prefix[code] = -1;
-            _suffix[code] = (byte)code;
-            _first[code] = (byte)code;
-            _length[code] = 1;
-        }
-
+        var start = _start;
+        var lengths = _length;
+        var clear = 1 << _minimumSize;
+        var end = clear + 1;
         var codeSize = _minimumSize + 1;
-        var next = _end + 1;
+        var next = end + 1;
         var previous = -1;
+        var previousStart = 0;
+        var previousLength = 0;
         var written = 0;
         var input = _input;
         uint bits = 0;
@@ -75,66 +71,74 @@ internal ref struct GifLzwDecoder
             bits >>= codeSize;
             held -= codeSize;
 
-            if (code == _clear)
+            if (code == clear)
             {
                 codeSize = _minimumSize + 1;
-                next = _end + 1;
+                next = end + 1;
                 previous = -1;
                 continue;
             }
 
-            if (code == _end)
+            if (code == end)
                 throw Truncated();
             if (code > next || (code == next && previous < 0))
                 throw new ImageDecodeException("GIF: the LZW data has an invalid code.");
 
-            int first;
-            if (code == next)
+            var at = written;
+            int length;
+            var room = output.Length - written;
+            if (code < clear)
             {
-                // The code being defined: the previous word and its own first byte.
-                first = _first[previous];
-                written = Emit(previous, output, written, extra: first);
+                length = 1;
+                output[written++] = (byte)code;
+            }
+            else if (code == next)
+            {
+                // The code being defined: the previous word, which ends where this one starts, and its first byte.
+                length = previousLength + 1;
+                var copied = Math.Min(previousLength, room);
+                Copy(output, previousStart, written, copied);
+                if (copied < room)
+                    output[written + previousLength] = output[previousStart];
+                written += Math.Min(length, room);
             }
             else
             {
-                first = _first[code];
-                written = Emit(code, output, written, extra: -1);
+                length = lengths[code];
+                var copied = Math.Min(length, room);
+                Copy(output, start[code], written, copied);
+                written += copied;
             }
 
             if (previous >= 0 && next < MaxEntries)
             {
-                _prefix[next] = (short)previous;
-                _suffix[next] = (byte)first;
-                _first[next] = _first[previous];
-                _length[next] = (short)(_length[previous] + 1);
+                start[next] = previousStart;
+                lengths[next] = (short)(previousLength + 1);
                 if (next == (1 << codeSize) - 1 && codeSize < MaxCodeSize)
                     codeSize++;
                 next++;
             }
 
             previous = code;
+            previousStart = at;
+            previousLength = length;
         }
     }
 
-    /// <summary>Writes the word of <paramref name="code" />, then <paramref name="extra" /> if it is a byte, as far as the output reaches.</summary>
-    private int Emit(int code, Span<byte> output, int written, int extra)
+    // A word earlier in the output to its end; the two never overlap, since a word ends at or before the current one
+    // starts. Most words are a few bytes, where a loop costs less than the call to a block copy. Inlined, so the span
+    // is not passed through memory on each code, which System V stalls on.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Copy(Span<byte> output, int from, int to, int count)
     {
-        int length = _length[code];
-        var total = extra >= 0 ? length + 1 : length;
-        var room = output.Length - written;
+        if (count <= 8)
+        {
+            for (var i = 0; i < count; i++)
+                output[to + i] = output[from + i];
+            return;
+        }
 
-        // The table holds a word last byte first: it is written back from its end, into the output when it fits,
-        // or into the scratch word when only its start does.
-        var target = total <= room ? output.Slice(written, total) : _word[..total];
-        if (extra >= 0)
-            target[length] = (byte)extra;
-        var at = length - 1;
-        for (var c = code; c >= 0; c = _prefix[c])
-            target[at--] = _suffix[c];
-        if (total <= room)
-            return written + total;
-        target[..room].CopyTo(output[written..]);
-        return output.Length;
+        output.Slice(from, count).CopyTo(output.Slice(to, count));
     }
 
     private static ImageDecodeException Truncated() => new("GIF: the image data is truncated.");
