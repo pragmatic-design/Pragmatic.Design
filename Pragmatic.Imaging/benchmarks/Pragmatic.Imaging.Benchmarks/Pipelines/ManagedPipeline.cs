@@ -2,6 +2,7 @@ using Pragmatic.Imaging.Benchmarks.Workload;
 using Pragmatic.Imaging.Codecs;
 using Pragmatic.Imaging.Codecs.Bmp;
 using Pragmatic.Imaging.Codecs.Gif;
+using Pragmatic.Imaging.Codecs.Tiff;
 using Pragmatic.Imaging.Codecs.Jpeg;
 using Pragmatic.Imaging.Codecs.Png;
 using Pragmatic.Imaging.Codecs.Transforms;
@@ -42,6 +43,14 @@ public static class ManagedPipeline
     }
 
     public static byte[] EncodeGif(PixelBuffer image) => GifEncoder.Encode(image);
+
+    public static int DecodeTiff(byte[] encoded)
+    {
+        using var image = TiffDecoder.Decode(encoded);
+        return image.Width;
+    }
+
+    public static byte[] EncodeTiff(PixelBuffer image) => TiffEncoder.Encode(image);
 
     /// <summary>
     ///     Decode at the largest reduction that still covers the thumbnail box (the DCT does the first

@@ -1,0 +1,479 @@
+{
+  "about": "Every reference in this directory, with what produced it. Regenerate with scripts/visual-references.py; a reference is never produced by the code it checks.",
+  "references": {
+    "32bpp-None-jpeg.tiff": {
+      "origin": "libtiff 4.7.1, test/images/32bpp-None-jpeg.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "32bpp-None.tiff": {
+      "origin": "libtiff 4.7.1, test/images/32bpp-None.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "LICENSE-libtiff.md": {
+      "origin": "libtiff 4.7.1, LICENSE.md in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte, the notice libtiff's licence asks copies to carry",
+      "date": "2026-11-28"
+    },
+    "chelsea-cmyk.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the chelsea crop in CMYK, saved with compression='raw'",
+      "date": "2026-11-28"
+    },
+    "chelsea-grey16.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the chelsea crop in 16-bit grey",
+      "date": "2026-11-28"
+    },
+    "chelsea-rgba-lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.chelsea",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Stefan van der Walt).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 chelsea crop with a horizontal alpha ramp, saved with compression='tiff_lzw'",
+      "date": "2026-11-28"
+    },
+    "coffee-big-endian.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop, big-endian, written by the script's own TIFF writer with order='>', rows_per_strip=50",
+      "date": "2026-11-28"
+    },
+    "coffee-bigtiff-tiles.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop as BigTIFF in tiles, written by the script's own TIFF writer with big=True, compression=8, tile=(48, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-bilevel-group4.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop thresholded at 110, saved with compression='group4'",
+      "date": "2026-11-28"
+    },
+    "coffee-bilevel-packbits.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop thresholded at 110, saved with compression='packbits'",
+      "date": "2026-11-28"
+    },
+    "coffee-bilevel-raw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop thresholded at 110, saved with compression='raw'",
+      "date": "2026-11-28"
+    },
+    "coffee-bilevel-strips.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the thresholded coffee crop, one bit per pixel, white is zero, strips of 10, written by the script's own TIFF writer with bits=1, compression=8, rows_per_strip=10",
+      "date": "2026-11-28"
+    },
+    "coffee-bilevel-tiff_lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop thresholded at 110, saved with compression='tiff_lzw'",
+      "date": "2026-11-28"
+    },
+    "coffee-bilevel-tiles.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the thresholded coffee crop, one bit per pixel, in 32 x 32 tiles, written by the script's own TIFF writer with bits=1, tile=(32, 32)",
+      "date": "2026-11-28"
+    },
+    "coffee-cmyk16.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the 16-bit coffee crop with its red as the black channel, written by the script's own TIFF writer with ",
+      "date": "2026-11-28"
+    },
+    "coffee-float-predictor.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the float coffee crop with the floating-point predictor, written by the script's own TIFF writer with compression=8, predictor=3, sample_format=3",
+      "date": "2026-11-28"
+    },
+    "coffee-float-rgba.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the float coffee crop with its red as alpha, written by the script's own TIFF writer with extra_samples=[2], sample_format=3",
+      "date": "2026-11-28"
+    },
+    "coffee-float.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop as floats from -0.1 to 1.15, with a NaN and two infinities, written by the script's own TIFF writer with sample_format=3",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-int8.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the red of the coffee crop as signed samples, written by the script's own TIFF writer with sample_format=2",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-jpeg.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in grey, saved with compression='jpeg'",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-packbits.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in grey, saved with compression='packbits'",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-raw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in grey, saved with compression='raw'",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-tiff_adobe_deflate.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in grey, saved with compression='tiff_adobe_deflate'",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-tiff_deflate.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in grey, saved with compression='tiff_deflate'",
+      "date": "2026-11-28"
+    },
+    "coffee-grey-tiff_lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in grey, saved with compression='tiff_lzw'",
+      "date": "2026-11-28"
+    },
+    "coffee-grey16-white-is-zero.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the 16-bit red of the coffee crop, white is zero, written by the script's own TIFF writer with ",
+      "date": "2026-11-28"
+    },
+    "coffee-grey4.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the red of the coffee crop as 4-bit samples, unpacked, written by the script's own TIFF writer with bits=4",
+      "date": "2026-11-28"
+    },
+    "coffee-grey8-white-is-zero.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the green of the coffee crop, white is zero, written by the script's own TIFF writer with compression=32773",
+      "date": "2026-11-28"
+    },
+    "coffee-planar-tiles-lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the top 144 rows of the coffee crop, one plane per channel, in 32 x 48 tiles, the right ones padded, written by the script's own TIFF writer with compression=5, planar=2, tile=(32, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-planar.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop, one plane per channel, strips of 40 rows, written by the script's own TIFF writer with planar=2, rows_per_strip=40",
+      "date": "2026-11-28"
+    },
+    "coffee-predictor-lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop with the horizontal predictor, written by the script's own TIFF writer with compression=5, predictor=2",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-bigtiff.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop as BigTIFF, saved with big_tiff=True",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-jpeg.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop, RGB, saved with compression='jpeg'",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-packbits.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop, RGB, saved with compression='packbits'",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-raw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop, RGB, saved with compression='raw'",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-strips.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the coffee crop in strips of 16 rows, the last one short, saved with tiffinfo={278: 16}",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-tiff_adobe_deflate.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop, RGB, saved with compression='tiff_adobe_deflate'",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-tiff_deflate.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop, RGB, saved with compression='tiff_deflate'",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-tiff_lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: the 203 x 151 coffee crop, RGB, saved with compression='tiff_lzw'",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb-two-extra.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop with two unspecified extra samples, written by the script's own TIFF writer with extra_samples=[0, 0]",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb16-big-endian.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the 16-bit coffee crop, big-endian, written by the script's own TIFF writer with order='>', rows_per_strip=37",
+      "date": "2026-11-28"
+    },
+    "coffee-rgb16-predictor.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop in 16 bits, a ramp in the low byte, horizontal predictor, written by the script's own TIFF writer with compression=8, predictor=2",
+      "date": "2026-11-28"
+    },
+    "coffee-rgba-associated.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop with associated alpha, written by the script's own TIFF writer with extra_samples=[1]",
+      "date": "2026-11-28"
+    },
+    "coffee-rgba16.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the 16-bit coffee crop with an alpha ramp, written by the script's own TIFF writer with extra_samples=[2]",
+      "date": "2026-11-28"
+    },
+    "coffee-tiles-deflate.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop in 64 x 48 tiles, the edge ones padded, written by the script's own TIFF writer with compression=8, tile=(64, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-tiles-jpeg.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop in 64 x 48 tiles, each a JPEG Pillow wrote at quality 90, written by the script's own TIFF writer with compression=7, tile=(64, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-tiles-lzw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop in 64 x 48 tiles, the edge ones padded, written by the script's own TIFF writer with compression=5, tile=(64, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-tiles-packbits.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop in 64 x 48 tiles, the edge ones padded, written by the script's own TIFF writer with compression=32773, tile=(64, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-tiles-raw.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, NumPy 2.5.5: the coffee crop in 64 x 48 tiles, the edge ones padded, written by the script's own TIFF writer with compression=1, tile=(64, 48)",
+      "date": "2026-11-28"
+    },
+    "coffee-two-pages.tiff": {
+      "origin": "scikit-image 0.26.0, skimage.data.coffee",
+      "licence": "CC0: \"No copyright restrictions. CC0 by the photographer (Rachel Michetti).\"",
+      "producedBy": "scripts/visual-references.py tiff, Pillow 13.0.0 with libtiff 4.7.2, NumPy 2.5.5: two pages: the coffee crop, then the chelsea crop, saved with save_all=True",
+      "date": "2026-11-28"
+    },
+    "custom_dir_EXIF_GPS.tiff": {
+      "origin": "libtiff 4.7.1, test/images/custom_dir_EXIF_GPS.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "deflate-last-strip-extra-data.tiff": {
+      "origin": "libtiff 4.7.1, test/images/deflate-last-strip-extra-data.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz (libtiff took it from GDAL, autotest/alg/data/utmsmall_near.tiff)",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "logluv-3c-16b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/logluv-3c-16b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "lzw-single-strip.tiff": {
+      "origin": "libtiff 4.7.1, test/images/lzw-single-strip.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "minisblack-1c-16b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/minisblack-1c-16b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "minisblack-1c-8b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/minisblack-1c-8b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "minisblack-2c-8b-alpha.tiff": {
+      "origin": "libtiff 4.7.1, test/images/minisblack-2c-8b-alpha.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "miniswhite-1c-1b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/miniswhite-1c-1b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "ojpeg_chewey_subsamp21_multi_strip.tiff": {
+      "origin": "libtiff 4.7.1, test/images/ojpeg_chewey_subsamp21_multi_strip.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "ojpeg_single_strip_no_rowsperstrip.tiff": {
+      "origin": "libtiff 4.7.1, test/images/ojpeg_single_strip_no_rowsperstrip.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "ojpeg_zackthecat_subsamp22_single_strip.tiff": {
+      "origin": "libtiff 4.7.1, test/images/ojpeg_zackthecat_subsamp22_single_strip.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "palette-1c-1b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/palette-1c-1b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "palette-1c-4b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/palette-1c-4b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "palette-1c-8b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/palette-1c-8b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "quad-lzw-compat.tiff": {
+      "origin": "libtiff 4.7.1, test/images/quad-lzw-compat.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "quad-tile.jpg.tiff": {
+      "origin": "libtiff 4.7.1, test/images/quad-tile.jpg.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "rgb-3c-16b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/rgb-3c-16b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "rgb-3c-8b.tiff": {
+      "origin": "libtiff 4.7.1, test/images/rgb-3c-8b.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "test_float64_predictor2_be_lzw.tif": {
+      "origin": "libtiff 4.7.1, test/images/test_float64_predictor2_be_lzw.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "test_float64_predictor2_le_lzw.tif": {
+      "origin": "libtiff 4.7.1, test/images/test_float64_predictor2_le_lzw.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "test_ifd_loop_subifd.tif": {
+      "origin": "libtiff 4.7.1, test/images/test_ifd_loop_subifd.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "test_ifd_loop_to_first.tif": {
+      "origin": "libtiff 4.7.1, test/images/test_ifd_loop_to_first.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "test_ifd_loop_to_self.tif": {
+      "origin": "libtiff 4.7.1, test/images/test_ifd_loop_to_self.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "test_two_ifds.tif": {
+      "origin": "libtiff 4.7.1, test/images/test_two_ifds.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "testfax3_bug54_1dnoEOL.tif": {
+      "origin": "libtiff 4.7.1, test/images/testfax3_bug54_1dnoEOL.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "testfax3_bug_513.tiff": {
+      "origin": "libtiff 4.7.1, test/images/testfax3_bug_513.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "testfax4.tiff": {
+      "origin": "libtiff 4.7.1, test/images/testfax4.tiff in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "tiff_with_subifd_chain.tif": {
+      "origin": "libtiff 4.7.1, test/images/tiff_with_subifd_chain.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    },
+    "webp_lossless_rgba_alpha_fully_opaque.tif": {
+      "origin": "libtiff 4.7.1, test/images/webp_lossless_rgba_alpha_fully_opaque.tif in https://download.osgeo.org/libtiff/tiff-4.7.1.tar.gz",
+      "licence": "libtiff's licence, LICENSE-libtiff.md beside the files: \"Permission to use, copy, modify, distribute, and sell this software and its documentation for any purpose is hereby granted without fee\"",
+      "producedBy": "scripts/visual-references.py tiff: copied byte for byte",
+      "date": "2026-11-28"
+    }
+  }
+}

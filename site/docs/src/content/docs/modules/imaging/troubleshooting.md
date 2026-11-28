@@ -13,7 +13,7 @@ Runtime errors and their fixes.
 
 ### "Unable to load DLL 'Pragmatic.Imaging.Native'" or `DllNotFoundException`
 
-The native binary isn't findable. Only AVIF and TIFF (and a CMYK, 12-bit or arithmetic-coded JPEG) need it: PNG, JPEG, WebP, BMP, GIF, the operations and QR codes are managed, so an app that fails here is loading or encoding one of those formats. In order of likelihood:
+The native binary isn't findable. Only AVIF (and a CMYK, 12-bit or arithmetic-coded JPEG) needs it: PNG, JPEG, WebP, BMP, GIF, TIFF, the operations and QR codes are managed, so an app that fails here is loading or encoding one of those formats. In order of likelihood:
 
 1. **Wrong RID / unsupported platform.** The NuGet ships `win-x64`, `linux-x64` (glibc) and `osx-arm64`; any other RID needs a locally-built binary. See [native-deployment.md](/modules/imaging/native-deployment/).
 2. **Alpine Linux (musl libc).** The native library requires glibc. Use a Debian/Ubuntu image, or build for musl.
@@ -50,7 +50,7 @@ The decoded format isn't in `ImagingOptions.AllowedFormats`. Add the format to t
 
 ### `Reason == EncodeFailed` / `UnsupportedFormat`
 
-`UnsupportedFormat`: the requested output is not an encoder target (`ImageFormat.Unknown`). `EncodeFailed`: the native encoder of an AVIF or TIFF output reported an error, or a BMP or GIF is too large for its format. Choose a valid output format.
+`UnsupportedFormat`: the requested output is not an encoder target (`ImageFormat.Unknown`). `EncodeFailed`: the native encoder of an AVIF output reported an error, or a BMP, GIF or TIFF is too large for its format. Choose a valid output format.
 
 ### `ArgumentException` (not `ImagingException`)
 
@@ -105,7 +105,7 @@ Likely oversubscribed: CPU-bound image work doesn't scale past physical cores. U
 
 ### First call is slow, subsequent calls are fast
 
-The first call JIT-compiles the codecs (and, for AVIF or TIFF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
+The first call JIT-compiles the codecs (and, for AVIF, loads the native library). Pre-warm at startup if latency matters, with the formats you serve:
 
 ```csharp
 // In Program.cs startup: compiles the PNG path
